@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>夏目漱石作品集 - Bibli</title>
+    <link rel="stylesheet" type="text/css" href="css/reset.css">
+    <link rel="stylesheet" type="text/css" href="css/common.css">
+    <link rel="stylesheet" type="text/css" href="css/product_detail.css">
+
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <a href="index.html" class="logo">Bibli</a>
+                <div class="search-bar">
+                    <input type="text" placeholder="キーワードで検索...">
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="header-buttons">
+                    <a href="listing_page.html" class="btn btn-primary">出品</a>
+                    <a href="login.html" class="btn btn-secondary">ログイン/登録</a>
+                    <button class="hamburger-menu" id="hamburger-menu">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                </div>
+                <div class="hamburger-dropdown" id="hamburger-dropdown">
+                    <a href="profile_page.html" class="dropdown-item">
+                        <span class="dropdown-icon">👤</span>
+                        <span class="dropdown-text">プロフィール</span>
+                    </a>
+                    <a href="news_page.html" class="dropdown-item">
+                        <span class="dropdown-icon">🔔</span>
+                        <span class="dropdown-text">お知らせ</span>
+                    </a>
+                    <a href="forum.html" class="dropdown-item">
+                        <span class="dropdown-icon">💬</span>
+                        <span class="dropdown-text">掲示板</span>
+                    </a>
+                    <a href="listing_page.html" class="dropdown-item">
+                        <span class="dropdown-icon">📦</span>
+                        <span class="dropdown-text">出品</span>
+                    </a>
+                    <a href="settings.html" class="dropdown-item">
+                        <span class="dropdown-icon">⚙️</span>
+                        <span class="dropdown-text">設定</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="main-content">
+        <div class="product-container">
+            <!-- 左カラム: 商品画像エリア -->
+            <div class="product-images">
+                <div class="main-image" id="mainImage"></div>
+                <div class="thumbnail-list">
+                    <div class="thumbnail active" data-image="1">📖</div>
+                    <div class="thumbnail" data-image="2">📚</div>
+                    <div class="thumbnail" data-image="3">📝</div>
+                    <div class="thumbnail" data-image="4">📄</div>
+                </div>
+            </div>
+
+            <!-- 右カラム: 商品情報・購入エリア -->
+            <div class="product-info">
+                <h1 class="product-title">夏目漱石作品集</h1>
+                
+                <div class="product-meta">
+                    <span>📚 著者: 夏目漱石</span>
+                    <span>📂 カテゴリ: 小説</span>
+                </div>
+
+                <div class="condition-badge">
+                    ✨ 良好な状態
+                </div>
+
+                <div class="price">¥1,200</div>
+
+                <div class="action-buttons">
+                    <a href="checkout.html">
+                        <div class="btn-large btn-purchase">
+                            🛒 今すぐ購入
+                        </div>
+                    </a>
+                    <button class="btn-large btn-cart">
+                        💼 カートに入れる
+                    </button>
+                </div>
+
+                <div class="secondary-actions">
+                    <button class="btn-large btn-outline">
+                        💰 値下げ依頼
+                    </button>
+                    <button class="btn-large btn-outline">
+                        ❤️ お気に入り
+                    </button>
+                </div>
+
+                <div class="seller-info">
+                    <div class="seller-profile">
+                        <div class="seller-avatar">📚</div>
+                        <div class="seller-details">
+                            <h4>本好きユーザー</h4>
+                            <div class="rating">
+                                <span>⭐⭐⭐⭐⭐</span>
+                                <span>(4.8)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary btn-small">👤 フォロー</button>
+                </div>
+
+                <div class="communication-actions">
+                    <button class="btn btn-primary btn-small">💬 チャットで質問</button>
+                    <button class="btn btn-outline btn-small">🔗 シェア</button>
+                    <button class="btn btn-outline btn-small">⚠️ 通報</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 商品説明エリア -->
+        <div class="product-description">
+            <div class="description-section">
+                <h3>📖 商品の説明</h3>
+                <div class="description-text">
+                    <p>夏目漱石の代表作品を収録した貴重な作品集です。「こころ」「坊っちゃん」「吾輩は猫である」などの名作が収録されています。</p>
+                    <p>状態は非常に良好で、書き込みや汚れはほとんどありません。本棚で大切に保管されていた一冊です。</p>
+                    <p>文学好きの方、夏目漱石ファンの方におすすめの一冊です。</p>
+                </div>
+            </div>
+
+            <div class="description-section">
+                <h3>💝 本への想い</h3>
+                <div class="book-passion">
+                    <h4>出品者からのメッセージ</h4>
+                    <p>この作品集は私の文学への扉を開いてくれた大切な本でした。多くの人に夏目漱石の素晴らしさを知ってもらいたく、出品いたします。きっと新しい読者の方にも愛されることでしょう。</p>
+                </div>
+            </div>
+
+            <div class="description-section">
+                <h3>🏷️ 付けられているタグ</h3>
+                <div class="tags">
+                    <span class="tag">日本文学</span>
+                    <span class="tag">古典</span>
+                    <span class="tag">名作</span>
+                    <span class="tag">全集</span>
+                    <span class="tag">読書</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="footer">
+        <div class="footer-content">
+            <a href="commercial.html" class="footer-link">特定商取引法に基づく表記</a>
+            <a href="terms.html" class="footer-link">利用規約</a>
+            <a href="privacy.html" class="footer-link">プライバシーポリシー</a>
+            <a href="contact.html" class="footer-link">お問い合わせ</a>
+        </div>
+    </footer>
+    <script type="text/javascript" src="js/product_detail.js"></script>
+    <script src="js/common.js"></script>
+
+</body>
+</html>

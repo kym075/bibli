@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン - Bibli</title>
+    <link rel="stylesheet" type="text/css" href="css/reset.css">
+    <link rel="stylesheet" type="text/css" href="css/common.css">
+    <link rel="stylesheet" type="text/css" href="css/login.css">
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <a href="index.html" class="logo">Bibli</a>
+                <div class="search-bar">
+                    <input type="text" placeholder="キーワードで検索...">
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="header-buttons">
+                    <a href="listing_page.html" class="btn btn-primary">出品</a>
+                    <a href="login.html" class="btn btn-secondary">ログイン/登録</a>
+                    <button class="hamburger-menu" id="hamburger-menu">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                </div>
+                <div class="hamburger-dropdown" id="hamburger-dropdown">
+                    <a href="profile_page.html" class="dropdown-item">
+                        <span class="dropdown-icon">👤</span>
+                        <span class="dropdown-text">プロフィール</span>
+                    </a>
+                    <a href="news_page.html" class="dropdown-item">
+                        <span class="dropdown-icon">🔔</span>
+                        <span class="dropdown-text">お知らせ</span>
+                    </a>
+                    <a href="forum.html" class="dropdown-item">
+                        <span class="dropdown-icon">💬</span>
+                        <span class="dropdown-text">掲示板</span>
+                    </a>
+                    <a href="listing_page.html" class="dropdown-item">
+                        <span class="dropdown-icon">📦</span>
+                        <span class="dropdown-text">出品</span>
+                    </a>
+                    <a href="settings.html" class="dropdown-item">
+                        <span class="dropdown-icon">⚙️</span>
+                        <span class="dropdown-text">設定</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="main-content">
+        <div class="login-container">
+            <div class="login-box">
+                <h1 class="login-title">ログイン</h1>
+                <p class="login-subtitle">Bibliへようこそ</p>
+
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="email" class="form-label">メールアドレス</label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            class="form-input"
+                            placeholder="example@email.com"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password" class="form-label">パスワード</label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="form-input"
+                            placeholder="パスワードを入力"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-options">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="rememberMe">
+                            <span>ログイン状態を保持する</span>
+                        </label>
+                        <a href="#" class="forgot-password">パスワードをお忘れの方</a>
+                    </div>
+
+                    <button type="submit" class="login-btn">ログイン</button>
+                </form>
+
+                <div class="divider">
+                    <span>または</span>
+                </div>
+
+                <div class="register-link">
+                    <p>アカウントをお持ちでない方</p>
+                    <a href="register.html" class="register-btn">新規登録はこちら</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="footer">
+        <div class="footer-content">
+            <a href="commercial.html" class="footer-link">特定商取引法に基づく表記</a>
+            <a href="terms.html" class="footer-link">利用規約</a>
+            <a href="privacy.html" class="footer-link">プライバシーポリシー</a>
+            <a href="contact.html" class="footer-link">お問い合わせ</a>
+        </div>
+    </footer>
+
+    <script src="js/login.js"></script>
+    <script src="js/common.js"></script>
+</body>
+</html>

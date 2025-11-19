@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>リンクテスト</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 2rem;
+            line-height: 1.8;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 2rem;
+        }
+        .link-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        a {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        a:hover {
+            background: #2980b9;
+        }
+        .status {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #f0f0f0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Bibli リンクテストページ</h1>
+
+    <div class="status">
+        <p><strong>現在のページ:</strong> test_links.html</p>
+        <p><strong>目的:</strong> index.htmlからのリンクが正しく動作するか確認</p>
+    </div>
+
+    <h2>主要ページへのリンク</h2>
+    <div class="link-list">
+        <a href="index.html">トップページ (index.html)</a>
+        <a href="login.html">ログイン画面 (login.html)</a>
+        <a href="register.html">新規登録画面 (register.html)</a>
+        <a href="listing_page.html">出品画面 (listing_page.html)</a>
+        <a href="product_detail.html">商品詳細 (product_detail.html)</a>
+        <a href="checkout.html">購入手続き (checkout.html)</a>
+        <a href="profile_page.html">プロフィール (profile_page.html)</a>
+        <a href="settings.html">設定 (settings.html)</a>
+        <a href="forum.html">掲示板 (forum.html)</a>
+        <a href="contact.html">お問い合わせ (contact.html)</a>
+    </div>
+
+    <h2>規約・ポリシー</h2>
+    <div class="link-list">
+        <a href="terms.html">利用規約 (terms.html)</a>
+        <a href="privacy.html">プライバシーポリシー (privacy.html)</a>
+        <a href="commercial.html">特定商取引法 (commercial.html)</a>
+    </div>
+
+    <div class="status" style="margin-top: 2rem; background: #e8f5e9;">
+        <h3>テスト手順:</h3>
+        <ol>
+            <li>このページ (test_links.html) をブラウザで開く</li>
+            <li>上記のリンクをクリックして、各ページに移動できるか確認</li>
+            <li>移動できない場合は、ブラウザのコンソールでエラーを確認</li>
+            <li>index.htmlからも同様にテスト</li>
+        </ol>
+    </div>
+
+    <script>
+        // ページ読み込み時の情報を表示
+        console.log('現在のURL:', window.location.href);
+        console.log('現在のパス:', window.location.pathname);
+        console.log('現在のディレクトリ:', window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/')));
+    </script>
+</body>
+</html>

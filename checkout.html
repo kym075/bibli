@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>購入手続き - Bibli</title>
+    <link rel="stylesheet" type="text/css" href="css/reset.css">
+    <link rel="stylesheet" type="text/css" href="css/common.css">
+    <link rel="stylesheet" type="text/css" href="css/checkout.css">
+
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <a href="index.html" class="logo">Bibli</a>
+                <div class="search-bar">
+                    <input type="text" placeholder="キーワードで検索...">
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="header-buttons">
+                    <a href="listing_page.html" class="btn btn-primary">出品</a>
+                    <a href="login.html" class="btn btn-secondary">ログイン/登録</a>
+                    <button class="hamburger-menu" id="hamburger-menu">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                </div>
+                <div class="hamburger-dropdown" id="hamburger-dropdown">
+                    <a href="profile_page.html" class="dropdown-item">
+                        <span class="dropdown-icon">👤</span>
+                        <span class="dropdown-text">プロフィール</span>
+                    </a>
+                    <a href="news_page.html" class="dropdown-item">
+                        <span class="dropdown-icon">🔔</span>
+                        <span class="dropdown-text">お知らせ</span>
+                    </a>
+                    <a href="forum.html" class="dropdown-item">
+                        <span class="dropdown-icon">💬</span>
+                        <span class="dropdown-text">掲示板</span>
+                    </a>
+                    <a href="listing_page.html" class="dropdown-item">
+                        <span class="dropdown-icon">📦</span>
+                        <span class="dropdown-text">出品</span>
+                    </a>
+                    <a href="settings.html" class="dropdown-item">
+                        <span class="dropdown-icon">⚙️</span>
+                        <span class="dropdown-text">設定</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="main-content">
+        <!-- ページタイトル -->
+        <div class="page-title">
+            <h1>📋 購入内容の確認</h1>
+            <p>ご注文内容をご確認の上、購入を確定してください</p>
+        </div>
+
+        <!-- プログレスバー -->
+        <div class="progress-bar">
+            <div class="progress-step completed">
+                <div class="step-number">1</div>
+                <span>商品選択</span>
+            </div>
+            <div class="progress-divider completed"></div>
+            <div class="progress-step active">
+                <div class="step-number">2</div>
+                <span>購入確認</span>
+            </div>
+            <div class="progress-divider"></div>
+            <div class="progress-step">
+                <div class="step-number">3</div>
+                <span>購入完了</span>
+            </div>
+        </div>
+
+        <!-- 購入確認コンテナ -->
+        <div class="checkout-container">
+            <!-- セクションヘッダー -->
+            <div class="section-header">
+                <h2>ご注文内容</h2>
+                <p>以下の内容で購入手続きを進めます</p>
+            </div>
+
+            <!-- 成功メッセージ -->
+            <div class="success-message" id="successMessage">
+                購入が完了しました！ご注文ありがとうございます。
+            </div>
+
+            <!-- 購入商品セクション -->
+            <div class="product-section">
+                <div class="product-item">
+                    <div class="product-image">📖</div>
+                    <div class="product-info">
+                        <div class="product-title">夏目漱石作品集</div>
+                        <div class="product-author">著者: 夏目漱石</div>
+                        <div class="product-condition">良好な状態</div>
+                    </div>
+                    <div class="product-price">¥1,200</div>
+                </div>
+            </div>
+
+            <!-- お届け先セクション -->
+            <div class="info-section">
+                <h3 class="section-title delivery-title">お届け先</h3>
+                <div class="address-display">
+                    <div class="address-info">
+                        <div class="postal-code">〒123-4567</div>
+                        <div class="address-line">東京都渋谷区神南1-23-45</div>
+                        <div class="address-line">Bibliマンション 101号室</div>
+                        <div class="recipient-name">山田 太郎 様</div>
+                    </div>
+                    <a href="#" class="change-btn" id="changeAddressBtn">変更する</a>
+                </div>
+            </div>
+
+            <!-- 支払い方法セクション -->
+            <div class="info-section">
+                <h3 class="section-title payment-title">支払い方法</h3>
+                <div class="payment-display">
+                    <div class="payment-icon">VISA</div>
+                    <div class="payment-info">
+                        <div class="payment-method">クレジットカード</div>
+                        <div class="card-info">**** **** **** 1234</div>
+                    </div>
+                    <a href="#" class="change-btn" id="changePaymentBtn">変更する</a>
+                </div>
+                <div class="security-info">
+                    この決済はSSL暗号化通信により保護されています
+                </div>
+            </div>
+
+            <!-- お支払い金額セクション -->
+            <div class="info-section">
+                <h3 class="section-title summary-title">お支払い金額</h3>
+                <div class="price-summary">
+                    <div class="price-row">
+                        <span class="price-label">商品合計</span>
+                        <span class="price-value">¥1,200</span>
+                    </div>
+                    <div class="price-row">
+                        <span class="price-label">送料（ゆうパケット）</span>
+                        <span class="price-value">¥230</span>
+                    </div>
+                    <div class="price-row">
+                        <span class="price-label">販売手数料</span>
+                        <span class="price-value">¥120</span>
+                    </div>
+                    <div class="price-row">
+                        <span class="price-label">合計金額</span>
+                        <span class="price-value total-price">¥1,550</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 購入ボタンセクション -->
+            <div class="purchase-section">
+                <button class="purchase-btn" id="purchaseBtn">
+                    <span class="loading" id="loadingIndicator">処理中...</span>
+                    <span id="btnText">購入を確定する</span>
+                </button>
+                <div class="purchase-note">
+                    ボタンを押すと購入が確定し、決済が実行されます。<br>
+                    ご注文後のキャンセルはできませんので、内容をよくご確認ください。
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="footer">
+        <div class="footer-content">
+            <a href="commercial.html" class="footer-link">特定商取引法に基づく表記</a>
+            <a href="privacy.html" class="footer-link">プライバシーポリシー</a>
+            <a href="terms.html" class="footer-link">利用規約</a>
+            <a href="contact.html" class="footer-link">お問い合わせ</a>
+        </div>
+    </footer>
+    <script src="js/checkout.js"></script>
+    <script src="js/common.js"></script>
+</body>
+</html>

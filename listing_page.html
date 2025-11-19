@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品を出品する - Bibli</title>
+    <link rel="stylesheet" type="text/css" href="css/reset.css">
+    <link rel="stylesheet" type="text/css" href="css/common.css">
+    <link rel="stylesheet" type="text/css" href="css/listing_page.css">
+
+
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <a href="index.html" class="logo">Bibli</a>
+                <div class="search-bar">
+                    <input type="text" placeholder="キーワードで検索...">
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="header-buttons">
+                    <a href="listing_page.html" class="btn btn-primary">出品</a>
+                    <a href="login.html" class="btn btn-secondary">ログイン/登録</a>
+                    <button class="hamburger-menu" id="hamburger-menu">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                </div>
+                <div class="hamburger-dropdown" id="hamburger-dropdown">
+                    <a href="profile_page.html" class="dropdown-item">
+                        <span class="dropdown-icon">👤</span>
+                        <span class="dropdown-text">プロフィール</span>
+                    </a>
+                    <a href="news_page.html" class="dropdown-item">
+                        <span class="dropdown-icon">🔔</span>
+                        <span class="dropdown-text">お知らせ</span>
+                    </a>
+                    <a href="forum.html" class="dropdown-item">
+                        <span class="dropdown-icon">💬</span>
+                        <span class="dropdown-text">掲示板</span>
+                    </a>
+                    <a href="listing_page.html" class="dropdown-item">
+                        <span class="dropdown-icon">📦</span>
+                        <span class="dropdown-text">出品</span>
+                    </a>
+                    <a href="settings.html" class="dropdown-item">
+                        <span class="dropdown-icon">⚙️</span>
+                        <span class="dropdown-text">設定</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="main-content">
+        <div class="page-title">
+            <h1>📚 商品を出品する</h1>
+            <p>あなたの大切な本を新しい読者に届けませんか？</p>
+        </div>
+
+        <div class="form-container fade-in">
+            <form id="listingForm">
+                <div class="success-message" id="successMessage">
+                    ✅ 出品が完了しました！商品は審査後に公開されます。
+                </div>
+
+                <!-- 商品情報の入力 -->
+                <div class="form-section">
+                    <h2 class="section-title">商品情報の入力</h2>
+
+                    <!-- 出品画像 -->
+                    <div class="form-group">
+                        <label class="form-label">出品画像<span class="required">*</span></label>
+                        <div class="help-text">最大10枚まで登録できます。1枚目の画像がメイン画像として表示されます。</div>
+                        
+                        <div class="image-upload-area" id="imageUploadArea">
+                            <span class="upload-icon">📷</span>
+                            <div class="upload-text">ファイルを選択またはドラッグ＆ドロップ</div>
+                            <div class="upload-subtext">JPG, PNG, GIF (最大5MB)</div>
+                            <input type="file" class="file-input" id="imageInput" multiple accept="image/*">
+                        </div>
+
+                        <div class="image-preview-container" id="imagePreviewContainer"></div>
+                    </div>
+
+                    <!-- 書籍タイトル -->
+                    <div class="form-group">
+                        <label for="bookTitle" class="form-label">書籍タイトル<span class="required">*</span></label>
+                        <input type="text" id="bookTitle" class="form-input" placeholder="例: 夏目漱石作品集" required>
+                        <div class="help-text">正確なタイトルを入力してください。</div>
+                    </div>
+
+                    <!-- カテゴリ -->
+                    <div class="form-group">
+                        <label for="category" class="form-label">カテゴリ<span class="required">*</span></label>
+                        <select id="category" class="form-input form-select" required>
+                            <option value="">カテゴリを選択してください</option>
+                            <option value="novel">小説</option>
+                            <option value="manga">漫画</option>
+                            <option value="specialist">専門書</option>
+                            <option value="picture">絵本</option>
+                            <option value="magazine">雑誌</option>
+                            <option value="foreign">洋書</option>
+                            <option value="business">ビジネス書</option>
+                            <option value="self-help">自己啓発</option>
+                            <option value="other">その他</option>
+                        </select>
+                    </div>
+
+                    <!-- 商品の状態 -->
+                    <div class="form-group">
+                        <label for="condition" class="form-label">商品の状態<span class="required">*</span></label>
+                        <select id="condition" class="form-input form-select" required>
+                            <option value="">状態を選択してください</option>
+                            <option value="new">新品・未使用</option>
+                            <option value="like-new">未使用に近い</option>
+                            <option value="excellent">目立った傷や汚れなし</option>
+                            <option value="good">やや傷や汚れあり</option>
+                            <option value="fair">傷や汚れあり</option>
+                            <option value="poor">全体的に状態が悪い</option>
+                        </select>
+                    </div>
+
+                    <!-- 商品説明 -->
+                    <div class="form-group">
+                        <label for="description" class="form-label">商品説明<span class="required">*</span></label>
+                        <textarea id="description" class="form-input form-textarea" placeholder="本の状態、おすすめポイントなどを詳しく説明してください..." required></textarea>
+                        <div class="help-text">購入者が安心して購入できるよう、詳しい状態を記載してください。</div>
+                    </div>
+
+                    <!-- 本への想い -->
+                    <div class="form-group">
+                        <label for="passion" class="form-label">本への想い</label>
+                        <textarea id="passion" class="form-input form-textarea" placeholder="この本のどんなところが好きか、次の人にどう読んでほしいか等..."></textarea>
+                        <div class="help-text">任意項目です。この本に対するあなたの想いを次の読者に伝えましょう。</div>
+                    </div>
+
+                    <!-- タグ付け -->
+                    <div class="form-group">
+                        <label for="tags" class="form-label">タグ付け</label>
+                        <input type="text" id="tagInput" class="form-input" placeholder="例: ミステリー, 感動, サイン本 (Enterキーで追加)">
+                        <div class="help-text">商品を見つけやすくするためのタグを追加できます。Enterキーで追加してください。</div>
+                        <div class="tags-container" id="tagsContainer"></div>
+                    </div>
+                </div>
+
+                <!-- 販売形式と価格 -->
+                <div class="form-section">
+                    <h2 class="section-title">販売形式と価格</h2>
+
+                    <!-- 販売形式 -->
+                    <div class="form-group">
+                        <label class="form-label">販売形式<span class="required">*</span></label>
+                        <div class="radio-group">
+                            <div class="radio-option selected" data-value="normal">
+                                <input type="radio" name="saleType" value="normal" checked>
+                                <label class="radio-label">通常販売</label>
+                            </div>
+                            <div class="radio-option" data-value="auction">
+                                <input type="radio" name="saleType" value="auction">
+                                <label class="radio-label">オークション</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 販売価格 -->
+                    <div class="form-group">
+                        <label for="price" class="form-label">販売価格<span class="required">*</span></label>
+                        <div style="position: relative;">
+                            <span style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #7f8c8d; font-weight: 600;">¥</span>
+                            <input type="number" id="price" class="form-input" style="padding-left: 2.5rem;" placeholder="1000" required min="100" max="999999">
+                        </div>
+                        
+                        <div class="price-calculator" id="priceCalculator">
+                            <div class="price-row">
+                                <span>販売価格</span>
+                                <span id="salePrice">¥0</span>
+                            </div>
+                            <div class="price-row">
+                                <span>販売手数料 (10%)</span>
+                                <span class="fee" id="fee">¥0</span>
+                            </div>
+                            <div class="price-row total">
+                                <span>販売利益</span>
+                                <span class="profit" id="profit">¥0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 配送について -->
+                <div class="form-section">
+                    <h2 class="section-title">配送について</h2>
+
+                    <!-- 配送方法 -->
+                    <div class="form-group">
+                        <label for="shipping" class="form-label">配送方法<span class="required">*</span></label>
+                        <select id="shipping" class="form-input form-select" required>
+                            <option value="">配送方法を選択してください</option>
+                            <option value="yu-packet">ゆうパケット (¥230)</option>
+                            <option value="yu-packet-plus">ゆうパケットプラス (¥455)</option>
+                            <option value="takkyubin">宅急便コンパクト (¥450)</option>
+                            <option value="takkyubin-normal">宅急便 (¥700〜)</option>
+                            <option value="letter-pack">レターパック (¥370〜)</option>
+                            <option value="other">その他</option>
+                        </select>
+                        <div class="help-text">配送料は購入者負担となります。</div>
+                    </div>
+                </div>
+
+                <!-- 送信ボタン -->
+                <a href="listing_complete.html">
+                    <div class="submit-section">
+                        <button type="submit" class="submit-btn">📤 出品する</button>
+                        <div class="help-text" style="margin-top: 1rem;">
+                            出品後、運営による審査を経て公開されます。審査は通常24時間以内に完了します。
+                        </div>
+                    </div>
+                </a>
+            </form>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="footer">
+        <div class="footer-content">
+            <a href="commercial.html" class="footer-link">特定商取引法に基づく表記</a>
+            <a href="terms.html" class="footer-link">利用規約</a>
+            <a href="privacy.html" class="footer-link">プライバシーポリシー</a>
+            <a href="contact.html" class="footer-link">お問い合わせ</a>
+        </div>
+    </footer>
+    <script src="js/listing_page.js"></script>
+    <script src="js/common.js"></script>
+
+</body>
+</html>
+        

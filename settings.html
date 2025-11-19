@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>設定 - Bibli</title>
+    <link rel="stylesheet" type="text/css" href="css/reset.css">
+    <link rel="stylesheet" type="text/css" href="css/common.css">
+    <link rel="stylesheet" type="text/css" href="css/settings.css">
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <a href="index.html" class="logo">Bibli</a>
+                <div class="search-bar">
+                    <input type="text" placeholder="キーワードで検索...">
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="header-buttons">
+                    <a href="listing_page.html" class="btn btn-primary">出品</a>
+                    <a href="login.html" class="btn btn-secondary">ログイン/登録</a>
+                    <button class="hamburger-menu" id="hamburger-menu">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                </div>
+                <div class="hamburger-dropdown" id="hamburger-dropdown">
+                    <a href="profile_page.html" class="dropdown-item">
+                        <span class="dropdown-icon">👤</span>
+                        <span class="dropdown-text">プロフィール</span>
+                    </a>
+                    <a href="news_page.html" class="dropdown-item">
+                        <span class="dropdown-icon">🔔</span>
+                        <span class="dropdown-text">お知らせ</span>
+                    </a>
+                    <a href="forum.html" class="dropdown-item">
+                        <span class="dropdown-icon">💬</span>
+                        <span class="dropdown-text">掲示板</span>
+                    </a>
+                    <a href="listing_page.html" class="dropdown-item">
+                        <span class="dropdown-icon">📦</span>
+                        <span class="dropdown-text">出品</span>
+                    </a>
+                    <a href="settings.html" class="dropdown-item">
+                        <span class="dropdown-icon">⚙️</span>
+                        <span class="dropdown-text">設定</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="main-content">
+        <div class="settings-container">
+            <h1 class="page-title">設定</h1>
+
+            <!-- アカウント設定 -->
+            <section class="settings-section">
+                <h2 class="section-title">アカウント</h2>
+                <div class="settings-list">
+                    <a href="user_settings.html" class="settings-item">
+                        <div class="item-left">
+                            <span class="item-icon">👤</span>
+                            <span class="item-text">ユーザー設定</span>
+                        </div>
+                        <span class="item-arrow">›</span>
+                    </a>
+                    <a href="#" class="settings-item">
+                        <div class="item-left">
+                            <span class="item-icon">✉️</span>
+                            <span class="item-text">メールアドレス</span>
+                        </div>
+                        <span class="item-value">example@email.com</span>
+                    </a>
+                    <a href="#" class="settings-item">
+                        <div class="item-left">
+                            <span class="item-icon">📱</span>
+                            <span class="item-text">電話番号</span>
+                        </div>
+                        <span class="item-value">090-****-5678</span>
+                    </a>
+                    <a href="#" class="settings-item">
+                        <div class="item-left">
+                            <span class="item-icon">🔒</span>
+                            <span class="item-text">パスワード変更</span>
+                        </div>
+                        <span class="item-arrow">›</span>
+                    </a>
+                </div>
+            </section>
+
+            <!-- 支払い設定 -->
+            <section class="settings-section">
+                <h2 class="section-title">支払い</h2>
+                <div class="settings-list">
+                    <a href="#" class="settings-item" data-modal="payment">
+                        <div class="item-left">
+                            <span class="item-icon">💳</span>
+                            <span class="item-text">クレジットカード</span>
+                        </div>
+                        <span class="item-arrow">›</span>
+                    </a>
+                    <a href="#" class="settings-item">
+                        <div class="item-left">
+                            <span class="item-icon">🏦</span>
+                            <span class="item-text">振込先口座</span>
+                        </div>
+                        <span class="item-arrow">›</span>
+                    </a>
+                    <a href="#" class="settings-item">
+                        <div class="item-left">
+                            <span class="item-icon">💰</span>
+                            <span class="item-text">売上金・ポイント</span>
+                        </div>
+                        <span class="item-value">¥0</span>
+                        <span class="item-arrow">›</span>
+                    </a>
+                </div>
+            </section>
+
+            <!-- 通知設定 -->
+            <section class="settings-section">
+                <h2 class="section-title">通知</h2>
+                <div class="settings-list">
+                    <div class="settings-item toggle-item">
+                        <div class="item-left">
+                            <span class="item-icon">🔔</span>
+                            <span class="item-text">プッシュ通知</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="pushNotification" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-item toggle-item">
+                        <div class="item-left">
+                            <span class="item-icon">📧</span>
+                            <span class="item-text">メール通知</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="emailNotification" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-item toggle-item">
+                        <div class="item-left">
+                            <span class="item-icon">💬</span>
+                            <span class="item-text">メッセージ通知</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="messageNotification" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-item toggle-item">
+                        <div class="item-left">
+                            <span class="item-icon">🛍️</span>
+                            <span class="item-text">お知らせ・キャンペーン</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="campaignNotification">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- プライバシー設定 -->
+            <section class="settings-section">
+                <h2 class="section-title">プライバシー</h2>
+                <div class="settings-list">
+                    <div class="settings-item toggle-item">
+                        <div class="item-left">
+                            <span class="item-icon">🔐</span>
+                            <span class="item-text">プロフィールを非公開</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="privateProfile">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <a href="#" class="settings-item">
+                        <div class="item-left">
+                            <span class="item-icon">🚫</span>
+                            <span class="item-text">ブロックリスト</span>
+                        </div>
+                        <span class="item-arrow">›</span>
+                    </a>
+                </div>
+            </section>
+
+            <!-- その他 -->
+            <section class="settings-section">
+                <h2 class="section-title">その他</h2>
+                <div class="settings-list">
+                    <a href="contact.html" class="settings-item">
+                        <div class="item-left">
+                            <span class="item-icon">📞</span>
+                            <span class="item-text">お問い合わせ</span>
+                        </div>
+                        <span class="item-arrow">›</span>
+                    </a>
+                    <a href="terms.html" class="settings-item">
+                        <div class="item-left">
+                            <span class="item-icon">📄</span>
+                            <span class="item-text">利用規約</span>
+                        </div>
+                        <span class="item-arrow">›</span>
+                    </a>
+                    <a href="privacy.html" class="settings-item">
+                        <div class="item-left">
+                            <span class="item-icon">🔏</span>
+                            <span class="item-text">プライバシーポリシー</span>
+                        </div>
+                        <span class="item-arrow">›</span>
+                    </a>
+                    <a href="commercial.html" class="settings-item">
+                        <div class="item-left">
+                            <span class="item-icon">⚖️</span>
+                            <span class="item-text">特定商取引法に基づく表記</span>
+                        </div>
+                        <span class="item-arrow">›</span>
+                    </a>
+                    <a href="#" class="settings-item">
+                        <div class="item-left">
+                            <span class="item-icon">ℹ️</span>
+                            <span class="item-text">アプリバージョン</span>
+                        </div>
+                        <span class="item-value">v1.0.0</span>
+                    </a>
+                </div>
+            </section>
+
+            <!-- ログアウト -->
+            <section class="settings-section">
+                <div class="settings-list">
+                    <a href="#" class="settings-item danger-item" id="logoutBtn">
+                        <div class="item-left">
+                            <span class="item-icon">🚪</span>
+                            <span class="item-text">ログアウト</span>
+                        </div>
+                    </a>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="footer">
+        <div class="footer-content">
+            <a href="commercial.html" class="footer-link">特定商取引法に基づく表記</a>
+            <a href="terms.html" class="footer-link">利用規約</a>
+            <a href="privacy.html" class="footer-link">プライバシーポリシー</a>
+            <a href="contact.html" class="footer-link">お問い合わせ</a>
+        </div>
+    </footer>
+
+    <script src="js/settings.js"></script>
+    <script src="js/common.js"></script>
+</body>
+</html>
