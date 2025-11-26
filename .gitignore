@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build outputs (distは含める)
+# account/dist/
+
+# Environment files
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
