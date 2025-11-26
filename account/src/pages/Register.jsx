@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -13,7 +13,6 @@ function Register() {
     agreeTerms: false
   });
   const [errors, setErrors] = useState({});
-  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -120,7 +119,7 @@ function Register() {
     alert('アカウント登録が完了しました！');
 
     // ログインページへリダイレクト
-    navigate('/login');
+    window.location.hash = '/login';
   };
 
   const handleUserIdBlur = () => {

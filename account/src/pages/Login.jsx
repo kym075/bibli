@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -10,7 +10,6 @@ function Login() {
     rememberMe: false
   });
   const [errors, setErrors] = useState({});
-  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -59,7 +58,9 @@ function Login() {
     alert('ログインに成功しました！');
 
     // プロフィールページへリダイレクト
-    window.location.href = '../profile_page.html';
+    const isDev = window.location.hostname === 'localhost';
+    const baseUrl = isDev ? '../../' : '../../';
+    window.location.href = `${baseUrl}profile_page.html`;
   };
 
   const handleEmailBlur = () => {
