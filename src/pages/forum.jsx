@@ -30,7 +30,7 @@ export default function Forum() {
         </div>
 
         <!-- 新規投稿ボタン -->
-        <a href="forum_post.html">
+        <a href="/forum_post">
             <div class="post-action">
                 <button class="new-post-btn" id="newPostBtn">新しいトピックを投稿する</button>
             </div>
@@ -71,7 +71,7 @@ export default function Forum() {
                     </div>
                 </div>
 
-                <a href="forum_detail.html">
+                <a href="/forum_detail">
                     <div class="thread-item question">
                         <div class="thread-header">
                             <span class="thread-category category-question">質問</span>
@@ -103,10 +103,6 @@ export default function Forum() {
 `;
 
     return (
-        <>
-            <Header />
-            <main className="main-content" dangerouslySetInnerHTML={{ __html: markup }} />
-            <Footer />
-        </>
+        <main className="main-content" dangerouslySetInnerHTML={{ __html: markup }} />
     );
 }

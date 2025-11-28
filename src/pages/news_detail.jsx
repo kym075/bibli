@@ -56,7 +56,7 @@ export default function NewsDetail() {
             </section>
 
             <nav class="article-navigation">
-                <a href="news_page.html" class="back-btn" id="backToList">お知らせ一覧へ戻る</a>
+                <a href="/news_page" class="back-btn" id="backToList">お知らせ一覧へ戻る</a>
             </nav>
         </article>
     `;

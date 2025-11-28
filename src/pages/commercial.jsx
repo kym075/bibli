@@ -34,7 +34,7 @@ export default function Commercial() {
                     <h2 class="document-heading">連絡先</h2>
                     <p>メールアドレス: support@bibli.com<br>
                     電話番号: 03-1234-5678（受付時間: 平日10:00〜18:00）<br>
-                    お問い合わせフォーム: <a href="contact.html">こちら</a></p>
+                    お問い合わせフォーム: <a href="/contact">こちら</a></p>
                     <p class="note">※商品に関するお問い合わせは、出品者に直接お問い合わせください。</p>
                 </section>
 
@@ -68,7 +68,7 @@ export default function Commercial() {
             </div>
 
             <div class="back-link">
-                <a href="contact.html" class="btn-back">お問い合わせページに戻る</a>
+                <a href="/contact" class="btn-back">お問い合わせページに戻る</a>
             </div>
         </div>
     `;

@@ -57,7 +57,7 @@ export default function ListingPage() {
                     </div>
                 </div>
 
-                <a href="listing_complete.html">
+                <a href="/listing_complete">
                     <div class="submit-section">
                         <button type="submit" class="submit-btn">📤 出品する</button>
                         <div class="help-text" style="margin-top: 1rem;">
