@@ -1,0 +1,375 @@
+/* お問い合わせ・規約関連ページの共通スタイル */
+
+.main-content {
+    min-height: calc(100vh - 200px);
+    background: #f5f5f5;
+    padding: 2rem 1rem;
+}
+
+.inquiry-container,
+.document-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.page-subtitle {
+    font-size: 1rem;
+    color: #7f8c8d;
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.update-date {
+    font-size: 0.9rem;
+    color: #95a5a6;
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+/* よくある質問セクション */
+.faq-section {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #3498db;
+}
+
+.faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.faq-item {
+    border-left: 3px solid #3498db;
+    padding-left: 1rem;
+}
+
+.faq-question,
+.faq-answer {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.faq-icon {
+    font-weight: 700;
+    font-size: 1.1rem;
+    min-width: 1.5rem;
+}
+
+.faq-question .faq-icon {
+    color: #3498db;
+}
+
+.faq-answer .faq-icon {
+    color: #27ae60;
+}
+
+.faq-text {
+    flex: 1;
+    line-height: 1.6;
+}
+
+.faq-question .faq-text {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.faq-answer .faq-text {
+    color: #555;
+}
+
+/* お問い合わせフォームセクション */
+.contact-form-section {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.form-description {
+    font-size: 0.95rem;
+    color: #7f8c8d;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.form-label .required {
+    color: #e74c3c;
+    margin-left: 0.25rem;
+}
+
+.form-input {
+    padding: 0.85rem 1rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.form-select {
+    cursor: pointer;
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.help-text {
+    font-size: 0.85rem;
+    color: #95a5a6;
+    margin-top: 0.4rem;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 1rem;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
+}
+
+.submit-btn:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.submit-btn:active {
+    transform: translateY(0);
+}
+
+/* サポート情報 */
+.support-info {
+    margin-bottom: 2.5rem;
+}
+
+.support-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.support-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.75rem;
+    text-align: center;
+    text-decoration: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.support-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.support-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.support-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.support-description {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    line-height: 1.5;
+}
+
+/* 規約・ポリシー用のドキュメントスタイル */
+.document-content {
+    background: white;
+    border-radius: 8px;
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    line-height: 1.8;
+}
+
+.document-section {
+    margin-bottom: 2.5rem;
+}
+
+.document-section:last-child {
+    margin-bottom: 0;
+}
+
+.document-heading {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #ecf0f1;
+}
+
+.document-subheading {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #34495e;
+    margin: 1.5rem 0 1rem 0;
+}
+
+.document-section > p {
+    color: #555;
+    margin-bottom: 1rem;
+}
+
+.document-list {
+    padding-left: 2rem;
+    color: #555;
+}
+
+.document-list > li {
+    margin-bottom: 0.75rem;
+}
+
+.sub-list {
+    list-style-type: lower-alpha;
+    padding-left: 1.5rem;
+    margin-top: 0.5rem;
+}
+
+.sub-list > li {
+    margin-bottom: 0.5rem;
+}
+
+.note {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    font-style: italic;
+}
+
+.contact-info {
+    background: #f8f9fa;
+    padding: 1.25rem;
+    border-radius: 6px;
+    margin-top: 1rem;
+}
+
+.contact-info p {
+    margin-bottom: 0.5rem;
+}
+
+.contact-info a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.contact-info a:hover {
+    text-decoration: underline;
+}
+
+.back-link {
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.btn-back {
+    display: inline-block;
+    padding: 0.75rem 2rem;
+    background: #3498db;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-back:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .main-content {
+        padding: 1.5rem 1rem;
+    }
+
+    .page-title {
+        font-size: 1.6rem;
+    }
+
+    .faq-section,
+    .contact-form-section,
+    .document-content {
+        padding: 1.5rem;
+    }
+
+    .section-title {
+        font-size: 1.2rem;
+    }
+
+    .document-heading {
+        font-size: 1.15rem;
+    }
+
+    .document-content {
+        padding: 1.5rem;
+    }
+
+    .support-cards {
+        grid-template-columns: 1fr;
+    }
+}

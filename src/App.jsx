@@ -1,0 +1,97 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
+// CSS imports
+import './css/reset.css';
+import './css/common.css';
+import './css/index.css';
+import './css/profile_page.css';
+import './css/settings.css';
+import './css/user_settings.css';
+import './css/product_detail.css';
+import './css/search_results.css';
+import './css/listing_page.css';
+import './css/listing_complete.css';
+import './css/checkout.css';
+import './css/purchase_complete.css';
+import './css/forum.css';
+import './css/forum_detail.css';
+import './css/forum_post.css';
+import './css/news_page.css';
+import './css/news_detail.css';
+import './css/inquiry.css';
+
+// Pages
+import Home from './pages/Home';
+
+// Auth pages
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+
+// Profile pages
+import ProfilePage from './pages/profile/ProfilePage';
+import Settings from './pages/profile/Settings';
+import UserSettings from './pages/profile/UserSettings';
+
+// Product pages
+import ProductDetail from './pages/products/ProductDetail';
+import SearchResults from './pages/products/SearchResults';
+import Listing from './pages/products/Listing';
+import ListingComplete from './pages/products/ListingComplete';
+import Checkout from './pages/products/Checkout';
+import PurchaseComplete from './pages/products/PurchaseComplete';
+
+// Community pages
+import Forum from './pages/community/Forum';
+import ForumDetail from './pages/community/ForumDetail';
+import ForumPost from './pages/community/ForumPost';
+import News from './pages/community/News';
+import NewsDetail from './pages/community/NewsDetail';
+
+// Info pages
+import Contact from './pages/info/Contact';
+import Commercial from './pages/info/Commercial';
+import Terms from './pages/info/Terms';
+import Privacy from './pages/info/Privacy';
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        {/* Home */}
+        <Route path="/" element={<Home />} />
+
+        {/* Auth */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* Profile */}
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/user-settings" element={<UserSettings />} />
+
+        {/* Products */}
+        <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/search" element={<SearchResults />} />
+        <Route path="/listing" element={<Listing />} />
+        <Route path="/listing-complete" element={<ListingComplete />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/purchase-complete" element={<PurchaseComplete />} />
+
+        {/* Community */}
+        <Route path="/forum" element={<Forum />} />
+        <Route path="/forum/:id" element={<ForumDetail />} />
+        <Route path="/forum-post" element={<ForumPost />} />
+        <Route path="/news" element={<News />} />
+        <Route path="/news/:id" element={<NewsDetail />} />
+
+        {/* Info */}
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/commercial" element={<Commercial />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;

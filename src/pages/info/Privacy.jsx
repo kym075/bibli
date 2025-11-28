@@ -1,0 +1,118 @@
+import { Link, useNavigate } from 'react-router-dom';
+import Header from '../../components/Header';
+import Footer from '../../components/Footer';
+
+function Privacy() {
+  const navigate = useNavigate();
+
+  return (
+    <>
+      <Header />
+      <main className="main-content">
+        <div className="document-container">
+          <h1 className="page-title">プライバシーポリシー</h1>
+          <p className="update-date">最終更新日: 2024年1月1日</p>
+
+          <div className="document-content">
+            <section className="document-section">
+              <p>Bibli運営事務局（以下「当社」といいます。）は、当社の提供するサービス（以下「本サービス」といいます。）における、ユーザーについての個人情報を含む利用者情報の取扱いについて、以下のとおりプライバシーポリシー（以下「本ポリシー」といいます。）を定めます。</p>
+            </section>
+
+            <section className="document-section">
+              <h2 className="document-heading">1. 収集する情報</h2>
+              <p>当社は、本サービスの提供にあたり、以下の情報を取得します。</p>
+              <h3 className="document-subheading">(1) ユーザーから提供される情報</h3>
+              <ul className="document-list">
+                <li>氏名、生年月日、性別、職業等のプロフィール情報</li>
+                <li>メールアドレス、電話番号、住所等の連絡先情報</li>
+                <li>クレジットカード情報、銀行口座情報等の決済に関する情報</li>
+                <li>本人確認書類の情報</li>
+                <li>ユーザーが本サービス上で投稿、送信するコンテンツ（テキスト、画像、動画等）</li>
+              </ul>
+
+              <h3 className="document-subheading">(2) ユーザーが本サービスを利用するにあたって取得される情報</h3>
+              <ul className="document-list">
+                <li>端末情報（端末の種類、OS、ブラウザの種類等）</li>
+                <li>ログ情報（アクセス日時、IPアドレス、リファラ情報等）</li>
+                <li>Cookie及び匿名ID</li>
+                <li>位置情報</li>
+                <li>閲覧履歴、購入履歴、検索履歴等の行動履歴</li>
+              </ul>
+            </section>
+
+            <section className="document-section">
+              <h2 className="document-heading">2. 利用目的</h2>
+              <p>当社は、収集した情報を以下の目的で利用します。</p>
+              <ol className="document-list">
+                <li>本サービスの提供、維持、保護及び改善のため</li>
+                <li>ユーザーの本人確認のため</li>
+                <li>本サービスに関する案内、お問い合わせ等への対応のため</li>
+                <li>本サービスに関する規約、ポリシー等（以下「規約等」といいます。）に違反する行為に対する対応のため</li>
+                <li>本サービスに関する規約等の変更などを通知するため</li>
+                <li>本サービスの利用状況を分析し、本サービスの改善に役立てるため</li>
+                <li>広告の配信、表示及び効果測定のため</li>
+                <li>キャンペーン、アンケート等の実施のため</li>
+                <li>マーケティングデータの調査・分析のため</li>
+                <li>上記の利用目的に付随する目的のため</li>
+              </ol>
+            </section>
+
+            <section className="document-section">
+              <h2 className="document-heading">3. 個人情報の第三者提供</h2>
+              <p>当社は、以下の場合を除き、ユーザーの同意なく個人情報を第三者に提供することはありません。</p>
+              <ol className="document-list">
+                <li>法令に基づく場合</li>
+                <li>人の生命、身体又は財産の保護のために必要がある場合であって、本人の同意を得ることが困難であるとき</li>
+                <li>公衆衛生の向上又は児童の健全な育成の推進のために特に必要がある場合であって、本人の同意を得ることが困難であるとき</li>
+                <li>国の機関若しくは地方公共団体又はその委託を受けた者が法令の定める事務を遂行することに対して協力する必要がある場合であって、本人の同意を得ることにより当該事務の遂行に支障を及ぼすおそれがあるとき</li>
+                <li>合併その他の事由による事業の承継に伴って個人情報が提供される場合</li>
+                <li>個人情報を特定の者との間で共同して利用する場合であって、その旨並びに共同して利用される個人情報の項目、共同して利用する者の範囲、利用する者の利用目的及び当該個人情報の管理について責任を有する者の氏名又は名称について、あらかじめ本人に通知し、又は本人が容易に知り得る状態に置いた場合</li>
+              </ol>
+            </section>
+
+            <section className="document-section">
+              <h2 className="document-heading">4. 個人情報の開示・訂正・削除</h2>
+              <ol className="document-list">
+                <li>ユーザーは、当社に対して、個人情報保護法の定めに従い、自己の個人情報の開示を請求することができます。</li>
+                <li>ユーザーは、開示請求により、個人情報が誤っている場合は、当社に対して、個人情報保護法の定めに従い、個人情報の訂正、追加又は削除（以下「訂正等」といいます。）を請求することができます。</li>
+                <li>当社は、ユーザーから前二項の請求を受けた場合、本人確認を行った上で、速やかに対応いたします。</li>
+                <li>開示請求等の手続きにつきましては、お問い合わせフォームよりご連絡ください。</li>
+              </ol>
+            </section>
+
+            <section className="document-section">
+              <h2 className="document-heading">5. Cookieその他の技術の利用</h2>
+              <p>本サービスは、Cookie及びこれに類する技術を利用することがあります。これらの技術は、当社による本サービスの利用状況等の把握に役立ち、サービス向上に資するものです。Cookieを無効化されたいユーザーは、ウェブブラウザの設定を変更することによりCookieを無効化することができます。但し、Cookieを無効化すると、本サービスの一部の機能をご利用いただけなくなる場合があります。</p>
+            </section>
+
+            <section className="document-section">
+              <h2 className="document-heading">6. お問い合わせ窓口</h2>
+              <p>本ポリシーに関するお問い合わせは、下記の窓口までお願いいたします。</p>
+              <div className="contact-info">
+                <p>Eメールアドレス: privacy@bibli.com</p>
+                <p>お問い合わせフォーム: <Link to="/contact">こちら</Link></p>
+              </div>
+            </section>
+
+            <section className="document-section">
+              <h2 className="document-heading">7. プライバシーポリシーの変更手続</h2>
+              <p>当社は、必要に応じて、本ポリシーを変更します。但し、法令上ユーザーの同意が必要となるような本ポリシーの変更を行う場合、変更後の本ポリシーは、当社所定の方法で変更に同意したユーザーに対してのみ適用されるものとします。なお、当社は、本ポリシーを変更する場合には、変更後の本ポリシーの施行時期及び内容を当社のウェブサイト上での表示その他の適切な方法により周知し、又はユーザーに通知します。</p>
+            </section>
+
+            <section className="document-section">
+              <h2 className="document-heading">8. 安全管理措置</h2>
+              <p>当社は、個人情報の紛失、破壊、改ざん及び漏洩などのリスクに対して、個人情報の安全管理が図られるよう、当社の従業員に対し、必要かつ適切な監督を行います。また、当社は、個人情報の取扱いの全部又は一部を委託する場合は、委託先において個人情報の安全管理が図られるよう、必要かつ適切な監督を行います。</p>
+            </section>
+          </div>
+
+          <div className="back-link">
+            <Link to="/contact" className="btn-back">お問い合わせページに戻る</Link>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </>
+  );
+}
+
+export default Privacy;

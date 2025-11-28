@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bibli - 本の売買プラットフォーム</title>
+    <link rel="stylesheet" type="text/css" href="css/reset.css">
+    <link rel="stylesheet" type="text/css" href="css/common.css">
+    <link rel="stylesheet" type="text/css" href="css/index.css">
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <a href="index.html" class="logo">Bibli</a>
+                <div class="search-bar">
+                    <input type="text" placeholder="キーワードで検索...">
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="header-buttons">
+                    <a href="listing_page.html" class="btn btn-primary">出品</a>
+                    <a href="account/dist/index.html" class="btn btn-secondary">ログイン/登録</a>
+                    <button class="hamburger-menu" id="hamburger-menu">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                </div>
+                <div class="hamburger-dropdown" id="hamburger-dropdown">
+                    <a href="profile_page.html" class="dropdown-item">
+                        <span class="dropdown-icon">👤</span>
+                        <span class="dropdown-text">プロフィール</span>
+                    </a>
+                    <a href="news_page.html" class="dropdown-item">
+                        <span class="dropdown-icon">🔔</span>
+                        <span class="dropdown-text">お知らせ</span>
+                    </a>
+                    <a href="forum.html" class="dropdown-item">
+                        <span class="dropdown-icon">💬</span>
+                        <span class="dropdown-text">掲示板</span>
+                    </a>
+                    <a href="listing_page.html" class="dropdown-item">
+                        <span class="dropdown-icon">📦</span>
+                        <span class="dropdown-text">出品</span>
+                    </a>
+                    <a href="settings.html" class="dropdown-item">
+                        <span class="dropdown-icon">⚙️</span>
+                        <span class="dropdown-text">設定</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="main-content">
+        <!-- ピックアップエリア -->
+        <div class="pickup-area">
+            <h2>📚 本好きのためのマーケットプレイス</h2>
+            <p>あなたの大切な本を新しい読者に届けませんか？</p>
+        </div>
+
+        <!-- カテゴリから探す -->
+        <section class="section">
+            <h2 class="section-title">カテゴリから探す</h2>
+            <div class="categories">
+                <a href="search_results.html"><button class="category-btn">小説</button></a>
+                <button class="category-btn">漫画</button>
+                <button class="category-btn">専門書</button>
+                <button class="category-btn">絵本</button>
+                <button class="category-btn">雑誌</button>
+                <button class="category-btn">洋書</button>
+                <button class="category-btn">自己啓発</button>
+            </div>
+        </section>
+
+        <!-- ジャンルから探す -->
+        <section class="section">
+            <h2 class="section-title">ジャンルから探す</h2>
+            <div class="genres">
+                <button class="genre-btn">ファンタジー</button>
+                <button class="genre-btn">純文学</button>
+                <button class="genre-btn">ホラー</button>
+                <button class="genre-btn">歴史</button>
+                <button class="genre-btn">童話</button>
+                <button class="genre-btn">恋愛</button>
+                <button class="genre-btn">ビジネス書</button>
+                <button class="genre-btn">自己啓発</button>
+            </div>
+        </section>
+
+        <!-- 新着の本 -->
+        <section class="section">
+            <h2 class="section-title">新着の本</h2>
+            <div class="book-grid">
+                <a href="product_detail.html">
+                    <div class="book-card">
+                        <div class="book-image"></div>
+                        <div class="book-info">
+                            <div class="book-title">夏目漱石作品集</div>
+                            <div class="book-price">¥1,200</div>
+                        </div>
+                    </div>
+                </a>
+                <div class="book-card">
+                    <div class="book-image"></div>
+                    <div class="book-info">
+                        <div class="book-title">JavaScript完全ガイド</div>
+                        <div class="book-price">¥2,800</div>
+                    </div>
+                </div>
+                <div class="book-card">
+                    <div class="book-image"></div>
+                    <div class="book-info">
+                        <div class="book-title">人気コミック全巻セット</div>
+                        <div class="book-price">¥4,500</div>
+                    </div>
+                </div>
+                <div class="book-card">
+                    <div class="book-image"></div>
+                    <div class="book-info">
+                        <div class="book-title">料理のレシピ本</div>
+                        <div class="book-price">¥890</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 注目の本 -->
+        <section class="section">
+            <h2 class="section-title">注目の本</h2>
+            <div class="book-grid">
+                <div class="book-card">
+                    <div class="book-image"></div>
+                    <div class="book-info">
+                        <div class="book-title">ベストセラー小説</div>
+                        <div class="book-price">¥1,500</div>
+                    </div>
+                </div>
+                <div class="book-card">
+                    <div class="book-image"></div>
+                    <div class="book-info">
+                        <div class="book-title">人気ビジネス書</div>
+                        <div class="book-price">¥2,200</div>
+                    </div>
+                </div>
+                <div class="book-card">
+                    <div class="book-image"></div>
+                    <div class="book-info">
+                        <div class="book-title">希少な古書</div>
+                        <div class="book-price">¥8,000</div>
+                    </div>
+                </div>
+                <div class="book-card">
+                    <div class="book-image"></div>
+                    <div class="book-info">
+                        <div class="book-title">人気シリーズ最新刊</div>
+                        <div class="book-price">¥1,800</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 特集・掲示板への導線 -->
+        <section class="section">
+            <h2 class="section-title">特集・コミュニティ</h2>
+            <div class="special-links">
+                <a href="forum.html" class="special-link">📝 本好きが集う掲示板へ</a>
+                <a href="#" class="special-link">💎 絶版・希少本特集</a>
+                <a href="#" class="special-link">🔥 今月のおすすめ</a>
+            </div>
+        </section>
+    </main>
+
+    <!-- フッター -->
+    <footer class="footer">
+        <div class="footer-content">
+            <a href="commercial.html" class="footer-link">特定商取引法に基づく表記</a>
+            <a href="terms.html" class="footer-link">利用規約</a>
+            <a href="privacy.html" class="footer-link">プライバシーポリシー</a>
+            <a href="contact.html" class="footer-link">お問い合わせ</a>
+        </div>
+    </footer>
+    <script src="js/index.js"></script>
+    <script src="js/common.js"></script>
+
+</body>
+</html>
