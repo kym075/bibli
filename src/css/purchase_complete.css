@@ -1,5 +1,6 @@
 /* メインコンテンツ */
 .main-content {
+    width: 100%;
     flex: 1;
     max-width: 700px;
     margin: 0 auto;
@@ -7,6 +8,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
 }
 
 /* 成功コンテナ */
