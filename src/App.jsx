@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // CSS imports - グローバルスタイル
+import './css/reset.css';
 import './css/common.css';
 
 // Pages
