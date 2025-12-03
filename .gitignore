@@ -1,8 +1,8 @@
 # Dependencies
 node_modules/
 
-# Build outputs (distは含める)
-# account/dist/
+# Build outputs
+dist/
 
 # Environment files
 .env

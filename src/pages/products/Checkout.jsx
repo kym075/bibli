@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import '../../css/checkout.css';
 
 function Checkout() {
   const navigate = useNavigate();

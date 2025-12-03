@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import '../../css/forum_detail.css';
 
 function ForumDetail() {
   const navigate = useNavigate();

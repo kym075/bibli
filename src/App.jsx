@@ -1,24 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-// CSS imports
-import './css/reset.css';
+// CSS imports - グローバルスタイル
 import './css/common.css';
-import './css/index.css';
-import './css/profile_page.css';
-import './css/settings.css';
-import './css/user_settings.css';
-import './css/product_detail.css';
-import './css/search_results.css';
-import './css/listing_page.css';
-import './css/listing_complete.css';
-import './css/checkout.css';
-import './css/purchase_complete.css';
-import './css/forum.css';
-import './css/forum_detail.css';
-import './css/forum_post.css';
-import './css/news_page.css';
-import './css/news_detail.css';
-import './css/inquiry.css';
 
 // Pages
 import Home from './pages/Home';

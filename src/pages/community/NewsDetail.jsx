@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import '../../css/news_detail.css';
 
 function NewsDetail() {
   const navigate = useNavigate();
