@@ -1,11 +1,9 @@
 /* お問い合わせ・規約関連ページの共通スタイル */
 
 .main-content {
-    width: 100%;
     min-height: calc(100vh - 200px);
     background: #f5f5f5;
     padding: 2rem 1rem;
-    box-sizing: border-box;
 }
 
 .inquiry-container,

@@ -1,10 +1,8 @@
 /* === MAIN CONTENT SECTION === */
 .main-content {
-    width: 100%;
     max-width: 1000px;
     margin: 0 auto;
     padding: 2rem;
-    box-sizing: border-box;
 }
 
 /* === PROFILE HEADER SECTION === */

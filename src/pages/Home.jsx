@@ -8,7 +8,7 @@ function Home() {
     <>
       <Header />
 
-      <main className="main-content">
+      <main className="main-content" style={{width: '100%', maxWidth: '1200px', margin: '0 auto'}}>
         {/* ピックアップエリア */}
         <div className="pickup-area">
           <h2>📚 本好きのためのマーケットプレイス</h2>
