@@ -1,6 +1,6 @@
 /* 設定ページのスタイル */
 
-.main-content {
+body .main-content {
     min-height: calc(100vh - 200px);
     /* background: #f5f5f5; */
     padding: 2rem 1rem;

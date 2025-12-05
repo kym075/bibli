@@ -79,10 +79,6 @@ input, button, textarea, select {
     gap: 0.5rem;
 }
 
-.logo::before {
-    content: "📚";
-    font-size: 1.5rem;
-}
 
 .search-bar {
     flex: 1;

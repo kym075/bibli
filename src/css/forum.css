@@ -1,5 +1,5 @@
 /* メインコンテンツ */
-.main-content {
+body .main-content {
 max-width: 1000px;
 margin: 0 auto;
 padding: 2rem;
@@ -432,7 +432,7 @@ color: white;
     justify-content: center;
 }
 
-.main-content {
+body .main-content {
     padding: 1rem;
 }
 

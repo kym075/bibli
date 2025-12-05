@@ -53,23 +53,18 @@ function Header() {
           </div>
           <div className="hamburger-dropdown" id="hamburger-dropdown">
             <Link to="/profile" className="dropdown-item">
-              <span className="dropdown-icon">👤</span>
               <span className="dropdown-text">プロフィール</span>
             </Link>
             <Link to="/news" className="dropdown-item">
-              <span className="dropdown-icon">🔔</span>
               <span className="dropdown-text">お知らせ</span>
             </Link>
             <Link to="/forum" className="dropdown-item">
-              <span className="dropdown-icon">💬</span>
               <span className="dropdown-text">掲示板</span>
             </Link>
             <Link to="/listing" className="dropdown-item">
-              <span className="dropdown-icon">📦</span>
               <span className="dropdown-text">出品</span>
             </Link>
             <Link to="/settings" className="dropdown-item">
-              <span className="dropdown-icon">⚙️</span>
               <span className="dropdown-text">設定</span>
             </Link>
           </div>

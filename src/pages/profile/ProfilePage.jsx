@@ -1,9 +1,13 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/profile_page.css';
 
 function ProfilePage() {
+  const [activeTab, setActiveTab] = useState('products');
+  const [productFilter, setProductFilter] = useState('all');
+
   return (
     <>
       <Header />
@@ -13,7 +17,7 @@ function ProfilePage() {
         {/* === PROFILE HEADER SUBSECTION === */}
         <section className="profile-header">
           <div className="profile-main">
-            <div className="profile-avatar">📚</div>
+            <div className="profile-avatar">U</div>
             <div className="profile-info">
               <div className="profile-name-section">
                 <div className="profile-name">
@@ -22,11 +26,11 @@ function ProfilePage() {
                 </div>
                 <div className="profile-actions">
                   <button className="action-btn btn-follow" id="followBtn">
-                    👤 フォローする
+                    フォローする
                   </button>
                   <Link to="/user-settings">
                     <button className="action-btn btn-usrsettings" id="usrSettingsBtn">
-                      ⚙️ ユーザー設定
+                      ユーザー設定
                     </button>
                   </Link>
                 </div>
@@ -60,21 +64,18 @@ function ProfilePage() {
         <section className="user-details">
           <div className="details-grid">
             <div className="detail-item">
-              <div className="detail-icon">📅</div>
               <div className="detail-content">
                 <div className="detail-label">登録日</div>
                 <div className="detail-value">2023年4月15日</div>
               </div>
             </div>
             <div className="detail-item">
-              <div className="detail-icon">📦</div>
               <div className="detail-content">
                 <div className="detail-label">発送日数</div>
                 <div className="detail-value">1-2日で発送</div>
               </div>
             </div>
             <div className="detail-item">
-              <div className="detail-icon">📍</div>
               <div className="detail-content">
                 <div className="detail-label">発送元</div>
                 <div className="detail-value">東京都</div>
@@ -86,26 +87,69 @@ function ProfilePage() {
         {/* === TAB NAVIGATION SUBSECTION === */}
         <section className="tab-navigation">
           <div className="tab-buttons">
-            <button className="tab-btn active" data-tab="products">出品商品 (127)</button>
-            <button className="tab-btn" data-tab="purchases">購入履歴 (23)</button>
-            <button className="tab-btn" data-tab="reviews">評価・レビュー (89)</button>
-            <button className="tab-btn" data-tab="favorites">お気に入り本</button>
+            <button
+              className={`tab-btn ${activeTab === 'products' ? 'active' : ''}`}
+              onClick={() => setActiveTab('products')}
+            >
+              出品商品 (127)
+            </button>
+            <button
+              className={`tab-btn ${activeTab === 'purchases' ? 'active' : ''}`}
+              onClick={() => setActiveTab('purchases')}
+            >
+              購入履歴 (23)
+            </button>
+            <button
+              className={`tab-btn ${activeTab === 'reviews' ? 'active' : ''}`}
+              onClick={() => setActiveTab('reviews')}
+            >
+              評価・レビュー (89)
+            </button>
+            <button
+              className={`tab-btn ${activeTab === 'favorites' ? 'active' : ''}`}
+              onClick={() => setActiveTab('favorites')}
+            >
+              お気に入り本
+            </button>
           </div>
 
           <div className="tab-content">
             {/* === PRODUCTS SUBSECTION === */}
-            <div className="tab-panel active" id="products-panel">
+            <div className={`tab-panel ${activeTab === 'products' ? 'active' : ''}`} id="products-panel">
               <div className="sort-controls">
                 <span className="sort-label">表示:</span>
-                <button className="sort-btn active" data-status="all">すべて</button>
-                <button className="sort-btn" data-status="available">販売中</button>
-                <button className="sort-btn" data-status="reserved">取引中</button>
-                <button className="sort-btn" data-status="sold">売却済み</button>
+                <button
+                  className={`sort-btn ${productFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setProductFilter('all')}
+                >
+                  すべて
+                </button>
+                <button
+                  className={`sort-btn ${productFilter === 'available' ? 'active' : ''}`}
+                  onClick={() => setProductFilter('available')}
+                >
+                  販売中
+                </button>
+                <button
+                  className={`sort-btn ${productFilter === 'reserved' ? 'active' : ''}`}
+                  onClick={() => setProductFilter('reserved')}
+                >
+                  取引中
+                </button>
+                <button
+                  className={`sort-btn ${productFilter === 'sold' ? 'active' : ''}`}
+                  onClick={() => setProductFilter('sold')}
+                >
+                  売却済み
+                </button>
               </div>
               <div className="products-grid">
-                <div className="product-card" data-status="available">
+                <div
+                  className="product-card"
+                  data-status="available"
+                  style={{ display: productFilter === 'all' || productFilter === 'available' ? 'block' : 'none' }}
+                >
                   <div className="product-image">
-                    📖
                     <div className="product-status status-available">販売中</div>
                   </div>
                   <div className="product-info">
@@ -114,7 +158,11 @@ function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="product-card" data-status="reserved">
+                <div
+                  className="product-card"
+                  data-status="reserved"
+                  style={{ display: productFilter === 'all' || productFilter === 'reserved' ? 'block' : 'none' }}
+                >
                   <div className="product-image">
                     📚
                     <div className="product-status status-reserved">取引中</div>
@@ -125,7 +173,11 @@ function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="product-card" data-status="available">
+                <div
+                  className="product-card"
+                  data-status="available"
+                  style={{ display: productFilter === 'all' || productFilter === 'available' ? 'block' : 'none' }}
+                >
                   <div className="product-image">
                     📘
                     <div className="product-status status-available">販売中</div>
@@ -136,7 +188,11 @@ function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="product-card" data-status="available">
+                <div
+                  className="product-card"
+                  data-status="available"
+                  style={{ display: productFilter === 'all' || productFilter === 'available' ? 'block' : 'none' }}
+                >
                   <div className="product-image">
                     📗
                     <div className="product-status status-available">販売中</div>
@@ -147,7 +203,11 @@ function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="product-card" data-status="available">
+                <div
+                  className="product-card"
+                  data-status="available"
+                  style={{ display: productFilter === 'all' || productFilter === 'available' ? 'block' : 'none' }}
+                >
                   <div className="product-image">
                     📙
                     <div className="product-status status-available">販売中</div>
@@ -158,7 +218,11 @@ function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="product-card" data-status="available">
+                <div
+                  className="product-card"
+                  data-status="available"
+                  style={{ display: productFilter === 'all' || productFilter === 'available' ? 'block' : 'none' }}
+                >
                   <div className="product-image">
                     📕
                     <div className="product-status status-available">販売中</div>
@@ -170,7 +234,11 @@ function ProfilePage() {
                 </div>
 
                 {/* 売却済み商品 */}
-                <div className="product-card" data-status="sold">
+                <div
+                  className="product-card"
+                  data-status="sold"
+                  style={{ display: productFilter === 'all' || productFilter === 'sold' ? 'block' : 'none' }}
+                >
                   <div className="product-image">
                     📖
                     <div className="product-status status-sold">SOLD</div>
@@ -181,7 +249,11 @@ function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="product-card" data-status="sold">
+                <div
+                  className="product-card"
+                  data-status="sold"
+                  style={{ display: productFilter === 'all' || productFilter === 'sold' ? 'block' : 'none' }}
+                >
                   <div className="product-image">
                     📚
                     <div className="product-status status-sold">SOLD</div>
@@ -192,7 +264,11 @@ function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="product-card" data-status="sold">
+                <div
+                  className="product-card"
+                  data-status="sold"
+                  style={{ display: productFilter === 'all' || productFilter === 'sold' ? 'block' : 'none' }}
+                >
                   <div className="product-image">
                     📘
                     <div className="product-status status-sold">SOLD</div>
@@ -206,10 +282,10 @@ function ProfilePage() {
             </div>
 
             {/* === PURCHASE HISTORY SUBSECTION === */}
-            <div className="tab-panel" id="purchases-panel">
+            <div className={`tab-panel ${activeTab === 'purchases' ? 'active' : ''}`} id="purchases-panel">
               <div className="purchase-list">
                 <div className="purchase-item">
-                  <div className="purchase-image">📖</div>
+                  <div className="purchase-image"></div>
                   <div className="purchase-info">
                     <div className="purchase-title">太宰治作品集</div>
                     <div className="purchase-details">
@@ -220,7 +296,7 @@ function ProfilePage() {
                 </div>
 
                 <div className="purchase-item">
-                  <div className="purchase-image">📚</div>
+                  <div className="purchase-image"></div>
                   <div className="purchase-info">
                     <div className="purchase-title">推理小説コレクション</div>
                     <div className="purchase-details">
@@ -231,7 +307,7 @@ function ProfilePage() {
                 </div>
 
                 <div className="purchase-item">
-                  <div className="purchase-image">📘</div>
+                  <div className="purchase-image"></div>
                   <div className="purchase-info">
                     <div className="purchase-title">Python入門書</div>
                     <div className="purchase-details">
@@ -242,7 +318,7 @@ function ProfilePage() {
                 </div>
 
                 <div className="purchase-item">
-                  <div className="purchase-image">📗</div>
+                  <div className="purchase-image"></div>
                   <div className="purchase-info">
                     <div className="purchase-title">世界文学全集</div>
                     <div className="purchase-details">
@@ -253,7 +329,7 @@ function ProfilePage() {
                 </div>
 
                 <div className="purchase-item">
-                  <div className="purchase-image">📙</div>
+                  <div className="purchase-image"></div>
                   <div className="purchase-info">
                     <div className="purchase-title">現代思想入門</div>
                     <div className="purchase-details">
@@ -266,7 +342,7 @@ function ProfilePage() {
             </div>
 
             {/* === REVIEWS SUBSECTION === */}
-            <div className="tab-panel" id="reviews-panel">
+            <div className={`tab-panel ${activeTab === 'reviews' ? 'active' : ''}`} id="reviews-panel">
               <div className="reviews-list">
                 <div className="review-item">
                   <div className="review-header">
@@ -276,7 +352,7 @@ function ProfilePage() {
                       <div className="review-date">2024年7月10日</div>
                     </div>
                     <div className="review-rating">
-                      ⭐⭐⭐⭐⭐
+                      
                     </div>
                   </div>
                   <div className="review-text">
@@ -292,7 +368,7 @@ function ProfilePage() {
                       <div className="review-date">2024年7月8日</div>
                     </div>
                     <div className="review-rating">
-                      ⭐⭐⭐⭐⭐
+                      
                     </div>
                   </div>
                   <div className="review-text">
@@ -308,7 +384,7 @@ function ProfilePage() {
                       <div className="review-date">2024年7月5日</div>
                     </div>
                     <div className="review-rating">
-                      ⭐⭐⭐⭐☆
+                      ☆
                     </div>
                   </div>
                   <div className="review-text">
@@ -324,7 +400,7 @@ function ProfilePage() {
                       <div className="review-date">2024年7月2日</div>
                     </div>
                     <div className="review-rating">
-                      ⭐⭐⭐⭐⭐
+                      
                     </div>
                   </div>
                   <div className="review-text">
@@ -335,9 +411,9 @@ function ProfilePage() {
             </div>
 
             {/* === FAVORITES SUBSECTION === */}
-            <div className="tab-panel" id="favorites-panel">
+            <div className={`tab-panel ${activeTab === 'favorites' ? 'active' : ''}`} id="favorites-panel">
               <div className="empty-state">
-                <div className="empty-icon">📚</div>
+                <div className="empty-icon"></div>
                 <div className="empty-message">お気に入りの本</div>
                 <div className="empty-description">このユーザーのお気に入り本は公開されていません</div>
               </div>

@@ -97,7 +97,7 @@ function NewsDetail() {
             </div>
 
             <div className="content-section">
-              <h2>✅ メンテナンス完了後の改善点</h2>
+              <h2> メンテナンス完了後の改善点</h2>
               <h3>性能向上</h3>
               <ul>
                 <li>ページの読み込み速度が約30%向上</li>

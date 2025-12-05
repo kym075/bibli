@@ -32,7 +32,7 @@ function ProductDetail() {
             </div>
 
             <div className="condition-badge">
-              ✨ 良好な状態
+               良好な状態
             </div>
 
             <div className="price">¥1,200</div>
@@ -63,7 +63,7 @@ function ProductDetail() {
                 <div className="seller-details">
                   <h4>本好きユーザー</h4>
                   <div className="rating">
-                    <span>⭐⭐⭐⭐⭐</span>
+                    <span></span>
                     <span>(4.8)</span>
                   </div>
                 </div>

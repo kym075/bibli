@@ -8,6 +8,8 @@ function Register() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     userId: '',
+    name: '',
+    nameKana: '',
     email: '',
     phone: '',
     password: '',
@@ -60,6 +62,12 @@ function Register() {
     return hasLetter && hasNumber;
   };
 
+  const isValidKana = (kana) => {
+    // ひらがなとカタカナのみ
+    const kanaRegex = /^[ぁ-んァ-ヶー]+$/;
+    return kanaRegex.test(kana);
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -69,6 +77,16 @@ function Register() {
       newErrors.userId = 'ユーザーIDは4文字以上で入力してください';
     } else if (!isValidUserId(formData.userId.trim())) {
       newErrors.userId = '半角英数字とアンダースコア(_)のみ使用できます';
+    }
+
+    if (!formData.name.trim()) {
+      newErrors.name = '氏名を入力してください';
+    }
+
+    if (!formData.nameKana.trim()) {
+      newErrors.nameKana = 'フリガナを入力してください';
+    } else if (!isValidKana(formData.nameKana.trim())) {
+      newErrors.nameKana = 'ひらがなまたはカタカナで入力してください';
     }
 
     if (!formData.email.trim()) {
@@ -186,6 +204,43 @@ function Register() {
                 />
                 <div className="help-text">半角英数字とアンダースコア(_)が使用できます</div>
                 {errors.userId && <div className="error-message">{errors.userId}</div>}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="name" className="form-label">
+                  氏名 <span className="required">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  className="form-input"
+                  placeholder="山田 太郎"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  style={{ borderColor: errors.name ? '#e74c3c' : '#e0e0e0' }}
+                />
+                {errors.name && <div className="error-message">{errors.name}</div>}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="nameKana" className="form-label">
+                  フリガナ <span className="required">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="nameKana"
+                  name="nameKana"
+                  className="form-input"
+                  placeholder="ヤマダ タロウ"
+                  value={formData.nameKana}
+                  onChange={handleChange}
+                  required
+                  style={{ borderColor: errors.nameKana ? '#e74c3c' : '#e0e0e0' }}
+                />
+                <div className="help-text">ひらがなまたはカタカナで入力してください</div>
+                {errors.nameKana && <div className="error-message">{errors.nameKana}</div>}
               </div>
 
               <div className="form-group">

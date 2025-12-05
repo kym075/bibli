@@ -32,14 +32,14 @@ function Listing() {
       <Header />
       <main className="main-content">
         <div className="page-title">
-          <h1>📚 商品を出品する</h1>
+          <h1>商品を出品する</h1>
           <p>あなたの大切な本を新しい読者に届けませんか？</p>
         </div>
 
         <div className="form-container fade-in">
           <form id="listingForm" onSubmit={handleSubmit}>
             <div className="success-message" id="successMessage">
-              ✅ 出品が完了しました！商品は審査後に公開されます。
+              出品が完了しました！商品は審査後に公開されます。
             </div>
 
             {/* 商品情報の入力 */}

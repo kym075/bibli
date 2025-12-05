@@ -70,7 +70,7 @@ function News() {
                   </p>
                   <div className="news-actions">
                     <a href="#" className="read-more">詳細を見る →</a>
-                    <span className="news-status">⭐ 人気</span>
+                    <span className="news-status"> 人気</span>
                   </div>
                 </div>
 
@@ -158,7 +158,7 @@ function News() {
                 <div className="notification-item unread">
                   <div className="unread-indicator"></div>
                   <div className="notification-header">
-                    <div className="notification-icon">✅</div>
+                    <div className="notification-icon"></div>
                     <div className="notification-content">
                       <div className="notification-title">商品審査完了</div>
                       <div className="notification-message">
@@ -185,7 +185,7 @@ function News() {
 
                 <div className="notification-item">
                   <div className="notification-header">
-                    <div className="notification-icon">⭐</div>
+                    <div className="notification-icon"></div>
                     <div className="notification-content">
                       <div className="notification-title">評価を受けました</div>
                       <div className="notification-message">
