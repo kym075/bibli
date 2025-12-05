@@ -3,13 +3,13 @@
 .main-content {
     min-height: calc(100vh - 200px);
     display: flex;
-    align-items: center;
-    justify-content: center;
+    margin: auto;
     padding: 2rem 1rem;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .register-container {
+    margin: auto;
     width: 100%;
     max-width: 500px;
 }

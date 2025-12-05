@@ -1,9 +1,26 @@
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import '../css/index.css';
 
 function Home() {
+  const [message, setMessage] = useState('');
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    fetch('http://localhost:5000/api/hello')
+      .then(response => response.json())
+      .then(data => setMessage(data.message))
+      .catch(error => console.error('Flask API呼び出しエラー:', error));
+
+    // 商品のリストを取得
+    fetch('http://localhost:5000/api/products')
+      .then(response => response.json())
+      .then(data => setProducts(data))
+      .catch(error => console.error('Products API呼び出しエラー:', error));
+  }, []);
+
   return (
     <>
       <Header />
@@ -13,6 +30,7 @@ function Home() {
         <div className="pickup-area">
           <h2>📚 本好きのためのマーケットプレイス</h2>
           <p>あなたの大切な本を新しい読者に届けませんか？</p>
+          <p>Flaskからのメッセージ: {message}</p>
         </div>
 
         {/* カテゴリから探す */}
@@ -48,36 +66,21 @@ function Home() {
         <section className="section">
           <h2 className="section-title">新着の本</h2>
           <div className="book-grid">
-            <Link to="/product/1">
-              <div className="book-card">
-                <div className="book-image"></div>
-                <div className="book-info">
-                  <div className="book-title">夏目漱石作品集</div>
-                  <div className="book-price">¥1,200</div>
-                </div>
-              </div>
-            </Link>
-            <div className="book-card">
-              <div className="book-image"></div>
-              <div className="book-info">
-                <div className="book-title">JavaScript完全ガイド</div>
-                <div className="book-price">¥2,800</div>
-              </div>
-            </div>
-            <div className="book-card">
-              <div className="book-image"></div>
-              <div className="book-info">
-                <div className="book-title">人気コミック全巻セット</div>
-                <div className="book-price">¥4,500</div>
-              </div>
-            </div>
-            <div className="book-card">
-              <div className="book-image"></div>
-              <div className="book-info">
-                <div className="book-title">料理のレシピ本</div>
-                <div className="book-price">¥890</div>
-              </div>
-            </div>
+            {products.length > 0 ? (
+              products.slice(0, 4).map(product => (
+                <Link key={product.id} to={`/product/${product.id}`}>
+                  <div className="book-card">
+                    <div className="book-image"></div>
+                    <div className="book-info">
+                      <div className="book-title">{product.title}</div>
+                      <div className="book-price">¥{product.price}</div>
+                    </div>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <p>Loading products...</p>
+            )}
           </div>
         </section>
 
