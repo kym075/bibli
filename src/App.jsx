@@ -54,7 +54,7 @@ function App() {
         <Route path="/user-settings" element={<UserSettings />} />
 
         {/* Products */}
-        <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/product-detail" element={<ProductDetail />} />
         <Route path="/search" element={<SearchResults />} />
         <Route path="/listing" element={<Listing />} />
         <Route path="/listing-complete" element={<ListingComplete />} />
@@ -63,10 +63,10 @@ function App() {
 
         {/* Community */}
         <Route path="/forum" element={<Forum />} />
-        <Route path="/forum/:id" element={<ForumDetail />} />
+        <Route path="/forum-detail" element={<ForumDetail />} />
         <Route path="/forum-post" element={<ForumPost />} />
         <Route path="/news" element={<News />} />
-        <Route path="/news/:id" element={<NewsDetail />} />
+        <Route path="/news-detail" element={<NewsDetail />} />
 
         {/* Info */}
         <Route path="/contact" element={<Contact />} />

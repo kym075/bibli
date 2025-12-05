@@ -47,20 +47,40 @@ function Login() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
       return;
     }
 
-    console.log('ログイン試行:', formData);
+    try {
+      const response = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
 
-    // 実際のアプリケーションではここでAPIリクエストを送信
-    alert('ログインに成功しました！');
+      const data = await response.json();
 
-    // プロフィールページへリダイレクト
-    navigate('/profile');
+      if (response.ok) {
+        // Token and user data received
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        alert('ログインに成功しました！');
+        navigate('/profile');
+      } else {
+        setErrors({ general: data.error || 'ログインに失敗しました' });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setErrors({ general: 'サーバーエラーが発生しました' });
+    }
   };
 
   const handleEmailBlur = () => {
@@ -78,6 +98,8 @@ function Login() {
           <div className="login-box">
             <h1 className="login-title">ログイン</h1>
             <p className="login-subtitle">Bibliへようこそ</p>
+
+            {errors.general && <div className="error-message" style={{marginBottom: '10px'}}>{errors.general}</div>}
 
             <form onSubmit={handleSubmit} className="login-form">
               <div className="form-group">

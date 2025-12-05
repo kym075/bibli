@@ -105,7 +105,7 @@ function Register() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -115,13 +115,31 @@ function Register() {
       return;
     }
 
-    console.log('アカウント登録試行:', formData);
+    try {
+      const response = await fetch('http://localhost:5000/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: formData.userId,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
 
-    // 実際のアプリケーションではここでAPIリクエストを送信
-    alert('アカウント登録が完了しました！');
+      const data = await response.json();
 
-    // ログインページへリダイレクト
-    navigate('/login');
+      if (response.ok) {
+        alert('アカウント登録が完了しました！');
+        navigate('/login');
+      } else {
+        setErrors({ general: data.error || '登録に失敗しました' });
+      }
+    } catch (error) {
+      console.error('Register error:', error);
+      setErrors({ general: 'サーバーエラーが発生しました' });
+    }
   };
 
   const handleUserIdBlur = () => {
@@ -165,6 +183,8 @@ function Register() {
           <div className="register-box">
             <h1 className="register-title">新規登録</h1>
             <p className="register-subtitle">Bibliのアカウントを作成</p>
+
+            {errors.general && <div className="error-message" style={{marginBottom: '10px'}}>{errors.general}</div>}
 
             <form onSubmit={handleSubmit} className="register-form">
               <div className="form-group">
