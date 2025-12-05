@@ -12,7 +12,7 @@ function ForumDetail() {
       <main className="main-content">
         {/* ブレッドクラム */}
         <div className="breadcrumb">
-          <Link to="/community/forum" className="back-btn">掲示板一覧へ戻る</Link>
+          <Link to="/forum" className="back-btn">掲示板一覧へ戻る</Link>
         </div>
 
         {/* スレッドコンテナ */}

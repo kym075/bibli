@@ -16,7 +16,7 @@ function ForumPost() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    navigate('/community/forum');
+    navigate('/forum');
   };
 
   const handleInputChange = (e) => {
@@ -42,7 +42,7 @@ function ForumPost() {
 
         {/* ブレッドクラム */}
         <div className="breadcrumb">
-          <Link to="/community/forum" className="back-btn" id="backToForum">掲示板一覧へ戻る</Link>
+          <Link to="/forum" className="back-btn" id="backToForum">掲示板一覧へ戻る</Link>
         </div>
 
         {/* フォームコンテナ */}

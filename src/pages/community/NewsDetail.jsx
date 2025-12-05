@@ -14,7 +14,7 @@ function NewsDetail() {
         <nav className="breadcrumb">
           <Link to="/">ホーム</Link>
           <span>&gt;</span>
-          <Link to="/community/news" id="newsListLink">お知らせ</Link>
+          <Link to="/news" id="newsListLink">お知らせ</Link>
           <span>&gt;</span>
           <span>メンテナンスのお知らせ</span>
         </nav>
@@ -171,7 +171,7 @@ function NewsDetail() {
 
           {/* ナビゲーション */}
           <nav className="article-navigation">
-            <Link to="/community/news" className="back-btn" id="backToList">お知らせ一覧へ戻る</Link>
+            <Link to="/news" className="back-btn" id="backToList">お知らせ一覧へ戻る</Link>
           </nav>
         </article>
       </main>

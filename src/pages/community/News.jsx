@@ -53,7 +53,7 @@ function News() {
                     2025年7月16日（火）2:00〜6:00の間、システムメンテナンスを実施いたします。メンテナンス中はサービスをご利用いただけません...
                   </p>
                   <div className="news-actions">
-                    <Link to="/community/news-detail" className="read-more">詳細を見る →</Link>
+                    <Link to="/news/1" className="read-more">詳細を見る →</Link>
                     <span className="news-status">📌 固定</span>
                   </div>
                 </div>

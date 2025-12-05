@@ -36,7 +36,7 @@ function Forum() {
 
         {/* 新規投稿ボタン */}
         <div className="post-action">
-          <Link to="/community/forum-post">
+          <Link to="/forum-post">
             <button className="new-post-btn" id="newPostBtn">新しいトピックを投稿する</button>
           </Link>
         </div>
@@ -77,7 +77,7 @@ function Forum() {
             </div>
 
             {/* 質問スレッド */}
-            <Link to="/community/forum-detail">
+            <Link to="/forum/1">
               <div className="thread-item question">
                 <div className="thread-header">
                   <span className="thread-category category-question">質問</span>
