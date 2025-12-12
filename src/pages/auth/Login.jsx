@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../css/firebase";
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/login.css';
@@ -9,7 +11,7 @@ function Login() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    rememberMe: false
+    rememberMe: false,
   });
   const [errors, setErrors] = useState({});
 
@@ -19,29 +21,17 @@ function Login() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  const isValidEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const validateForm = () => {
     const newErrors = {};
+    if (!formData.email.trim()) newErrors.email = 'メールアドレスを入力してください';
+    else if (!isValidEmail(formData.email.trim())) newErrors.email = '有効なメールアドレスを入力してください';
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'メールアドレスを入力してください';
-    } else if (!isValidEmail(formData.email.trim())) {
-      newErrors.email = '有効なメールアドレスを入力してください';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'パスワードを入力してください';
-    }
+    if (!formData.password) newErrors.password = 'パスワードを入力してください';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -49,43 +39,35 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
-      const response = await fetch('http://localhost:5000/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
+      // Firebase Auth ログイン
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
 
-      const data = await response.json();
+      const user = userCredential.user;
 
-      if (response.ok) {
-        // Token and user data received
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        alert('ログインに成功しました！');
-        navigate('/profile');
-      } else {
-        setErrors({ general: data.error || 'ログインに失敗しました' });
+      // ローカル保存（任意）
+      if (formData.rememberMe) {
+        localStorage.setItem("user", JSON.stringify(user));
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      setErrors({ general: 'サーバーエラーが発生しました' });
-    }
-  };
 
-  const handleEmailBlur = () => {
-    if (formData.email.trim() && !isValidEmail(formData.email.trim())) {
-      setErrors(prev => ({ ...prev, email: '有効なメールアドレスを入力してください' }));
+      alert("ログイン成功！");
+      navigate("/profile");
+
+    } catch (error) {
+      console.error("Firebase Login Error:", error);
+      let message = 'ログインに失敗しました';
+
+      if (error.code === "auth/user-not-found") message = "ユーザーが存在しません";
+      if (error.code === "auth/wrong-password") message = "パスワードが間違っています";
+      if (error.code === "auth/invalid-email") message = "メールアドレスが不正です";
+
+      setErrors({ general: message });
     }
   };
 
@@ -99,7 +81,7 @@ function Login() {
             <h1 className="login-title">ログイン</h1>
             <p className="login-subtitle">Bibliへようこそ</p>
 
-            {errors.general && <div className="error-message" style={{marginBottom: '10px'}}>{errors.general}</div>}
+            {errors.general && <div className="error-message">{errors.general}</div>}
 
             <form onSubmit={handleSubmit} className="login-form">
               <div className="form-group">
@@ -112,8 +94,10 @@ function Login() {
                   placeholder="example@email.com"
                   value={formData.email}
                   onChange={handleChange}
-                  onBlur={handleEmailBlur}
-                  required
+                  onBlur={() => {
+                    if (formData.email && !isValidEmail(formData.email))
+                      setErrors(prev => ({ ...prev, email: '有効なメールアドレスを入力してください' }));
+                  }}
                   style={{ borderColor: errors.email ? '#e74c3c' : '#e0e0e0' }}
                 />
                 {errors.email && <div className="error-message">{errors.email}</div>}
@@ -129,7 +113,6 @@ function Login() {
                   placeholder="パスワードを入力"
                   value={formData.password}
                   onChange={handleChange}
-                  required
                   style={{ borderColor: errors.password ? '#e74c3c' : '#e0e0e0' }}
                 />
                 {errors.password && <div className="error-message">{errors.password}</div>}
@@ -146,15 +129,12 @@ function Login() {
                   />
                   <span>ログイン状態を保持する</span>
                 </label>
-                <a href="#" className="forgot-password">パスワードをお忘れの方</a>
               </div>
 
               <button type="submit" className="login-btn">ログイン</button>
             </form>
 
-            <div className="divider">
-              <span>または</span>
-            </div>
+            <div className="divider"><span>または</span></div>
 
             <div className="register-link">
               <p>アカウントをお持ちでない方</p>
