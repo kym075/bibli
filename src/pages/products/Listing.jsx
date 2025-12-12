@@ -1,5 +1,5 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useState, useRef } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/listing_page.css';
@@ -17,14 +17,185 @@ function Listing() {
     shipping: ''
   });
 
-  const handleSubmit = (e) => {
+  const [images, setImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/products/listing-complete');
+    setIsLoading(true);
+    setError(null);
+
+    console.log('出品処理を開始します...');
+
+    try {
+      // JWTトークンを取得（開発用: 仮ログイン機能）
+      let token = localStorage.getItem('token');
+      console.log('既存トークン:', token ? 'あり' : 'なし');
+
+      // トークンがない場合は、仮ユーザーでログインを試みる
+      if (!token) {
+        console.log('仮ログインを試みます...');
+        try {
+          const loginResponse = await fetch('http://localhost:5000/api/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              identifier: 'test@example.com',
+              password: 'test1234'
+            })
+          });
+
+          console.log('ログインレスポンスステータス:', loginResponse.status);
+
+          if (loginResponse.ok) {
+            const loginData = await loginResponse.json();
+            token = loginData.access_token;
+            localStorage.setItem('token', token);
+            console.log('開発用: 仮ログインが成功しました');
+          } else {
+            const errorData = await loginResponse.json();
+            console.error('ログインエラー詳細:', errorData);
+            setError(`開発用: 仮ユーザーでのログインに失敗しました。詳細: ${JSON.stringify(errorData)}`);
+            setIsLoading(false);
+            return;
+          }
+        } catch (loginError) {
+          console.error('ログイン例外:', loginError);
+          setError(`ログイン処理中にエラーが発生しました: ${loginError.message}`);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // 画像が1枚以上必要
+      if (images.length === 0) {
+        console.log('エラー: 画像が選択されていません');
+        setError('画像を最低1枚アップロードしてください');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('選択された画像数:', images.length);
+
+      // 商品データを作成
+      const productData = {
+        title: formData.title,
+        category: formData.category,
+        condition: formData.condition,
+        description: formData.description,
+        price: parseInt(formData.price) || 0,
+      };
+
+      console.log('商品データ:', productData);
+      console.log('各フィールドの値:');
+      console.log('- title:', formData.title, '(空?', !formData.title, ')');
+      console.log('- category:', formData.category, '(空?', !formData.category, ')');
+      console.log('- condition:', formData.condition, '(空?', !formData.condition, ')');
+      console.log('- description:', formData.description, '(空?', !formData.description, ')');
+      console.log('- price:', formData.price, '-> parsed:', parseInt(formData.price), '(NaN?', isNaN(parseInt(formData.price)), ')');
+
+      // 商品を出品
+      console.log('商品出品APIを呼び出します...');
+      const response = await fetch('http://localhost:5000/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(productData)
+      });
+
+      console.log('商品出品レスポンスステータス:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('商品出品エラー:', errorData);
+        console.error('エラー詳細:', JSON.stringify(errorData, null, 2));
+
+        // エラーメッセージを整形
+        let errorMessage = '出品に失敗しました';
+        if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+        if (errorData.details) {
+          errorMessage += '\n詳細: ' + JSON.stringify(errorData.details, null, 2);
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      const productId = result.product.id;
+      console.log('商品が作成されました。ID:', productId);
+
+      // 画像をアップロード
+      console.log('画像アップロードを開始します...');
+      for (let i = 0; i < images.length; i++) {
+        const image = images[i];
+        console.log(`画像 ${i + 1}/${images.length} をアップロード中...`);
+
+        const imageFormData = new FormData();
+        imageFormData.append('image', image);
+
+        const imageResponse = await fetch(`http://localhost:5000/api/products/${productId}/images`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: imageFormData
+        });
+
+        console.log(`画像 ${i + 1} アップロードステータス:`, imageResponse.status);
+
+        if (!imageResponse.ok) {
+          const imageError = await imageResponse.json();
+          console.error(`画像 ${i + 1} のアップロードに失敗:`, imageError);
+        }
+      }
+
+      console.log('すべての処理が完了しました。画面遷移します...');
+      // 出品完了画面へ遷移
+      navigate('/listing-complete', { state: { productId } });
+    } catch (err) {
+      console.error('出品エラー:', err);
+      setError(err.message || '出品中にエラーが発生しました');
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+
+    if (images.length + files.length > 10) {
+      setError('画像は最大10枚までです');
+      return;
+    }
+
+    // ファイルサイズチェック（5MB）
+    const maxSize = 5 * 1024 * 1024;
+    const validFiles = files.filter(file => {
+      if (file.size > maxSize) {
+        setError(`${file.name}は5MBを超えています`);
+        return false;
+      }
+      return true;
+    });
+
+    setImages(prev => [...prev, ...validFiles]);
+    setError(null);
+  };
+
+  const removeImage = (index) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -38,9 +209,18 @@ function Listing() {
 
         <div className="form-container fade-in">
           <form id="listingForm" onSubmit={handleSubmit}>
-            <div className="success-message" id="successMessage">
-              出品が完了しました！商品は審査後に公開されます。
-            </div>
+            {error && (
+              <div style={{
+                backgroundColor: '#fee',
+                color: '#c33',
+                padding: '1rem',
+                borderRadius: '8px',
+                marginBottom: '1.5rem',
+                border: '1px solid #fcc'
+              }}>
+                {error}
+              </div>
+            )}
 
             {/* 商品情報の入力 */}
             <div className="form-section">
@@ -51,14 +231,81 @@ function Listing() {
                 <label className="form-label">出品画像<span className="required">*</span></label>
                 <div className="help-text">最大10枚まで登録できます。1枚目の画像がメイン画像として表示されます。</div>
 
-                <div className="image-upload-area" id="imageUploadArea">
+                <div className="image-upload-area" id="imageUploadArea" onClick={() => fileInputRef.current?.click()}>
                   <span className="upload-icon">📷</span>
                   <div className="upload-text">ファイルを選択またはドラッグ＆ドロップ</div>
                   <div className="upload-subtext">JPG, PNG, GIF (最大5MB)</div>
-                  <input type="file" className="file-input" id="imageInput" multiple accept="image/*" />
+                  <input
+                    type="file"
+                    className="file-input"
+                    ref={fileInputRef}
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    style={{ display: 'none' }}
+                  />
                 </div>
 
-                <div className="image-preview-container" id="imagePreviewContainer"></div>
+                {images.length > 0 && (
+                  <div className="image-preview-container" style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                    gap: '1rem',
+                    marginTop: '1rem'
+                  }}>
+                    {images.map((image, index) => (
+                      <div key={index} style={{ position: 'relative' }}>
+                        <img
+                          src={URL.createObjectURL(image)}
+                          alt={`Preview ${index + 1}`}
+                          style={{
+                            width: '100%',
+                            height: '120px',
+                            objectFit: 'cover',
+                            borderRadius: '8px',
+                            border: '2px solid #e0e0e0'
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          style={{
+                            position: 'absolute',
+                            top: '5px',
+                            right: '5px',
+                            backgroundColor: 'rgba(0,0,0,0.7)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '24px',
+                            height: '24px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          ×
+                        </button>
+                        {index === 0 && (
+                          <div style={{
+                            position: 'absolute',
+                            bottom: '5px',
+                            left: '5px',
+                            backgroundColor: 'rgba(0,0,0,0.7)',
+                            color: 'white',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            fontSize: '11px'
+                          }}>
+                            メイン
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* 書籍タイトル */}
@@ -238,7 +485,9 @@ function Listing() {
 
             {/* 送信ボタン */}
             <div className="submit-section">
-              <button type="submit" className="submit-btn">📤 出品する</button>
+              <button type="submit" className="submit-btn" disabled={isLoading}>
+                {isLoading ? '出品中...' : '📤 出品する'}
+              </button>
               <div className="help-text" style={{marginTop: '1rem'}}>
                 出品後、運営による審査を経て公開されます。審査は通常24時間以内に完了します。
               </div>

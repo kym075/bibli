@@ -1,12 +1,88 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/profile_page.css';
 
 function ProfilePage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('products');
   const [productFilter, setProductFilter] = useState('all');
+  const [myProducts, setMyProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // 出品商品を取得
+  useEffect(() => {
+    const fetchMyProducts = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+          setError('ログインが必要です');
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await fetch('http://localhost:5000/api/products/my-products', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('商品の取得に失敗しました');
+        }
+
+        const data = await response.json();
+        setMyProducts(data.products || []);
+      } catch (err) {
+        console.error('商品取得エラー:', err);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (activeTab === 'products') {
+      fetchMyProducts();
+    }
+  }, [activeTab]);
+
+  // ステータスに応じた日本語ラベルを取得
+  const getStatusLabel = (status) => {
+    const statusMap = {
+      'available': '販売中',
+      'reserved': '取引中',
+      'sold': '売却済み'
+    };
+    return statusMap[status] || status;
+  };
+
+  // ステータスに応じたCSSクラスを取得
+  const getStatusClass = (status) => {
+    const classMap = {
+      'available': 'status-available',
+      'reserved': 'status-reserved',
+      'sold': 'status-sold'
+    };
+    return classMap[status] || '';
+  };
+
+  // フィルターに応じた商品をフィルタリング
+  const filteredProducts = myProducts.filter(product => {
+    if (productFilter === 'all') return true;
+    return product.status === productFilter;
+  });
+
+  // 商品カードクリック時の処理
+  const handleProductClick = (productId) => {
+    navigate(`/product/${productId}`);
+  };
 
   return (
     <>
@@ -40,11 +116,11 @@ function ProfilePage() {
               </p>
               <div className="profile-stats">
                 <div className="stat-item">
-                  <span className="stat-number">127</span>
+                  <span className="stat-number">{myProducts.length}</span>
                   <span className="stat-label">出品数</span>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-number">95</span>
+                  <span className="stat-number">{myProducts.filter(p => p.status === 'sold').length}</span>
                   <span className="stat-label">販売実績</span>
                 </div>
                 <div className="stat-item">
@@ -91,7 +167,7 @@ function ProfilePage() {
               className={`tab-btn ${activeTab === 'products' ? 'active' : ''}`}
               onClick={() => setActiveTab('products')}
             >
-              出品商品 (127)
+              出品商品 ({myProducts.length})
             </button>
             <button
               className={`tab-btn ${activeTab === 'purchases' ? 'active' : ''}`}
@@ -144,140 +220,89 @@ function ProfilePage() {
                 </button>
               </div>
               <div className="products-grid">
-                <div
-                  className="product-card"
-                  data-status="available"
-                  style={{ display: productFilter === 'all' || productFilter === 'available' ? 'block' : 'none' }}
-                >
-                  <div className="product-image">
-                    <div className="product-status status-available">販売中</div>
+                {isLoading && (
+                  <div style={{
+                    gridColumn: '1 / -1',
+                    textAlign: 'center',
+                    padding: '2rem',
+                    color: '#7f8c8d'
+                  }}>
+                    読み込み中...
                   </div>
-                  <div className="product-info">
-                    <div className="product-title">村上春樹 ノルウェイの森</div>
-                    <div className="product-price">¥800</div>
-                  </div>
-                </div>
+                )}
 
-                <div
-                  className="product-card"
-                  data-status="reserved"
-                  style={{ display: productFilter === 'all' || productFilter === 'reserved' ? 'block' : 'none' }}
-                >
-                  <div className="product-image">
-                    📚
-                    <div className="product-status status-reserved">取引中</div>
+                {error && (
+                  <div style={{
+                    gridColumn: '1 / -1',
+                    textAlign: 'center',
+                    padding: '2rem',
+                    color: '#e74c3c',
+                    backgroundColor: '#fee',
+                    borderRadius: '8px'
+                  }}>
+                    {error}
                   </div>
-                  <div className="product-info">
-                    <div className="product-title">東野圭吾 白夜行</div>
-                    <div className="product-price">¥950</div>
-                  </div>
-                </div>
+                )}
 
-                <div
-                  className="product-card"
-                  data-status="available"
-                  style={{ display: productFilter === 'all' || productFilter === 'available' ? 'block' : 'none' }}
-                >
-                  <div className="product-image">
-                    📘
-                    <div className="product-status status-available">販売中</div>
+                {!isLoading && !error && filteredProducts.length === 0 && (
+                  <div style={{
+                    gridColumn: '1 / -1',
+                    textAlign: 'center',
+                    padding: '3rem',
+                    color: '#7f8c8d'
+                  }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📚</div>
+                    <div style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>出品商品がありません</div>
+                    <div style={{ fontSize: '0.9rem' }}>
+                      <Link to="/listing" style={{ color: '#4a90e2', textDecoration: 'underline' }}>
+                        最初の商品を出品する
+                      </Link>
+                    </div>
                   </div>
-                  <div className="product-info">
-                    <div className="product-title">JavaScript完全ガイド</div>
-                    <div className="product-price">¥2,800</div>
-                  </div>
-                </div>
+                )}
 
-                <div
-                  className="product-card"
-                  data-status="available"
-                  style={{ display: productFilter === 'all' || productFilter === 'available' ? 'block' : 'none' }}
-                >
-                  <div className="product-image">
-                    📗
-                    <div className="product-status status-available">販売中</div>
+                {!isLoading && !error && filteredProducts.map(product => (
+                  <div
+                    key={product.id}
+                    className="product-card"
+                    data-status={product.status}
+                    onClick={() => handleProductClick(product.id)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className="product-image">
+                      {product.images && product.images.length > 0 ? (
+                        <img
+                          src={`http://localhost:5000/api/products/images/${product.images[0].image_id}`}
+                          alt={product.title}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: '100%',
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '3rem',
+                          backgroundColor: '#f5f5f5'
+                        }}>
+                          📚
+                        </div>
+                      )}
+                      <div className={`product-status ${getStatusClass(product.status)}`}>
+                        {getStatusLabel(product.status)}
+                      </div>
+                    </div>
+                    <div className="product-info">
+                      <div className="product-title">{product.title}</div>
+                      <div className="product-price">¥{product.price.toLocaleString()}</div>
+                    </div>
                   </div>
-                  <div className="product-info">
-                    <div className="product-title">哲学入門書</div>
-                    <div className="product-price">¥1,500</div>
-                  </div>
-                </div>
-
-                <div
-                  className="product-card"
-                  data-status="available"
-                  style={{ display: productFilter === 'all' || productFilter === 'available' ? 'block' : 'none' }}
-                >
-                  <div className="product-image">
-                    📙
-                    <div className="product-status status-available">販売中</div>
-                  </div>
-                  <div className="product-info">
-                    <div className="product-title">ビジネス書セット</div>
-                    <div className="product-price">¥3,200</div>
-                  </div>
-                </div>
-
-                <div
-                  className="product-card"
-                  data-status="available"
-                  style={{ display: productFilter === 'all' || productFilter === 'available' ? 'block' : 'none' }}
-                >
-                  <div className="product-image">
-                    📕
-                    <div className="product-status status-available">販売中</div>
-                  </div>
-                  <div className="product-info">
-                    <div className="product-title">芥川龍之介作品集</div>
-                    <div className="product-price">¥1,200</div>
-                  </div>
-                </div>
-
-                {/* 売却済み商品 */}
-                <div
-                  className="product-card"
-                  data-status="sold"
-                  style={{ display: productFilter === 'all' || productFilter === 'sold' ? 'block' : 'none' }}
-                >
-                  <div className="product-image">
-                    📖
-                    <div className="product-status status-sold">SOLD</div>
-                  </div>
-                  <div className="product-info">
-                    <div className="product-title">夏目漱石作品集</div>
-                    <div className="product-price">¥1,200</div>
-                  </div>
-                </div>
-
-                <div
-                  className="product-card"
-                  data-status="sold"
-                  style={{ display: productFilter === 'all' || productFilter === 'sold' ? 'block' : 'none' }}
-                >
-                  <div className="product-image">
-                    📚
-                    <div className="product-status status-sold">SOLD</div>
-                  </div>
-                  <div className="product-info">
-                    <div className="product-title">人気コミック全巻セット</div>
-                    <div className="product-price">¥4,500</div>
-                  </div>
-                </div>
-
-                <div
-                  className="product-card"
-                  data-status="sold"
-                  style={{ display: productFilter === 'all' || productFilter === 'sold' ? 'block' : 'none' }}
-                >
-                  <div className="product-image">
-                    📘
-                    <div className="product-status status-sold">SOLD</div>
-                  </div>
-                  <div className="product-info">
-                    <div className="product-title">プログラミング教本</div>
-                    <div className="product-price">¥2,200</div>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 

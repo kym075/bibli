@@ -1,10 +1,11 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/listing_complete.css';
 
 function ListingComplete() {
-  const navigate = useNavigate();
+  const location = useLocation();
+  const productId = location.state?.productId;
 
   return (
     <>
@@ -22,6 +23,19 @@ function ListingComplete() {
               あなたの大切な本の出品が正常に完了しました。<br />
               <strong>運営による審査後</strong>、商品が公開されます。
             </p>
+            {productId && (
+              <div style={{
+                backgroundColor: '#f0f8ff',
+                padding: '1rem',
+                borderRadius: '8px',
+                marginTop: '1rem',
+                border: '2px solid #4a90e2'
+              }}>
+                <p style={{ margin: 0, color: '#2c3e50' }}>
+                  商品ID: <strong>#{productId}</strong>
+                </p>
+              </div>
+            )}
 
             <div className="action-buttons">
               <Link to="/profile" className="action-btn btn-check" id="checkBtn">
