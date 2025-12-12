@@ -43,19 +43,17 @@ class User(db.Model):
 class Product(db.Model):
     __tablename__ = "products"
 
-    product_id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
-    seller_id = db.Column(db.BigInteger, db.ForeignKey("users.user_id"), nullable=False)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=False)
     title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    price = db.Column(db.Numeric(10, 2), nullable=False)
-    category_id = db.Column(db.Integer, db.ForeignKey("categories.category_id"), nullable=False)
-    condition_type = db.Column(db.SmallInteger, nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    price = db.Column(db.Integer, nullable=False)
+    condition = db.Column(db.String(50), nullable=False)
+    category = db.Column(db.String(100), nullable=False)
     isbn = db.Column(db.String(20))
-    status = db.Column(db.SmallInteger, nullable=False)
-    shipping_method = db.Column(db.SmallInteger, nullable=False)
-    shipping_fee_payer = db.Column(db.SmallInteger, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)  # ← 修正
-    update_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)  # ← 修正
+    status = db.Column(db.String(20), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class Category(db.Model):
@@ -183,17 +181,15 @@ def get_products():
     out = []
     for p in prods:
         out.append({
-            "product_id": p.product_id,
-            "seller_id": p.seller_id,
+            "id": p.id,
+            "user_id": p.user_id,
             "title": p.title,
             "description": p.description or "",
-            "price": str(p.price),
-            "category_id": p.category_id,
-            "condition_type": p.condition_type,
+            "price": p.price,
+            "category": p.category,
+            "condition": p.condition,
             "isbn": p.isbn,
-            "status": p.status,
-            "shipping_method": p.shipping_method,
-            "shipping_fee_payer": p.shipping_fee_payer
+            "status": p.status
         })
     return jsonify(out), 200
 
@@ -202,27 +198,25 @@ def get_products():
 def create_product():
     data = request.get_json() or {}
 
-    required = ['seller_id', 'title', 'price', 'category_id', 'condition_type', 'shipping_method', 'shipping_fee_payer']
+    required = ['user_id', 'title', 'price', 'category', 'condition']
     for r in required:
         if r not in data:
             return jsonify({"error": f"{r} が必要です"}), 400
 
     try:
-        price = Decimal(str(data['price']))
+        price = int(data['price'])
     except:
         return jsonify({"error": "price の形式が不正"}), 400
 
     product = Product(
-        seller_id=data['seller_id'],
+        user_id=data['user_id'],
         title=data['title'],
-        description=data.get('description'),
+        description=data.get('description', ''),
         price=price,
-        category_id=data['category_id'],
-        condition_type=int(data['condition_type']),
+        category=data['category'],
+        condition=data['condition'],
         isbn=data.get('isbn'),
-        status=int(data.get('status', 1)),
-        shipping_method=int(data['shipping_method']),
-        shipping_fee_payer=int(data['shipping_fee_payer'])
+        status=data.get('status', 'available')
     )
 
     try:
@@ -232,7 +226,7 @@ def create_product():
         db.session.rollback()
         return jsonify({"error": "DB書き込みエラー"}), 500
 
-    return jsonify({"message": "Product created", "product_id": product.product_id}), 201
+    return jsonify({"message": "Product created", "product_id": product.id}), 201
 
 
 # ============================
