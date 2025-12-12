@@ -64,8 +64,8 @@ function Register() {
 
     if (!formData.password) {
       newErrors.password = 'パスワードを入力してください';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'パスワードは8文字以上必要です';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'パスワードは6文字以上必要です';
     }
 
     if (formData.password !== formData.passwordConfirm) {

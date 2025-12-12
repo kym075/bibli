@@ -106,12 +106,12 @@ def firebase_register():
         data = request.get_json()
 
         # 必須フィールドチェック
-        required_fields = ['uid', 'user_id', 'name', 'name_kana', 'email', 'phone']
+        required_fields = ['uid', 'email']
         for field in required_fields:
             if field not in data:
                 return jsonify({'error': f'{field}が必要です'}), 400
 
-        # Firebase UIDの重複チェック
+        # Firebase UIDの重複チェック（user_idとしてFirebase UIDを保存）
         if User.query.filter_by(user_id=data['uid']).first():
             return jsonify({'error': 'このアカウントは既に登録されています'}), 409
 
@@ -119,13 +119,13 @@ def firebase_register():
         if User.query.filter_by(email=data['email']).first():
             return jsonify({'error': 'このメールアドレスは既に登録されています'}), 409
 
-        # 新規ユーザー作成（Firebase UIDをuser_idとして保存）
+        # 新規ユーザー作成
         user = User(
-            user_id=data['uid'],  # Firebase UIDを使用
-            name=data['name'],
-            name_kana=data['name_kana'],
+            user_id=data['uid'],  # Firebase UIDをuser_idとして保存
+            name=data.get('name', ''),  # オプション
+            name_kana=data.get('name_kana', ''),  # オプション
             email=data['email'],
-            phone=data['phone']
+            phone=data.get('phone', '')  # オプション
         )
         # Firebaseで認証済みなのでパスワードハッシュは保存しない（ダミー値）
         user.password_hash = 'firebase_auth'
