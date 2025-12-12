@@ -56,7 +56,7 @@ function Login() {
         localStorage.setItem("user", JSON.stringify(user));
       }
 
-      alert("ログイン成功！");
+      // alert("ログイン成功！");
       navigate("/profile");
 
     } catch (error) {
