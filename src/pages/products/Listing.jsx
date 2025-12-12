@@ -30,45 +30,17 @@ function Listing() {
     console.log('出品処理を開始します...');
 
     try {
-      // JWTトークンを取得（開発用: 仮ログイン機能）
-      let token = localStorage.getItem('token');
+      // JWTトークンを取得
+      const token = localStorage.getItem('token');
       console.log('既存トークン:', token ? 'あり' : 'なし');
 
-      // トークンがない場合は、仮ユーザーでログインを試みる
+      // トークンがない場合はログインページへリダイレクト
       if (!token) {
-        console.log('仮ログインを試みます...');
-        try {
-          const loginResponse = await fetch('http://localhost:5000/api/auth/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              identifier: 'test@example.com',
-              password: 'test1234'
-            })
-          });
-
-          console.log('ログインレスポンスステータス:', loginResponse.status);
-
-          if (loginResponse.ok) {
-            const loginData = await loginResponse.json();
-            token = loginData.access_token;
-            localStorage.setItem('token', token);
-            console.log('開発用: 仮ログインが成功しました');
-          } else {
-            const errorData = await loginResponse.json();
-            console.error('ログインエラー詳細:', errorData);
-            setError(`開発用: 仮ユーザーでのログインに失敗しました。詳細: ${JSON.stringify(errorData)}`);
-            setIsLoading(false);
-            return;
-          }
-        } catch (loginError) {
-          console.error('ログイン例外:', loginError);
-          setError(`ログイン処理中にエラーが発生しました: ${loginError.message}`);
-          setIsLoading(false);
-          return;
-        }
+        console.log('トークンがないため、ログインページへリダイレクトします');
+        setError('ログインが必要です。ログインしてから出品してください。');
+        setIsLoading(false);
+        navigate('/login');
+        return;
       }
 
       // 画像が1枚以上必要

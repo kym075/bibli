@@ -19,41 +19,15 @@ function ProfilePage() {
       setError(null);
 
       try {
-        let token = localStorage.getItem('token');
+        const token = localStorage.getItem('token');
 
-        // トークンがない場合は、仮ユーザーでログインを試みる
+        // トークンがない場合はログインページへリダイレクト
         if (!token) {
-          console.log('[ProfilePage] トークンがないため、仮ログインを試みます...');
-          try {
-            const loginResponse = await fetch('http://localhost:5000/api/auth/login', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                identifier: 'test@example.com',
-                password: 'test1234'
-              })
-            });
-
-            if (loginResponse.ok) {
-              const loginData = await loginResponse.json();
-              token = loginData.access_token;
-              localStorage.setItem('token', token);
-              console.log('[ProfilePage] 仮ログインが成功しました');
-            } else {
-              const errorData = await loginResponse.json();
-              console.error('[ProfilePage] ログインエラー:', errorData);
-              setError('ログインに失敗しました。ページを再読み込みしてください。');
-              setIsLoading(false);
-              return;
-            }
-          } catch (loginError) {
-            console.error('[ProfilePage] ログイン例外:', loginError);
-            setError('ログイン処理中にエラーが発生しました');
-            setIsLoading(false);
-            return;
-          }
+          console.log('[ProfilePage] トークンがないため、ログインページへリダイレクトします');
+          setError('ログインが必要です');
+          setIsLoading(false);
+          navigate('/login');
+          return;
         }
 
         console.log('[ProfilePage] 商品一覧を取得します...');

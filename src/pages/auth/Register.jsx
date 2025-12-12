@@ -89,32 +89,40 @@ function Register() {
     }
 
     try {
-      // バックエンドで新規登録
-      const registerResponse = await fetch('http://localhost:5000/api/auth/register', {
+      // Firebase Auth で新規登録
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
+
+      const user = userCredential.user;
+
+      // Firebase IDトークンを取得
+      const idToken = await user.getIdToken();
+
+      // バックエンドにユーザー情報を登録
+      const registerResponse = await fetch('http://localhost:5000/api/auth/firebase-register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          firebase_token: idToken,
+          uid: user.uid,
           user_id: formData.userId,
           name: formData.name,
           name_kana: formData.nameKana,
           email: formData.email,
-          phone: formData.phone,
-          password: formData.password
+          phone: formData.phone
         })
       });
 
       if (!registerResponse.ok) {
         const errorData = await registerResponse.json();
-        throw new Error(errorData.error || '登録に失敗しました');
-      }
-
-      // Firebase Auth で新規登録（オプション）
-      try {
-        await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      } catch (firebaseError) {
-        console.warn("Firebase 登録に失敗しましたが、バックエンド登録は成功しています", firebaseError);
+        // バックエンド登録に失敗した場合、Firebaseアカウントも削除
+        await user.delete();
+        throw new Error(errorData.error || 'バックエンド登録に失敗しました');
       }
 
       alert("アカウントを作成しました！");
@@ -123,10 +131,16 @@ function Register() {
     } catch (error) {
       console.error("Register error:", error);
 
-      let msg = error.message || "登録中にエラーが発生しました";
+      let msg = "登録中にエラーが発生しました";
 
-      if (error.message.includes("email")) {
+      if (error.code === "auth/email-already-in-use") {
         msg = "このメールアドレスはすでに使われています";
+      } else if (error.code === "auth/weak-password") {
+        msg = "パスワードが弱すぎます";
+      } else if (error.code === "auth/invalid-email") {
+        msg = "メールアドレスが不正です";
+      } else if (error.message) {
+        msg = error.message;
       }
 
       setErrors({ general: msg });

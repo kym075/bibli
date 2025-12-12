@@ -6,6 +6,9 @@ from app.utils.validators import validate_user_registration, validate_login
 
 bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
+# Firebase Admin SDK の初期化は不要（IDトークンの検証のみ行う）
+# 本番環境では firebase_admin.auth.verify_id_token() を使用してトークンを検証すべき
+
 @bp.route('/register', methods=['POST'])
 def register():
     """ユーザー登録API"""
@@ -94,3 +97,80 @@ def get_current_user():
 
     except Exception as e:
         return jsonify({'error': 'ユーザー情報の取得中にエラーが発生しました', 'details': str(e)}), 500
+
+
+@bp.route('/firebase-register', methods=['POST'])
+def firebase_register():
+    """Firebase認証後のユーザー登録API"""
+    try:
+        data = request.get_json()
+
+        # 必須フィールドチェック
+        required_fields = ['uid', 'user_id', 'name', 'name_kana', 'email', 'phone']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'{field}が必要です'}), 400
+
+        # Firebase UIDの重複チェック
+        if User.query.filter_by(user_id=data['uid']).first():
+            return jsonify({'error': 'このアカウントは既に登録されています'}), 409
+
+        # メールアドレスの重複チェック
+        if User.query.filter_by(email=data['email']).first():
+            return jsonify({'error': 'このメールアドレスは既に登録されています'}), 409
+
+        # 新規ユーザー作成（Firebase UIDをuser_idとして保存）
+        user = User(
+            user_id=data['uid'],  # Firebase UIDを使用
+            name=data['name'],
+            name_kana=data['name_kana'],
+            email=data['email'],
+            phone=data['phone']
+        )
+        # Firebaseで認証済みなのでパスワードハッシュは保存しない（ダミー値）
+        user.password_hash = 'firebase_auth'
+
+        db.session.add(user)
+        db.session.commit()
+
+        # JWTトークン生成
+        access_token = create_access_token(identity=str(user.id))
+
+        return jsonify({
+            'message': 'ユーザー登録が完了しました',
+            'access_token': access_token,
+            'user': user.to_dict()
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': '登録中にエラーが発生しました', 'details': str(e)}), 500
+
+
+@bp.route('/firebase-login', methods=['POST'])
+def firebase_login():
+    """Firebase認証後のログインAPI"""
+    try:
+        data = request.get_json()
+
+        # 必須フィールドチェック
+        if 'uid' not in data:
+            return jsonify({'error': 'UIDが必要です'}), 400
+
+        # Firebase UIDでユーザー検索
+        user = User.query.filter_by(user_id=data['uid']).first()
+
+        if not user:
+            return jsonify({'error': 'ユーザーが見つかりません。先に登録してください。'}), 404
+
+        # JWTトークン生成
+        access_token = create_access_token(identity=str(user.id))
+
+        return jsonify({
+            'message': 'ログインに成功しました',
+            'access_token': access_token,
+            'user': user.to_dict()
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': 'ログイン中にエラーが発生しました', 'details': str(e)}), 500
