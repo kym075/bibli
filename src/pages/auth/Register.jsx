@@ -74,7 +74,7 @@ function Register() {
       // Firebase Auth で新規登録
       await createUserWithEmailAndPassword(auth, formData.email, formData.password);
 
-      // alert("アカウントを作成しました！");
+      alert("アカウントを作成しました！");
       navigate("/login");
 
     } catch (error) {
