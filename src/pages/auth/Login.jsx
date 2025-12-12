@@ -42,30 +42,45 @@ function Login() {
     if (!validateForm()) return;
 
     try {
-      // Firebase Auth ログイン
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
+      // バックエンドのログインAPIを呼び出してJWTトークンを取得
+      const loginResponse = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          identifier: formData.email,
+          password: formData.password
+        })
+      });
 
-      const user = userCredential.user;
-
-      // ローカル保存（任意）
-      if (formData.rememberMe) {
-        localStorage.setItem("user", JSON.stringify(user));
+      if (!loginResponse.ok) {
+        const errorData = await loginResponse.json();
+        throw new Error(errorData.error || 'ログインに失敗しました');
       }
 
-      // alert("ログイン成功！");
+      const loginData = await loginResponse.json();
+      const token = loginData.access_token;
+
+      // JWTトークンを保存
+      localStorage.setItem('token', token);
+
+      // Firebase Auth ログイン（オプション）
+      try {
+        await signInWithEmailAndPassword(
+          auth,
+          formData.email,
+          formData.password
+        );
+      } catch (firebaseError) {
+        console.warn("Firebase ログインに失敗しましたが、バックエンド認証は成功しています", firebaseError);
+      }
+
       navigate("/profile");
 
     } catch (error) {
-      console.error("Firebase Login Error:", error);
-      let message = 'ログインに失敗しました';
-
-      if (error.code === "auth/user-not-found") message = "ユーザーが存在しません";
-      if (error.code === "auth/wrong-password") message = "パスワードが間違っています";
-      if (error.code === "auth/invalid-email") message = "メールアドレスが不正です";
+      console.error("Login Error:", error);
+      let message = error.message || 'ログインに失敗しました';
 
       setErrors({ general: message });
     }

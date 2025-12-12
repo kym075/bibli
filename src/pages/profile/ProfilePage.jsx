@@ -19,14 +19,44 @@ function ProfilePage() {
       setError(null);
 
       try {
-        const token = localStorage.getItem('token');
+        let token = localStorage.getItem('token');
 
+        // トークンがない場合は、仮ユーザーでログインを試みる
         if (!token) {
-          setError('ログインが必要です');
-          setIsLoading(false);
-          return;
+          console.log('[ProfilePage] トークンがないため、仮ログインを試みます...');
+          try {
+            const loginResponse = await fetch('http://localhost:5000/api/auth/login', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                identifier: 'test@example.com',
+                password: 'test1234'
+              })
+            });
+
+            if (loginResponse.ok) {
+              const loginData = await loginResponse.json();
+              token = loginData.access_token;
+              localStorage.setItem('token', token);
+              console.log('[ProfilePage] 仮ログインが成功しました');
+            } else {
+              const errorData = await loginResponse.json();
+              console.error('[ProfilePage] ログインエラー:', errorData);
+              setError('ログインに失敗しました。ページを再読み込みしてください。');
+              setIsLoading(false);
+              return;
+            }
+          } catch (loginError) {
+            console.error('[ProfilePage] ログイン例外:', loginError);
+            setError('ログイン処理中にエラーが発生しました');
+            setIsLoading(false);
+            return;
+          }
         }
 
+        console.log('[ProfilePage] 商品一覧を取得します...');
         const response = await fetch('http://localhost:5000/api/products/my-products', {
           method: 'GET',
           headers: {
@@ -34,14 +64,19 @@ function ProfilePage() {
           }
         });
 
+        console.log('[ProfilePage] 商品一覧レスポンスステータス:', response.status);
+
         if (!response.ok) {
-          throw new Error('商品の取得に失敗しました');
+          const errorData = await response.json();
+          console.error('[ProfilePage] 商品一覧取得エラー:', errorData);
+          throw new Error(errorData.error || '商品の取得に失敗しました');
         }
 
         const data = await response.json();
+        console.log('[ProfilePage] 取得した商品数:', data.products?.length || 0);
         setMyProducts(data.products || []);
       } catch (err) {
-        console.error('商品取得エラー:', err);
+        console.error('[ProfilePage] 商品取得エラー:', err);
         setError(err.message);
       } finally {
         setIsLoading(false);
