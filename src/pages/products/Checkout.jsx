@@ -1,19 +1,124 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/checkout.css';
 
 function Checkout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [product, setProduct] = useState(null);
 
-  const handlePurchase = () => {
-    setLoading(true);
-    setTimeout(() => {
-      navigate('/products/purchase-complete');
-    }, 1500);
+  // 配送・決済情報
+  const [shippingMethod, setShippingMethod] = useState('ゆうパケット');
+  const [shippingFee, setShippingFee] = useState(230);
+  const [paymentMethod, setPaymentMethod] = useState('クレジットカード');
+
+  useEffect(() => {
+    // location.stateから商品情報を取得
+    if (location.state && location.state.product) {
+      setProduct(location.state.product);
+    } else {
+      // 商品情報がない場合はホームに戻す
+      navigate('/');
+    }
+  }, [location, navigate]);
+
+  const getCategoryLabel = (category) => {
+    const categoryMap = {
+      'novel': '小説',
+      'manga': '漫画',
+      'specialist': '専門書',
+      'picture': '絵本',
+      'magazine': '雑誌',
+      'foreign': '洋書',
+      'business': 'ビジネス書',
+      'self-help': '自己啓発'
+    };
+    return categoryMap[category] || category;
   };
+
+  const getConditionLabel = (condition) => {
+    const conditionMap = {
+      'new': '新品・未使用',
+      'like-new': '未使用に近い',
+      'excellent': '目立った傷や汚れなし',
+      'good': 'やや傷や汚れあり',
+      'fair': '傷や汚れあり',
+      'poor': '全体的に状態が悪い'
+    };
+    return conditionMap[condition] || condition;
+  };
+
+  const handlePurchase = async () => {
+    if (!product) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const firebase_uid = localStorage.getItem('firebase_uid');
+
+      if (!firebase_uid) {
+        setError('ログインが必要です');
+        setLoading(false);
+        navigate('/login');
+        return;
+      }
+
+      // 購入処理 - Firebase UIDを認証トークンとして送信
+      const response = await fetch('http://localhost:5000/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${firebase_uid}`
+        },
+        body: JSON.stringify({
+          product_id: product.id,
+          shipping_method: shippingMethod,
+          shipping_fee: shippingFee,
+          payment_method: paymentMethod,
+          shipping_address: '東京都渋谷区神南1-23-45 Bibliマンション 101号室'
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '購入に失敗しました');
+      }
+
+      const data = await response.json();
+      console.log('購入成功:', data);
+
+      // 購入完了画面へ遷移
+      navigate('/purchase-complete', { state: { order: data.order } });
+
+    } catch (err) {
+      console.error('購入エラー:', err);
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  if (!product) {
+    return (
+      <>
+        <Header />
+        <main className="main-content">
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#7f8c8d' }}>
+            読み込み中...
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  const productPrice = product.price;
+  const serviceFee = Math.floor(productPrice * 0.1);
+  const totalAmount = productPrice + shippingFee + serviceFee;
 
   return (
     <>
@@ -51,21 +156,40 @@ function Checkout() {
             <p>以下の内容で購入手続きを進めます</p>
           </div>
 
-          {/* 成功メッセージ */}
-          <div className="success-message" id="successMessage">
-            購入が完了しました！ご注文ありがとうございます。
-          </div>
+          {/* エラーメッセージ */}
+          {error && (
+            <div style={{
+              backgroundColor: '#fee',
+              color: '#c33',
+              padding: '1rem',
+              borderRadius: '8px',
+              marginBottom: '1.5rem',
+              border: '1px solid #fcc'
+            }}>
+              {error}
+            </div>
+          )}
 
           {/* 購入商品セクション */}
           <div className="product-section">
             <div className="product-item">
-              <div className="product-image">📖</div>
-              <div className="product-info">
-                <div className="product-title">夏目漱石作品集</div>
-                <div className="product-author">著者: 夏目漱石</div>
-                <div className="product-condition">良好な状態</div>
+              <div className="product-image">
+                {product.images && product.images.length > 0 ? (
+                  <img
+                    src={`http://localhost:5000/api/products/images/${product.images[0].image_id}`}
+                    alt={product.title}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  '📖'
+                )}
               </div>
-              <div className="product-price">¥1,200</div>
+              <div className="product-info">
+                <div className="product-title">{product.title}</div>
+                <div className="product-author">カテゴリ: {getCategoryLabel(product.category)}</div>
+                <div className="product-condition">{getConditionLabel(product.condition)}</div>
+              </div>
+              <div className="product-price">¥{productPrice.toLocaleString()}</div>
             </div>
           </div>
 
@@ -89,7 +213,7 @@ function Checkout() {
             <div className="payment-display">
               <div className="payment-icon">VISA</div>
               <div className="payment-info">
-                <div className="payment-method">クレジットカード</div>
+                <div className="payment-method">{paymentMethod}</div>
                 <div className="card-info">**** **** **** 1234</div>
               </div>
               <a href="#" className="change-btn" id="changePaymentBtn">変更する</a>
@@ -105,19 +229,19 @@ function Checkout() {
             <div className="price-summary">
               <div className="price-row">
                 <span className="price-label">商品合計</span>
-                <span className="price-value">¥1,200</span>
+                <span className="price-value">¥{productPrice.toLocaleString()}</span>
               </div>
               <div className="price-row">
-                <span className="price-label">送料（ゆうパケット）</span>
-                <span className="price-value">¥230</span>
+                <span className="price-label">送料（{shippingMethod}）</span>
+                <span className="price-value">¥{shippingFee.toLocaleString()}</span>
               </div>
               <div className="price-row">
                 <span className="price-label">販売手数料</span>
-                <span className="price-value">¥120</span>
+                <span className="price-value">¥{serviceFee.toLocaleString()}</span>
               </div>
               <div className="price-row">
                 <span className="price-label">合計金額</span>
-                <span className="price-value total-price">¥1,550</span>
+                <span className="price-value total-price">¥{totalAmount.toLocaleString()}</span>
               </div>
             </div>
           </div>

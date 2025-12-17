@@ -54,6 +54,7 @@ function App() {
         <Route path="/user-settings" element={<UserSettings />} />
 
         {/* Products */}
+        <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/product-detail" element={<ProductDetail />} />
         <Route path="/search" element={<SearchResults />} />
         <Route path="/listing" element={<Listing />} />

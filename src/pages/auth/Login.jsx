@@ -50,14 +50,21 @@ function Login() {
       );
 
       const user = userCredential.user;
+      console.log('Firebase ログイン成功:', user.uid);
+
+      // Firebase UIDをlocalStorageに保存（購入時にこれを送信）
+      localStorage.setItem("firebase_uid", user.uid);
 
       // ローカル保存（任意）
       if (formData.rememberMe) {
-        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("user", JSON.stringify({
+          uid: user.uid,
+          email: user.email
+        }));
       }
 
-      // alert("ログイン成功！");
-      navigate("/profile");
+      console.log('Firebase UID保存完了:', user.uid);
+      navigate("/");
 
     } catch (error) {
       console.error("Firebase Login Error:", error);
@@ -66,6 +73,7 @@ function Login() {
       if (error.code === "auth/user-not-found") message = "ユーザーが存在しません";
       if (error.code === "auth/wrong-password") message = "パスワードが間違っています";
       if (error.code === "auth/invalid-email") message = "メールアドレスが不正です";
+      if (error.code === "auth/invalid-credential") message = "メールアドレスまたはパスワードが間違っています";
 
       setErrors({ general: message });
     }

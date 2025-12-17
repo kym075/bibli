@@ -90,7 +90,34 @@ function Register() {
 
     try {
       // Firebase Auth で新規登録
-      await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const user = userCredential.user;
+
+      console.log('Firebase登録成功:', user.uid);
+
+      // バックエンドにユーザー情報を送信
+      const response = await fetch('http://localhost:5000/api/auth/firebase/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          firebase_uid: user.uid,
+          email: formData.email,
+          name: formData.name,
+          nameKana: formData.nameKana,
+          userId: formData.userId,
+          phone: formData.phone
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'バックエンド登録に失敗しました');
+      }
+
+      const data = await response.json();
+      console.log('バックエンド登録成功:', data);
 
       alert("アカウントを作成しました！");
       navigate("/login");
@@ -102,6 +129,8 @@ function Register() {
 
       if (error.code === "auth/email-already-in-use") {
         msg = "このメールアドレスはすでに使われています";
+      } else if (error.message) {
+        msg = error.message;
       }
 
       setErrors({ general: msg });

@@ -19,9 +19,10 @@ def create_app(config_class=Config):
     CORS(app, origins=app.config['CORS_ORIGINS'])
 
     # ブループリント(ルート)の登録
-    from app.routes import auth, products
+    from app.routes import auth, products, orders
     app.register_blueprint(auth.bp)
     app.register_blueprint(products.bp)
+    app.register_blueprint(orders.bp)
 
     # データベーステーブルの作成
     with app.app_context():

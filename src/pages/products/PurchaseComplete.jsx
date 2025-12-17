@@ -1,10 +1,37 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/purchase_complete.css';
 
 function PurchaseComplete() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [order, setOrder] = useState(null);
+
+  useEffect(() => {
+    // location.stateから注文情報を取得
+    if (location.state && location.state.order) {
+      setOrder(location.state.order);
+    } else {
+      // 注文情報がない場合はホームに戻す
+      navigate('/');
+    }
+  }, [location, navigate]);
+
+  if (!order) {
+    return (
+      <>
+        <Header />
+        <main className="main-content">
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#7f8c8d' }}>
+            読み込み中...
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
@@ -28,15 +55,15 @@ function PurchaseComplete() {
               <div className="order-details">
                 <div className="order-row">
                   <span className="order-label">注文番号</span>
-                  <span className="order-value">#BL-2025071401</span>
+                  <span className="order-value">#{order.order_number}</span>
                 </div>
                 <div className="order-row">
                   <span className="order-label">商品名</span>
-                  <span className="order-value">夏目漱石作品集</span>
+                  <span className="order-value">{order.product?.title || '商品'}</span>
                 </div>
                 <div className="order-row">
                   <span className="order-label">お支払い金額</span>
-                  <span className="order-value">¥1,550</span>
+                  <span className="order-value">¥{order.total_amount.toLocaleString()}</span>
                 </div>
                 <div className="order-row">
                   <span className="order-label">お届け予定</span>

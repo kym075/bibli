@@ -8,11 +8,12 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    firebase_uid = db.Column(db.String(128), unique=True, nullable=True, index=True)  # Firebase UID
     name = db.Column(db.String(100), nullable=False)
     name_kana = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    phone = db.Column(db.String(20), nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
+    phone = db.Column(db.String(20), nullable=True)  # 任意に変更
+    password_hash = db.Column(db.String(255), nullable=True)  # Firebase使用時は不要
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
