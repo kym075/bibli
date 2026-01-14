@@ -65,7 +65,7 @@ function Register() {
       await createUserWithEmailAndPassword(auth, formData.email, formData.password);
 
       // MySQL API にユーザー情報を保存（不要項目を送らない）
-      await fetch("http://localhost:5000/api/register", {
+      const response = await fetch("http://localhost:5000/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -79,6 +79,11 @@ function Register() {
         })
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'データベースへの登録に失敗しました');
+      }
+
       alert("アカウントの作成が完了しました！");
       navigate("/");
 
@@ -89,6 +94,8 @@ function Register() {
 
       if (error.code === "auth/email-already-in-use") {
         msg = "このメールアドレスはすでに使われています";
+      } else if (error.message) {
+        msg = error.message;
       }
 
       setErrors({ general: msg });

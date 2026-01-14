@@ -5,19 +5,24 @@ import Footer from '../components/Footer';
 import '../css/index.css';
 
 function Home() {
-  const [message, setMessage] = useState('');
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
     fetch('http://localhost:5000/api/hello')
       .then(response => response.json())
-      .then(data => setMessage(data.message))
       .catch(error => console.error('Flask API呼び出しエラー:', error));
 
-    // 商品のリストを取得
-    fetch('http://localhost:5000/api/products')
+    // 商品のリストを取得（新しいAPIレスポンス形式に対応）
+    fetch('http://localhost:5000/api/products?limit=8')
       .then(response => response.json())
-      .then(data => setProducts(data))
+      .then(data => {
+        // 新しいレスポンス形式：{ products: [...], total: 0, ... }
+        if (data.products) {
+          setProducts(data.products);
+        } else {
+          setProducts([]);
+        }
+      })
       .catch(error => console.error('Products API呼び出しエラー:', error));
   }, []);
 
@@ -28,22 +33,22 @@ function Home() {
       <main className="main-content" style={{width: '100%', maxWidth: '1200px', margin: '0 auto'}}>
         {/* ピックアップエリア */}
         <div className="pickup-area">
-          <h2>📚 本好きのためのマーケットプレイス</h2>
+          <h2>本好きのためのマーケットプレイス</h2>
           <p>あなたの大切な本を新しい読者に届けませんか？</p>
-          <p>Flaskからのメッセージ: {message}</p>
         </div>
 
         {/* カテゴリから探す */}
         <section className="section">
           <h2 className="section-title">カテゴリから探す</h2>
           <div className="categories">
-            <Link to="/search"><button className="category-btn">小説</button></Link>
-            <button className="category-btn">漫画</button>
-            <button className="category-btn">専門書</button>
-            <button className="category-btn">絵本</button>
-            <button className="category-btn">雑誌</button>
-            <button className="category-btn">洋書</button>
-            <button className="category-btn">自己啓発</button>
+            <Link to="/search?q=小説"><button className="category-btn">小説</button></Link>
+            <Link to="/search?q=漫画"><button className="category-btn">漫画</button></Link>
+            <Link to="/search?q=専門書"><button className="category-btn">専門書</button></Link>
+            <Link to="/search?q=絵本"><button className="category-btn">絵本</button></Link>
+            <Link to="/search?q=雑誌"><button className="category-btn">雑誌</button></Link>
+            <Link to="/search?q=洋書"><button className="category-btn">洋書</button></Link>
+            <Link to="/search?q=自己啓発"><button className="category-btn">自己啓発</button></Link>
+            <Link to="/search?q=その他"><button className="category-btn">その他</button></Link>
           </div>
         </section>
 
@@ -51,14 +56,15 @@ function Home() {
         <section className="section">
           <h2 className="section-title">ジャンルから探す</h2>
           <div className="genres">
-            <button className="genre-btn">ファンタジー</button>
-            <button className="genre-btn">純文学</button>
-            <button className="genre-btn">ホラー</button>
-            <button className="genre-btn">歴史</button>
-            <button className="genre-btn">童話</button>
-            <button className="genre-btn">恋愛</button>
-            <button className="genre-btn">ビジネス書</button>
-            <button className="genre-btn">自己啓発</button>
+            <Link to="/search?q=ファンタジー"><button className="genre-btn">ファンタジー</button></Link>
+            <Link to="/search?q=純文学"><button className="genre-btn">純文学</button></Link>
+            <Link to="/search?q=ホラー"><button className="genre-btn">ホラー</button></Link>
+            <Link to="/search?q=歴史"><button className="genre-btn">歴史</button></Link>
+            <Link to="/search?q=童話"><button className="genre-btn">童話</button></Link>
+            <Link to="/search?q=恋愛"><button className="genre-btn">恋愛</button></Link>
+            <Link to="/search?q=ビジネス書"><button className="genre-btn">ビジネス書</button></Link>
+            <Link to="/search?q=自己啓発"><button className="genre-btn">自己啓発</button></Link>
+            <Link to="/search?q=その他"><button className="genre-btn">その他</button></Link>
           </div>
         </section>
 
@@ -68,7 +74,7 @@ function Home() {
           <div className="book-grid">
             {products.length > 0 ? (
               products.slice(0, 4).map(product => (
-                <Link key={product.id} to={`/product/${product.id}`}>
+                <Link key={product.id} to={`/product-detail?id=${product.id}`}>
                   <div className="book-card">
                     <div className="book-image"></div>
                     <div className="book-info">
@@ -88,34 +94,21 @@ function Home() {
         <section className="section">
           <h2 className="section-title">注目の本</h2>
           <div className="book-grid">
-            <div className="book-card">
-              <div className="book-image"></div>
-              <div className="book-info">
-                <div className="book-title">ベストセラー小説</div>
-                <div className="book-price">¥1,500</div>
-              </div>
-            </div>
-            <div className="book-card">
-              <div className="book-image"></div>
-              <div className="book-info">
-                <div className="book-title">人気ビジネス書</div>
-                <div className="book-price">¥2,200</div>
-              </div>
-            </div>
-            <div className="book-card">
-              <div className="book-image"></div>
-              <div className="book-info">
-                <div className="book-title">希少な古書</div>
-                <div className="book-price">¥8,000</div>
-              </div>
-            </div>
-            <div className="book-card">
-              <div className="book-image"></div>
-              <div className="book-info">
-                <div className="book-title">人気シリーズ最新刊</div>
-                <div className="book-price">¥1,800</div>
-              </div>
-            </div>
+            {products.length > 0 ? (
+              products.slice(0, 4).map(product => (
+                <Link key={product.id} to={`/product-detail?id=${product.id}`}>
+                  <div className="book-card">
+                    <div className="book-image"></div>
+                    <div className="book-info">
+                      <div className="book-title">{product.title}</div>
+                      <div className="book-price">¥{product.price}</div>
+                    </div>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <p>Loading products...</p>
+            )}
           </div>
         </section>
 

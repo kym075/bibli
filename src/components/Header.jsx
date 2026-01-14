@@ -1,11 +1,13 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { auth } from "../css/firebase"; // firebase.js のパスに合わせて調整
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 function Header() {
   const [user, setUser] = useState(null);
-  
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const navigate = useNavigate();
+
   useEffect(() => {
     // Firebase のログイン状態を監視
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -48,20 +50,41 @@ function Header() {
     await signOut(auth);
   };
 
+  // 検索処理
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchKeyword.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchKeyword.trim())}`);
+    }
+  };
+
+  // Enterキーで検索
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch(e);
+    }
+  };
+
   return (
     <header className="header">
       <div className="header-content">
         <div className="header-left">
           <Link to="/" className="logo">Bibli</Link>
           <div className="search-bar">
-            <input type="text" placeholder="キーワードで検索..." />
+            <input
+              type="text"
+              placeholder="キーワードで検索..."
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              onKeyPress={handleKeyPress}
+            />
           </div>
         </div>
 
         <div className="header-right">
           <div className="header-buttons">
             {/* 出品ボタン（ログイン者だけ押せるなどの処理は任意） */}
-            <Link to="/listing" className="btn btn-primary">出品</Link>
+            <Link to="/products/listing" className="btn btn-primary">出品</Link>
 
             {/* ▼ログイン状態で表示切り替え */}
             {!user ? (

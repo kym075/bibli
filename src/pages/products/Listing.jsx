@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { auth } from '../../css/firebase';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/listing_page.css';
@@ -9,22 +10,109 @@ function Listing() {
   const [formData, setFormData] = useState({
     title: '',
     category: '',
+    genre: '',
     condition: '',
     description: '',
     passion: '',
-    saleType: 'normal',
+    saleType: 'fixed',
     price: '',
     shipping: ''
   });
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/products/listing-complete');
+
+    // ログインチェック
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      alert('商品を出品するにはログインが必要です');
+      navigate('/login');
+      return;
+    }
+
+    // バリデーション
+    if (!formData.title || !formData.price || !formData.category || !formData.condition) {
+      alert('必須項目を入力してください');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // ユーザーIDを取得（Firebaseのメールアドレスでデータベースから検索）
+      const userResponse = await fetch(`http://localhost:5000/api/user/${currentUser.email}`);
+      if (!userResponse.ok) {
+        throw new Error('ユーザー情報の取得に失敗しました');
+      }
+      const userData = await userResponse.json();
+
+      // 商品データを送信
+      // 注: 現在は画像アップロード機能が未実装のため、image_urlは空文字列
+      const productData = {
+        title: formData.title,
+        description: formData.description,
+        price: parseInt(formData.price),
+        condition: formData.condition,
+        sale_type: formData.saleType,
+        seller_id: userData.id,
+        category: formData.category,
+        image_url: '' // TODO: 画像アップロード機能実装後、実際の画像URLを設定
+      };
+
+      const response = await fetch('http://localhost:5000/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productData)
+      });
+
+      if (!response.ok) {
+        throw new Error('商品の出品に失敗しました');
+      }
+
+      navigate('/products/listing-complete');
+    } catch (error) {
+      console.error('Error submitting product:', error);
+      alert('商品の出品に失敗しました。もう一度お試しください。');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleImageUploadClick = () => {
+    document.getElementById('imageInput').click();
+  };
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length + selectedImages.length > 10) {
+      alert('最大10枚までアップロードできます');
+      return;
+    }
+
+    const newImages = files.map(file => ({
+      file,
+      preview: URL.createObjectURL(file)
+    }));
+
+    setSelectedImages(prev => [...prev, ...newImages]);
+  };
+
+  const removeImage = (index) => {
+    setSelectedImages(prev => {
+      const newImages = [...prev];
+      URL.revokeObjectURL(newImages[index].preview);
+      newImages.splice(index, 1);
+      return newImages;
+    });
   };
 
   return (
@@ -51,14 +139,42 @@ function Listing() {
                 <label className="form-label">出品画像<span className="required">*</span></label>
                 <div className="help-text">最大10枚まで登録できます。1枚目の画像がメイン画像として表示されます。</div>
 
-                <div className="image-upload-area" id="imageUploadArea">
+                <div className="image-upload-area" id="imageUploadArea" onClick={handleImageUploadClick} style={{cursor: 'pointer'}}>
                   <span className="upload-icon">📷</span>
                   <div className="upload-text">ファイルを選択またはドラッグ＆ドロップ</div>
                   <div className="upload-subtext">JPG, PNG, GIF (最大5MB)</div>
-                  <input type="file" className="file-input" id="imageInput" multiple accept="image/*" />
+                  <input type="file" className="file-input" id="imageInput" multiple accept="image/*" onChange={handleImageChange} style={{display: 'none'}} />
                 </div>
 
-                <div className="image-preview-container" id="imagePreviewContainer"></div>
+                <div className="image-preview-container" id="imagePreviewContainer">
+                  {selectedImages.map((image, index) => (
+                    <div key={index} style={{position: 'relative', display: 'inline-block', margin: '10px'}}>
+                      <img src={image.preview} alt={`preview-${index}`} style={{width: '150px', height: '150px', objectFit: 'cover', borderRadius: '8px'}} />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        style={{
+                          position: 'absolute',
+                          top: '5px',
+                          right: '5px',
+                          background: 'rgba(255, 0, 0, 0.8)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '25px',
+                          height: '25px',
+                          cursor: 'pointer',
+                          fontSize: '16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* 書籍タイトル */}
@@ -87,16 +203,38 @@ function Listing() {
                   required
                 >
                   <option value="">カテゴリを選択してください</option>
-                  <option value="novel">小説</option>
-                  <option value="manga">漫画</option>
-                  <option value="specialist">専門書</option>
-                  <option value="picture">絵本</option>
-                  <option value="magazine">雑誌</option>
-                  <option value="foreign">洋書</option>
-                  <option value="business">ビジネス書</option>
-                  <option value="self-help">自己啓発</option>
-                  <option value="other">その他</option>
+                  <option value="小説">小説</option>
+                  <option value="漫画">漫画</option>
+                  <option value="専門書">専門書</option>
+                  <option value="絵本">絵本</option>
+                  <option value="雑誌">雑誌</option>
+                  <option value="洋書">洋書</option>
+                  <option value="自己啓発">自己啓発</option>
+                  <option value="その他">その他</option>
                 </select>
+              </div>
+
+              {/* ジャンル */}
+              <div className="form-group">
+                <label htmlFor="genre" className="form-label">ジャンル</label>
+                <select
+                  id="genre"
+                  className="form-input form-select"
+                  value={formData.genre}
+                  onChange={handleInputChange}
+                >
+                  <option value="">ジャンルを選択してください（任意）</option>
+                  <option value="ファンタジー">ファンタジー</option>
+                  <option value="純文学">純文学</option>
+                  <option value="ホラー">ホラー</option>
+                  <option value="歴史">歴史</option>
+                  <option value="童話">童話</option>
+                  <option value="恋愛">恋愛</option>
+                  <option value="ビジネス書">ビジネス書</option>
+                  <option value="自己啓発">自己啓発</option>
+                  <option value="その他">その他</option>
+                </select>
+                <div className="help-text">より詳細な分類を指定できます。</div>
               </div>
 
               {/* 商品の状態 */}
@@ -110,12 +248,9 @@ function Listing() {
                   required
                 >
                   <option value="">状態を選択してください</option>
-                  <option value="new">新品・未使用</option>
-                  <option value="like-new">未使用に近い</option>
-                  <option value="excellent">目立った傷や汚れなし</option>
-                  <option value="good">やや傷や汚れあり</option>
-                  <option value="fair">傷や汚れあり</option>
-                  <option value="poor">全体的に状態が悪い</option>
+                  <option value="excellent">非常に良い</option>
+                  <option value="good">良い</option>
+                  <option value="fair">普通</option>
                 </select>
               </div>
 
@@ -163,13 +298,17 @@ function Listing() {
               <div className="form-group">
                 <label className="form-label">販売形式<span className="required">*</span></label>
                 <div className="radio-group">
-                  <div className="radio-option selected" data-value="normal">
-                    <input type="radio" name="saleType" value="normal" checked={formData.saleType === 'normal'} onChange={handleInputChange} />
-                    <label className="radio-label">通常販売</label>
+                  <div className="radio-option selected" data-value="fixed">
+                    <input type="radio" name="saleType" id="saleType" value="fixed" checked={formData.saleType === 'fixed'} onChange={handleInputChange} />
+                    <label className="radio-label">固定価格</label>
                   </div>
                   <div className="radio-option" data-value="auction">
                     <input type="radio" name="saleType" value="auction" checked={formData.saleType === 'auction'} onChange={handleInputChange} />
                     <label className="radio-label">オークション</label>
+                  </div>
+                  <div className="radio-option" data-value="negotiable">
+                    <input type="radio" name="saleType" value="negotiable" checked={formData.saleType === 'negotiable'} onChange={handleInputChange} />
+                    <label className="radio-label">価格交渉可</label>
                   </div>
                 </div>
               </div>
@@ -238,7 +377,9 @@ function Listing() {
 
             {/* 送信ボタン */}
             <div className="submit-section">
-              <button type="submit" className="submit-btn">📤 出品する</button>
+              <button type="submit" className="submit-btn" disabled={isSubmitting}>
+                {isSubmitting ? '出品中...' : '📤 出品する'}
+              </button>
               <div className="help-text" style={{marginTop: '1rem'}}>
                 出品後、運営による審査を経て公開されます。審査は通常24時間以内に完了します。
               </div>
