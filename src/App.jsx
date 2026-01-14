@@ -56,8 +56,8 @@ function App() {
         {/* Products */}
         <Route path="/product-detail" element={<ProductDetail />} />
         <Route path="/search" element={<SearchResults />} />
-        <Route path="/listing" element={<Listing />} />
-        <Route path="/listing-complete" element={<ListingComplete />} />
+        <Route path="/products/listing" element={<Listing />} />
+        <Route path="/products/listing-complete" element={<ListingComplete />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/purchase-complete" element={<PurchaseComplete />} />
 
