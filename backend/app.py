@@ -1,14 +1,21 @@
 # app.py
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 import jwt
 from datetime import datetime, timedelta
 import secrets
 from decimal import Decimal
+import os
+import stripe
+from dotenv import load_dotenv
  
 app = Flask(__name__)
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, ".env"))
  
 # ---------------------------
 # CORS（完全対応版）
@@ -21,6 +28,11 @@ CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost/bibli_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = secrets.token_hex(32)
+app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, os.getenv("UPLOAD_FOLDER", "uploads"))
+
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+stripe.api_key = STRIPE_SECRET_KEY
  
 db = SQLAlchemy(app)
 
@@ -32,6 +44,28 @@ FORUM_CATEGORY_LABELS = {
     "recommendation": "おすすめ",
     "review": "感想・レビュー"
 }
+
+ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
+
+
+def _allowed_image(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
+
+
+def _save_product_image(file_storage):
+    if not file_storage or not file_storage.filename:
+        return ""
+    if not _allowed_image(file_storage.filename):
+        return None
+
+    original_name = secure_filename(file_storage.filename)
+    ext = original_name.rsplit(".", 1)[1].lower()
+    unique_name = f"{secrets.token_hex(16)}.{ext}"
+    upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'products')
+    os.makedirs(upload_dir, exist_ok=True)
+    file_path = os.path.join(upload_dir, unique_name)
+    file_storage.save(file_path)
+    return f"uploads/products/{unique_name}"
  
 # ============================
 # モデル定義
@@ -75,6 +109,23 @@ class Product(db.Model):
     status = db.Column(db.SmallInteger, default=1)  # 1: 販売中, 0: 売り切れ
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Purchase(db.Model):
+    __tablename__ = "purchases"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    seller_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    buyer_email = db.Column(db.String(120))
+    amount = db.Column(db.Integer, nullable=False)
+    currency = db.Column(db.String(10), default='jpy')
+    stripe_session_id = db.Column(db.String(255), unique=True, nullable=False)
+    stripe_payment_intent_id = db.Column(db.String(255))
+    status = db.Column(db.String(30), default='paid')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    product = db.relationship('Product')
 
 
 class ForumThread(db.Model):
@@ -464,6 +515,7 @@ def get_product_detail(product_id):
             "sale_type": product.sale_type,
             "category": product.category,
             "image_url": product.image_url,
+            "status": product.status,
             "created_at": product.created_at.isoformat() if product.created_at else None,
             "seller": {
                 "id": seller.id if seller else None,
@@ -485,24 +537,50 @@ def get_product_detail(product_id):
 @app.route('/api/products', methods=['POST'])
 def create_product():
     try:
-        data = request.get_json()
+        image_url = ''
+        if request.content_type and request.content_type.startswith('multipart/form-data'):
+            data = request.form.to_dict()
+            image_file = request.files.get('image')
+            if image_file and image_file.filename:
+                image_url = _save_product_image(image_file)
+                if image_url is None:
+                    return jsonify({"error": "画像形式が不正です"}), 400
+        else:
+            data = request.get_json() or {}
+            image_url = data.get('image_url', '') or ''
 
         # 必須フィールドのバリデーション
-        required_fields = ['title', 'price', 'seller_id']
-        for field in required_fields:
-            if field not in data or not data[field]:
-                return jsonify({"error": f"{field}は必須です"}), 400
+        title = (data.get('title') or '').strip()
+        price_raw = data.get('price')
+        seller_raw = data.get('seller_id')
+
+        if not title:
+            return jsonify({"error": "titleは必須です"}), 400
+        if price_raw is None or price_raw == '':
+            return jsonify({"error": "priceは必須です"}), 400
+        if seller_raw is None or seller_raw == '':
+            return jsonify({"error": "seller_idは必須です"}), 400
+
+        try:
+            price = int(price_raw)
+        except (TypeError, ValueError):
+            return jsonify({"error": "priceは数値で入力してください"}), 400
+
+        try:
+            seller_id = int(seller_raw)
+        except (TypeError, ValueError):
+            return jsonify({"error": "seller_idは数値で入力してください"}), 400
 
         # 新しい商品を作成
         new_product = Product(
-            title=data['title'],
+            title=title,
             description=data.get('description', ''),
-            price=data['price'],
+            price=price,
             condition=data.get('condition', 'good'),
             sale_type=data.get('sale_type', 'fixed'),
-            seller_id=data['seller_id'],
+            seller_id=seller_id,
             category=data.get('category', ''),
-            image_url=data.get('image_url', ''),
+            image_url=image_url,
             status=1
         )
 
@@ -656,6 +734,51 @@ def cleanup_blob_urls():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+
+# ============================
+# 出品取り消し
+# ============================
+@app.route('/api/products/<int:product_id>/cancel', methods=['POST'])
+def cancel_product(product_id):
+    data = request.get_json() or {}
+    seller_email = (data.get('seller_email') or '').strip()
+    if not seller_email:
+        return jsonify({"error": "seller_email が必要です"}), 400
+
+    user = User.query.filter_by(email=seller_email).first()
+    if not user:
+        return jsonify({"error": "ユーザーが見つかりません"}), 404
+
+    product = Product.query.get(product_id)
+    if not product:
+        return jsonify({"error": "商品が見つかりません"}), 404
+
+    if product.seller_id != user.id:
+        return jsonify({"error": "出品者のみ取り消しできます"}), 403
+
+    if product.status != 1:
+        return jsonify({"error": "販売中の商品ではありません"}), 400
+
+    existing_purchase = Purchase.query.filter_by(product_id=product.id).first()
+    if existing_purchase:
+        return jsonify({"error": "購入済みのため取り消しできません"}), 400
+
+    product.status = 0
+    product.updated_at = datetime.utcnow()
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "取り消しに失敗しました", "detail": str(e)}), 500
+
+    return jsonify({"message": "出品を取り消しました"}), 200
+
+
+@app.route('/uploads/<path:filename>')
+def serve_upload(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
 # ============================
@@ -998,6 +1121,192 @@ def unfollow_user():
         return jsonify({"error": "フォロー解除に失敗しました", "detail": str(e)}), 500
 
     return jsonify({"message": "フォロー解除しました"}), 200
+
+
+# ============================
+# Stripe 決済
+# ============================
+def _format_purchase_response(purchase, product):
+    return {
+        "purchase": {
+            "id": purchase.id,
+            "product_id": purchase.product_id,
+            "seller_id": purchase.seller_id,
+            "buyer_email": purchase.buyer_email,
+            "amount": purchase.amount,
+            "currency": purchase.currency,
+            "stripe_session_id": purchase.stripe_session_id,
+            "stripe_payment_intent_id": purchase.stripe_payment_intent_id,
+            "status": purchase.status,
+            "created_at": purchase.created_at.isoformat() if purchase.created_at else None
+        },
+        "product": {
+            "id": product.id,
+            "title": product.title,
+            "price": product.price,
+            "category": product.category,
+            "condition": product.condition
+        } if product else None
+    }
+
+
+def _upsert_purchase_from_session(session):
+    session_id = session.get('id')
+    if not session_id:
+        return None, None
+
+    existing = Purchase.query.filter_by(stripe_session_id=session_id).first()
+    if existing:
+        product = Product.query.get(existing.product_id)
+        return existing, product
+
+    metadata = session.get('metadata') or {}
+    product_id = metadata.get('product_id')
+    if not product_id:
+        return None, None
+
+    product = Product.query.get(int(product_id))
+    if not product:
+        return None, None
+
+    amount_total = session.get('amount_total')
+    if amount_total is None:
+        amount_total = product.price
+
+    purchase = Purchase(
+        product_id=product.id,
+        seller_id=product.seller_id,
+        buyer_email=session.get('customer_email'),
+        amount=int(amount_total),
+        currency=session.get('currency') or 'jpy',
+        stripe_session_id=session_id,
+        stripe_payment_intent_id=session.get('payment_intent'),
+        status=session.get('payment_status') or 'paid'
+    )
+
+    db.session.add(purchase)
+    if product.status == 1:
+        product.status = 0
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return None, product
+
+    return purchase, product
+
+
+@app.route('/api/stripe/create-checkout-session', methods=['POST'])
+def create_checkout_session():
+    if not STRIPE_SECRET_KEY:
+        return jsonify({"error": "STRIPE_SECRET_KEY が設定されていません"}), 500
+
+    data = request.get_json() or {}
+    product_id = data.get('product_id')
+    origin = (data.get('origin') or '').strip()
+    customer_email = (data.get('customer_email') or '').strip() or None
+
+    if not product_id:
+        return jsonify({"error": "product_id が必要です"}), 400
+    if not origin:
+        return jsonify({"error": "origin が必要です"}), 400
+
+    product = Product.query.filter_by(id=product_id, status=1).first()
+    if not product:
+        return jsonify({"error": "商品が見つかりません"}), 404
+
+    if buyer_email and product.seller_id:
+        buyer = User.query.filter_by(email=buyer_email).first()
+        if buyer and buyer.id == product.seller_id:
+            return jsonify({"error": "自分の商品は購入できません"}), 400
+
+    description = (product.description or '').strip()
+    if len(description) > 200:
+        description = f"{description[:200]}..."
+
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            mode='payment',
+            line_items=[{
+                'price_data': {
+                    'currency': 'jpy',
+                    'unit_amount': int(product.price),
+                    'product_data': {
+                        'name': product.title,
+                        'description': description or None
+                    }
+                },
+                'quantity': 1
+            }],
+            success_url=f"{origin}/products/purchase-complete?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{origin}/checkout?product_id={product.id}",
+            customer_email=customer_email,
+            metadata={
+                'product_id': str(product.id),
+                'seller_id': str(product.seller_id or '')
+            }
+        )
+    except Exception as e:
+        return jsonify({"error": "決済セッション作成に失敗しました", "detail": str(e)}), 500
+
+    return jsonify({
+        "id": session.id,
+        "url": session.url
+    }), 200
+
+
+@app.route('/api/stripe/webhook', methods=['POST'])
+def stripe_webhook():
+    if not STRIPE_WEBHOOK_SECRET:
+        return jsonify({"error": "STRIPE_WEBHOOK_SECRET が設定されていません"}), 400
+
+    payload = request.get_data()
+    sig_header = request.headers.get('Stripe-Signature')
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload=payload,
+            sig_header=sig_header,
+            secret=STRIPE_WEBHOOK_SECRET
+        )
+    except ValueError:
+        return jsonify({"error": "不正なペイロード"}), 400
+    except stripe.error.SignatureVerificationError:
+        return jsonify({"error": "署名検証に失敗しました"}), 400
+
+    if event.get('type') == 'checkout.session.completed':
+        session = event['data']['object']
+        _upsert_purchase_from_session(session)
+
+    return jsonify({"status": "success"}), 200
+
+
+@app.route('/api/purchases/session/<session_id>', methods=['GET'])
+def get_purchase_by_session(session_id):
+    if not STRIPE_SECRET_KEY:
+        return jsonify({"error": "STRIPE_SECRET_KEY が設定されていません"}), 500
+
+    purchase = Purchase.query.filter_by(stripe_session_id=session_id).first()
+    if purchase:
+        product = Product.query.get(purchase.product_id)
+        return jsonify(_format_purchase_response(purchase, product)), 200
+
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+    except Exception as e:
+        return jsonify({"error": "セッション取得に失敗しました", "detail": str(e)}), 500
+
+    payment_status = session.get('payment_status')
+    if payment_status != 'paid':
+        return jsonify({"status": payment_status or "pending"}), 200
+
+    purchase, product = _upsert_purchase_from_session(session)
+    if not purchase:
+        return jsonify({"error": "購入情報の作成に失敗しました"}), 500
+
+    return jsonify(_format_purchase_response(purchase, product)), 200
 
 
 # ============================

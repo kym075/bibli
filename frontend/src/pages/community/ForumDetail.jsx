@@ -17,6 +17,7 @@ function ForumDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [hasLikedThread, setHasLikedThread] = useState(false);
@@ -54,10 +55,14 @@ function ForumDetail() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
+      setAuthChecked(true);
+      if (!user) {
+        navigate('/login');
+      }
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const fetchThread = async () => {
     if (!resolvedThreadId) {
@@ -90,8 +95,9 @@ function ForumDetail() {
   };
 
   useEffect(() => {
+    if (!currentUser) return;
     fetchThread();
-  }, [resolvedThreadId]);
+  }, [resolvedThreadId, currentUser]);
 
   useEffect(() => {
     const followerEmail = currentUser?.email;
@@ -141,6 +147,10 @@ function ForumDetail() {
 
   const handleLike = async () => {
     if (!thread) return;
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
     const nextLiked = !hasLikedThread;
     setIsLiking(true);
     try {
@@ -171,6 +181,10 @@ function ForumDetail() {
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
     if (!commentInput.trim() || !thread) return;
 
     const currentUser = auth.currentUser;
@@ -208,6 +222,10 @@ function ForumDetail() {
   };
 
   const handleCommentLike = async (commentId) => {
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
     const nextLiked = !likedComments[commentId];
     try {
       const action = nextLiked ? 'like' : 'unlike';
@@ -271,7 +289,7 @@ function ForumDetail() {
     }
   };
 
-  if (loading) {
+  if (!authChecked || loading) {
     return (
       <>
         <Header />
@@ -341,7 +359,7 @@ function ForumDetail() {
 
           <div className="original-post">
             <div className="post-author">
-              <div className="author-avatar">??</div>
+              <div className="author-avatar">USER</div>
               <div className="author-info">
                 <div className="author-name">{thread.author_name}</div>
                 <div className="author-badge">投稿者</div>
@@ -390,7 +408,7 @@ function ForumDetail() {
           {comments.map((comment) => (
             <div className="comment-item fade-in" key={comment.id}>
               <div className="comment-header">
-                <div className="comment-avatar">??</div>
+                <div className="comment-avatar">USER</div>
                 <div className="comment-author">
                   <div className="comment-author-name">{comment.author_name}</div>
                   <div className="comment-time">{getRelativeTime(comment.created_at)}</div>

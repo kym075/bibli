@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { auth } from '../../css/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/forum_post.css';
@@ -16,12 +17,29 @@ function ForumPost() {
   const [contentCount, setContentCount] = useState(0);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setAuthChecked(true);
+      if (!user) {
+        navigate('/login');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
 
-    const currentUser = auth.currentUser;
     const authorName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'ゲスト';
     const authorEmail = currentUser?.email || '';
 
@@ -66,12 +84,28 @@ function ForumPost() {
     }
   };
 
+  if (!authChecked) {
+    return (
+      <>
+        <Header />
+        <main className="main-content">
+          <p>読み込み中...</p>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  if (!currentUser) {
+    return null;
+  }
+
   return (
     <>
       <Header />
       <main className="main-content">
         <div className="page-header">
-          <h1 className="page-title">?? 新しいトピックを投稿する</h1>
+          <h1 className="page-title">新しいトピックを投稿する</h1>
           <p className="page-description">本について語り合い、コミュニティを盛り上げましょう</p>
         </div>
 

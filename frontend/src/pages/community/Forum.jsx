@@ -1,5 +1,7 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { auth } from '../../css/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/forum.css';
@@ -17,6 +19,7 @@ const CATEGORY_LABELS = {
 const CATEGORY_ORDER = ['all', 'chat', 'question', 'discussion', 'recruitment', 'recommendation', 'review'];
 
 function Forum() {
+  const navigate = useNavigate();
   const [threads, setThreads] = useState([]);
   const [category, setCategory] = useState('all');
   const [sort, setSort] = useState('newest');
@@ -24,6 +27,8 @@ function Forum() {
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   const fetchThreads = async () => {
     setLoading(true);
@@ -58,8 +63,21 @@ function Forum() {
   };
 
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setAuthChecked(true);
+      if (!user) {
+        navigate('/login');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!currentUser) return;
     fetchThreads();
-  }, [category, sort, currentPage]);
+  }, [currentUser, category, sort, currentPage]);
 
   const handleCategoryChange = (value) => {
     setCategory(value);
@@ -99,6 +117,22 @@ function Forum() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
+
+  if (!authChecked) {
+    return (
+      <>
+        <Header />
+        <main className="main-content">
+          <p>読み込み中...</p>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  if (!currentUser) {
+    return null;
+  }
 
   return (
     <>
@@ -160,7 +194,7 @@ function Forum() {
                     <span className={`thread-category category-${thread.category}`}>
                       {thread.category_label || CATEGORY_LABELS[thread.category]}
                     </span>
-                    <span className="thread-author">?? {thread.author_name}</span>
+                    <span className="thread-author">{thread.author_name}</span>
                     <span className="thread-time">{getRelativeTime(thread.created_at)}</span>
                   </div>
                   <h3 className="thread-title">{thread.title}</h3>
