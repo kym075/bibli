@@ -1,206 +1,185 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/forum.css';
 
+const CATEGORY_LABELS = {
+  all: 'すべて',
+  chat: '雑談',
+  question: '質問',
+  discussion: '考察',
+  recruitment: '募集',
+  recommendation: 'おすすめ',
+  review: '感想・レビュー'
+};
+
+const CATEGORY_ORDER = ['all', 'chat', 'question', 'discussion', 'recruitment', 'recommendation', 'review'];
+
 function Forum() {
-  const navigate = useNavigate();
+  const [threads, setThreads] = useState([]);
+  const [category, setCategory] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const fetchThreads = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const params = new URLSearchParams();
+      if (category && category !== 'all') {
+        params.append('category', category);
+      }
+      params.append('page', currentPage);
+      params.append('limit', 10);
+
+      const response = await fetch(`http://localhost:5000/api/forum/threads?${params}`);
+      const data = await response.json();
+      if (response.ok) {
+        setThreads(data.threads || []);
+        setTotalPages(data.total_pages || 1);
+      } else {
+        setThreads([]);
+        setError(data.error || '掲示板の取得に失敗しました');
+      }
+    } catch (err) {
+      console.error('Forum fetch error:', err);
+      setThreads([]);
+      setError('掲示板の取得に失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchThreads();
+  }, [category, currentPage]);
+
+  const handleCategoryChange = (value) => {
+    setCategory(value);
+    setCurrentPage(1);
+  };
+
+  const getPreviewText = (content) => {
+    if (!content) return '';
+    const trimmed = content.replace(/\s+/g, ' ').trim();
+    if (trimmed.length <= 120) return trimmed;
+    return `${trimmed.slice(0, 120)}...`;
+  };
+
+  const getRelativeTime = (dateString) => {
+    if (!dateString) return '';
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 60) return `${diffMins}分前`;
+    if (diffHours < 24) return `${diffHours}時間前`;
+    if (diffDays < 7) return `${diffDays}日前`;
+    return `${Math.floor(diffDays / 7)}週間前`;
+  };
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   return (
     <>
       <Header />
       <main className="main-content">
-        {/* ページヘッダー */}
         <div className="page-header fade-in">
-          <h1 className="page-title">📖 掲示板</h1>
+          <h1 className="page-title">?? 掲示板</h1>
           <p className="page-subtitle">「本好きの熱量で繋がる」コミュニティ</p>
           <p className="page-description">本について語り合い、新しい発見や出会いを見つけましょう</p>
         </div>
 
-        {/* オンラインユーザー */}
-        <div className="online-users fade-in">
-          <div className="online-title">現在オンライン (24人)</div>
-          <div className="user-avatars">
-            <div className="user-avatar" data-name="本の虫">📚</div>
-            <div className="user-avatar" data-name="読書家A">🐱</div>
-            <div className="user-avatar" data-name="ミステリー好き">🔍</div>
-            <div className="user-avatar" data-name="古典愛好者">📜</div>
-            <div className="user-avatar" data-name="SF読者">🚀</div>
-            <div className="user-avatar" data-name="詩集コレクター">🌸</div>
-            <div className="user-avatar" data-name="ビジネス書読み">💼</div>
-            <div className="user-avatar" data-name="漫画オタク">🎨</div>
-            <div className="user-avatar" data-name="哲学者">🤔</div>
-            <div className="user-avatar" data-name="+15人">+15</div>
-          </div>
-        </div>
-
-        {/* 新規投稿ボタン */}
         <div className="post-action">
           <Link to="/forum-post">
             <button className="new-post-btn" id="newPostBtn">新しいトピックを投稿する</button>
           </Link>
         </div>
 
-        {/* フォーラムコンテナ */}
         <div className="forum-container fade-in">
-          {/* カテゴリフィルター */}
           <div className="category-filter">
-            <div className="filter-title">📂 カテゴリで絞り込み</div>
+            <div className="filter-title">?? カテゴリで絞り込み</div>
             <div className="category-tags">
-              <div className="category-tag active" data-category="all">すべて</div>
-              <div className="category-tag" data-category="chat">雑談</div>
-              <div className="category-tag" data-category="question">質問</div>
-              <div className="category-tag" data-category="discussion">考察</div>
-              <div className="category-tag" data-category="recruitment">募集</div>
-              <div className="category-tag" data-category="recommendation">おすすめ</div>
-              <div className="category-tag" data-category="review">感想・レビュー</div>
+              {CATEGORY_ORDER.map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`category-tag ${category === key ? 'active' : ''}`}
+                  data-category={key}
+                  onClick={() => handleCategoryChange(key)}
+                >
+                  {CATEGORY_LABELS[key]}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* スレッド一覧 */}
           <div className="thread-list">
-            {/* 人気スレッド */}
-            <div className="thread-item chat">
-              <div className="hot-badge">HOT</div>
-              <div className="thread-header">
-                <span className="thread-category category-chat">雑談</span>
-                <span className="thread-author">👤 本の虫さん</span>
-                <span className="thread-time">5分前</span>
-              </div>
-              <h3 className="thread-title">○○先生の新作、読んだ人いる？</h3>
-              <p className="thread-preview">今日発売された○○先生の最新作を早速読み終えました！感想を語り合いませんか？ネタバレ注意でお願いします...</p>
-              <div className="thread-stats">
-                <span className="stat-item comments-stat">15 コメント</span>
-                <span className="stat-item likes-stat">23 いいね</span>
-                <span className="stat-item views-stat">127 閲覧</span>
-              </div>
-            </div>
-
-            {/* 質問スレッド */}
-            <Link to="/forum/1">
-              <div className="thread-item question">
-                <div className="thread-header">
-                  <span className="thread-category category-question">質問</span>
-                  <span className="thread-author">👤 読書初心者さん</span>
-                  <span className="thread-time">1時間前</span>
+            {loading && <p>読み込み中...</p>}
+            {!loading && error && <p>{error}</p>}
+            {!loading && !error && threads.length === 0 && (
+              <p>投稿がまだありません。最初のトピックを投稿してみましょう。</p>
+            )}
+            {!loading && !error && threads.map((thread) => (
+              <Link to={`/forum/${thread.id}`} key={thread.id} className="thread-link">
+                <div className={`thread-item ${thread.category}`}>
+                  <div className="thread-header">
+                    <span className={`thread-category category-${thread.category}`}>
+                      {thread.category_label || CATEGORY_LABELS[thread.category]}
+                    </span>
+                    <span className="thread-author">?? {thread.author_name}</span>
+                    <span className="thread-time">{getRelativeTime(thread.created_at)}</span>
+                  </div>
+                  <h3 className="thread-title">{thread.title}</h3>
+                  <p className="thread-preview">{getPreviewText(thread.content)}</p>
+                  <div className="thread-stats">
+                    <span className="stat-item comments-stat">{thread.comment_count || 0} コメント</span>
+                    <span className="stat-item likes-stat">{thread.like_count || 0} いいね</span>
+                    <span className="stat-item views-stat">{thread.view_count || 0} 閲覧</span>
+                  </div>
                 </div>
-                <h3 className="thread-title">確か主人公が猫で...うろ覚えの本を探しています</h3>
-                <p className="thread-preview">昔読んだ本を探しているのですが、タイトルが思い出せません。主人公が猫で、飼い主の家で起こる出来事を描いた小説だったと思います...</p>
-                <div className="thread-stats">
-                  <span className="stat-item comments-stat">1 コメント</span>
-                  <span className="stat-item likes-stat">8 いいね</span>
-                  <span className="stat-item views-stat">45 閲覧</span>
-                </div>
-              </div>
-            </Link>
-
-            {/* 考察スレッド */}
-            <div className="thread-item discussion">
-              <div className="thread-header">
-                <span className="thread-category category-discussion">考察</span>
-                <span className="thread-author">👤 ミステリー好きさん</span>
-                <span className="thread-time">3時間前</span>
-              </div>
-              <h3 className="thread-title">あのミステリーの伏線について語りたい</h3>
-              <p className="thread-preview">「××の事件」シリーズの最新作を読み返していて、第1作目に仕込まれていた伏線に気づきました。皆さんはどう思いますか？...</p>
-              <div className="thread-stats">
-                <span className="stat-item comments-stat">42 コメント</span>
-                <span className="stat-item likes-stat">67 いいね</span>
-                <span className="stat-item views-stat">234 閲覧</span>
-              </div>
-            </div>
-
-            {/* 募集スレッド */}
-            <div className="thread-item recruitment">
-              <div className="new-badge">NEW</div>
-              <div className="thread-header">
-                <span className="thread-category category-recruitment">募集</span>
-                <span className="thread-author">👤 読書会主催者さん</span>
-                <span className="thread-time">1日前</span>
-              </div>
-              <h3 className="thread-title">一緒に読書会しませんか？</h3>
-              <p className="thread-preview">来月、都内で読書会を開催予定です。テーマは「現代文学」で、参加者同士で本を紹介し合う予定です。興味のある方はぜひ...</p>
-              <div className="thread-stats">
-                <span className="stat-item comments-stat">8 コメント</span>
-                <span className="stat-item likes-stat">15 いいね</span>
-                <span className="stat-item views-stat">89 閲覧</span>
-              </div>
-            </div>
-
-            {/* 追加のスレッド */}
-            <div className="thread-item chat">
-              <div className="thread-header">
-                <span className="thread-category category-chat">雑談</span>
-                <span className="thread-author">👤 古典愛好者さん</span>
-                <span className="thread-time">2日前</span>
-              </div>
-              <h3 className="thread-title">今読んでいる本を教えて！</h3>
-              <p className="thread-preview">皆さんが今読んでいる本を教えてください。私は夏目漱石の「こころ」を読み返しているところです...</p>
-              <div className="thread-stats">
-                <span className="stat-item comments-stat">28 コメント</span>
-                <span className="stat-item likes-stat">34 いいね</span>
-                <span className="stat-item views-stat">156 閲覧</span>
-              </div>
-            </div>
-
-            <div className="thread-item question">
-              <div className="thread-header">
-                <span className="thread-category category-question">質問</span>
-                <span className="thread-author">👤 SF読者さん</span>
-                <span className="thread-time">3日前</span>
-              </div>
-              <h3 className="thread-title">SFの名作を教えてください</h3>
-              <p className="thread-preview">最近SFに興味を持ち始めました。初心者におすすめの名作があれば教えてください。どんなジャンルでも構いません...</p>
-              <div className="thread-stats">
-                <span className="stat-item comments-stat">19 コメント</span>
-                <span className="stat-item likes-stat">22 いいね</span>
-                <span className="stat-item views-stat">98 閲覧</span>
-              </div>
-            </div>
-
-            <div className="thread-item discussion">
-              <div className="thread-header">
-                <span className="thread-category category-discussion">考察</span>
-                <span className="thread-author">👤 哲学者さん</span>
-                <span className="thread-time">4日前</span>
-              </div>
-              <h3 className="thread-title">村上春樹作品の共通テーマについて</h3>
-              <p className="thread-preview">村上春樹の作品を読み返していて、共通するテーマがいくつかあることに気づきました。皆さんはどう感じますか？...</p>
-              <div className="thread-stats">
-                <span className="stat-item comments-stat">35 コメント</span>
-                <span className="stat-item likes-stat">48 いいね</span>
-                <span className="stat-item views-stat">201 閲覧</span>
-              </div>
-            </div>
-
-            <div className="thread-item recruitment">
-              <div className="thread-header">
-                <span className="thread-category category-recruitment">募集</span>
-                <span className="thread-author">👤 ビジネス書読みさん</span>
-                <span className="thread-time">5日前</span>
-              </div>
-              <h3 className="thread-title">ビジネス書の読書会メンバー募集</h3>
-              <p className="thread-preview">月1回、ビジネス書について語り合う読書会のメンバーを募集しています。オンライン開催予定です...</p>
-              <div className="thread-stats">
-                <span className="stat-item comments-stat">12 コメント</span>
-                <span className="stat-item likes-stat">18 いいね</span>
-                <span className="stat-item views-stat">76 閲覧</span>
-              </div>
-            </div>
+              </Link>
+            ))}
           </div>
 
-          {/* ページネーション */}
-          <div className="pagination">
-            <a href="#" className="pagination-btn disabled">« 前へ</a>
-            <a href="#" className="pagination-btn active">1</a>
-            <a href="#" className="pagination-btn">2</a>
-            <a href="#" className="pagination-btn">3</a>
-            <a href="#" className="pagination-btn">4</a>
-            <a href="#" className="pagination-btn">5</a>
-            <span className="pagination-btn disabled">...</span>
-            <a href="#" className="pagination-btn">12</a>
-            <a href="#" className="pagination-btn">次へ »</a>
-          </div>
+          {totalPages > 1 && (
+            <div className="pagination">
+              <button
+                className={`pagination-btn ${currentPage === 1 ? 'disabled' : ''}`}
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                ≪ 前へ
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 7).map((page) => (
+                <button
+                  key={page}
+                  className={`pagination-btn ${page === currentPage ? 'active' : ''}`}
+                  onClick={() => goToPage(page)}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                className={`pagination-btn ${currentPage === totalPages ? 'disabled' : ''}`}
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                次へ ≫
+              </button>
+            </div>
+          )}
         </div>
       </main>
       <Footer />

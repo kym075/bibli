@@ -1,8 +1,18 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { auth } from '../../css/firebase';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/forum_post.css';
+
+const CATEGORY_LABELS = {
+  chat: '雑談',
+  question: '質問',
+  discussion: '考察',
+  recruitment: '募集',
+  recommendation: 'おすすめ',
+  review: '感想・レビュー'
+};
 
 function ForumPost() {
   const navigate = useNavigate();
@@ -13,10 +23,45 @@ function ForumPost() {
   });
   const [titleCount, setTitleCount] = useState(0);
   const [contentCount, setContentCount] = useState(0);
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/forum');
+    setError('');
+
+    const currentUser = auth.currentUser;
+    const authorName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'ゲスト';
+    const authorEmail = currentUser?.email || '';
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/forum/threads', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          category: formData.category,
+          title: formData.title.trim(),
+          content: formData.content.trim(),
+          author_name: authorName,
+          author_email: authorEmail
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        navigate(`/forum/${data.thread_id}`);
+      } else {
+        setError(data.error || '投稿に失敗しました');
+      }
+    } catch (err) {
+      console.error('Forum post error:', err);
+      setError('投稿に失敗しました');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -34,25 +79,22 @@ function ForumPost() {
     <>
       <Header />
       <main className="main-content">
-        {/* ページヘッダー */}
         <div className="page-header">
-          <h1 className="page-title">✏️ 新しいトピックを投稿する</h1>
+          <h1 className="page-title">?? 新しいトピックを投稿する</h1>
           <p className="page-description">本について語り合い、コミュニティを盛り上げましょう</p>
         </div>
 
-        {/* ブレッドクラム */}
         <div className="breadcrumb">
           <Link to="/forum" className="back-btn" id="backToForum">掲示板一覧へ戻る</Link>
         </div>
 
-        {/* フォームコンテナ */}
         <div className="form-container">
           <div className="success-message" id="successMessage">
             投稿が完了しました！掲示板一覧で確認できます。
           </div>
+          {error && <div className="error-message">{error}</div>}
 
           <form id="postForm" onSubmit={handleSubmit}>
-            {/* カテゴリ選択 */}
             <div className="form-group">
               <label htmlFor="category" className="form-label">
                 カテゴリ<span className="required">*</span>
@@ -75,7 +117,6 @@ function ForumPost() {
               <div className="help-text">投稿内容に最も適したカテゴリを選択してください。</div>
             </div>
 
-            {/* カテゴリ説明 */}
             <div className="category-descriptions">
               <h4>カテゴリの説明</h4>
               <div className="category-list">
@@ -124,7 +165,6 @@ function ForumPost() {
               </div>
             </div>
 
-            {/* タイトル入力 */}
             <div className="form-group">
               <label htmlFor="title" className="form-label">
                 タイトル<span className="required">*</span>
@@ -147,7 +187,6 @@ function ForumPost() {
               </div>
             </div>
 
-            {/* 本文入力 */}
             <div className="form-group">
               <label htmlFor="content" className="form-label">
                 本文<span className="required">*</span>
@@ -155,7 +194,7 @@ function ForumPost() {
               <textarea
                 id="content"
                 className="form-textarea"
-                placeholder="投稿内容を詳しく書いてください...&#10;&#10;例：&#10;子供の頃に読んだ本なのですが、どうしてもタイトルが思い出せません。&#10;記憶にあるのは以下の内容です：&#10;&#10;• 主人公が猫（確か黒い猫だったような...）&#10;• 飼い主の家で起こる日常を描いた小説&#10;• 猫の視点から人間の世界を観察する内容&#10;• 確か有名な作家さんの作品だったと思います&#10;&#10;何か心当たりがある方はいらっしゃいませんか？"
+                placeholder="投稿内容を詳しく書いてください...&#10;&#10;例：&#10;子供の頃に読んだ本なのですが、どうしてもタイトルが思い出せません。&#10;記憶にあるのは以下の内容です：&#10;&#10;? 主人公が猫（確か黒い猫だったような...）&#10;? 飼い主の家で起こる日常を描いた小説&#10;? 猫の視点から人間の世界を観察する内容&#10;? 確か有名な作家さんの作品だったと思います&#10;&#10;何か心当たりがある方はいらっしゃいませんか？"
                 maxLength="2000"
                 value={formData.content}
                 onChange={handleInputChange}
@@ -169,13 +208,14 @@ function ForumPost() {
               </div>
             </div>
 
-            {/* プレビューセクション */}
             <div className="preview-section">
               <div className="preview-title">投稿プレビュー</div>
               <div className="preview-container" id="previewContainer">
                 <div className="preview-header">
-                  <div className="preview-category" id="previewCategory">カテゴリ</div>
-                  <div className="preview-author">👤 あなた - 今</div>
+                  <div className="preview-category" id="previewCategory">
+                    {CATEGORY_LABELS[formData.category] || 'カテゴリ'}
+                  </div>
+                  <div className="preview-author">?? あなた - 今</div>
                 </div>
                 <div className="preview-thread-title" id="previewTitle">
                   {formData.title || 'タイトルをここに入力してください'}
@@ -186,22 +226,21 @@ function ForumPost() {
               </div>
             </div>
 
-            {/* 送信ボタン */}
             <div className="submit-section">
               <button
                 type="submit"
                 className="submit-btn"
                 id="submitBtn"
-                disabled={!formData.category || !formData.title || !formData.content}
+                disabled={!formData.category || !formData.title || !formData.content || isSubmitting}
               >
-                投稿する
+                {isSubmitting ? '投稿中...' : '投稿する'}
               </button>
               <div className="draft-actions">
                 <button type="button" className="draft-btn" id="saveDraftBtn">
-                  💾 下書き保存
+                  ?? 下書き保存
                 </button>
                 <button type="button" className="draft-btn" id="loadDraftBtn">
-                  📂 下書きを読み込む
+                  ?? 下書きを読み込む
                 </button>
               </div>
             </div>
