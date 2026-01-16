@@ -23,6 +23,15 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = secrets.token_hex(32)
  
 db = SQLAlchemy(app)
+
+FORUM_CATEGORY_LABELS = {
+    "chat": "雑談",
+    "question": "質問",
+    "discussion": "考察",
+    "recruitment": "募集",
+    "recommendation": "おすすめ",
+    "review": "感想・レビュー"
+}
  
 # ============================
 # モデル定義
@@ -66,6 +75,35 @@ class Product(db.Model):
     status = db.Column(db.SmallInteger, default=1)  # 1: 販売中, 0: 売り切れ
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class ForumThread(db.Model):
+    __tablename__ = "forum_threads"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    category = db.Column(db.String(50), nullable=False)
+    title = db.Column(db.String(255), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    author_name = db.Column(db.String(100), nullable=False)
+    author_email = db.Column(db.String(120))
+    view_count = db.Column(db.Integer, default=0)
+    like_count = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class ForumComment(db.Model):
+    __tablename__ = "forum_comments"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    thread_id = db.Column(db.Integer, db.ForeignKey('forum_threads.id'), nullable=False)
+    author_name = db.Column(db.String(100), nullable=False)
+    author_email = db.Column(db.String(120))
+    content = db.Column(db.Text, nullable=False)
+    like_count = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    thread = db.relationship('ForumThread', backref=db.backref('comments', cascade='all, delete-orphan'))
  
  
 # ============================
@@ -203,17 +241,38 @@ def get_profile(email):
         return jsonify({"error": "ユーザーが見つかりません"}), 404
 
     return jsonify({
+        "id": user.id,
         "user_id": user.user_id,
-        "user_name": user.user_name or user.name,  # user_nameがない場合nameを使用
+        "user_name": user.user_name or user.name,
         "email": user.email,
         "profile_image": user.profile_image,
         "bio": user.bio,
         "address": user.address,
-        "phone_number": user.phone_number or user.phone,  # phone_numberがない場合phoneを使用
+        "phone_number": user.phone_number or user.phone,
         "birth_date": user.birth_date,
-        "real_name": user.real_name or user.name,  # real_nameがない場合nameを使用
+        "real_name": user.real_name or user.name,
         "created_at": user.created_at.isoformat() if user.created_at else None,
         "status": user.status
+    }), 200
+
+
+# ============================
+# プロフィール取得（user_idで検索）
+# ============================
+@app.route('/api/profile/id/<user_id>', methods=['GET'])
+def get_profile_by_id(user_id):
+    user = User.query.filter_by(user_id=user_id).first()
+    if not user:
+        return jsonify({"error": "ユーザーが見つかりません"}), 404
+
+    return jsonify({
+        "id": user.id,
+        "user_id": user.user_id,
+        "user_name": user.user_name or user.name,
+        "email": user.email,
+        "profile_image": user.profile_image,
+        "bio": user.bio,
+        "created_at": user.created_at.isoformat() if user.created_at else None
     }), 200
 
 
@@ -399,6 +458,7 @@ def get_product_detail(product_id):
             "created_at": product.created_at.isoformat() if product.created_at else None,
             "seller": {
                 "id": seller.id if seller else None,
+                "user_id": seller.user_id if seller else None,
                 "user_name": seller.user_name if seller else "不明",
                 "profile_image": seller.profile_image if seller else None
             } if seller else None
@@ -587,6 +647,238 @@ def cleanup_blob_urls():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+
+# ============================
+# 掲示板 API
+# ============================
+@app.route('/api/forum/threads', methods=['GET'])
+def get_forum_threads():
+    try:
+        category = request.args.get('category', '').strip()
+        sort = request.args.get('sort', 'newest').strip()
+        page = request.args.get('page', 1, type=int)
+        limit = request.args.get('limit', 20, type=int)
+
+        query = ForumThread.query
+        if category and category != 'all':
+            query = query.filter(ForumThread.category == category)
+
+        if sort == 'popular':
+            query = query.order_by(
+                ForumThread.like_count.desc(),
+                ForumThread.view_count.desc(),
+                ForumThread.created_at.desc()
+            )
+        else:
+            query = query.order_by(ForumThread.created_at.desc())
+
+        total = query.count()
+        offset = (page - 1) * limit
+        threads = query.offset(offset).limit(limit).all()
+
+        thread_ids = [thread.id for thread in threads]
+        comment_counts = {}
+        if thread_ids:
+            rows = (
+                db.session.query(ForumComment.thread_id, db.func.count(ForumComment.id))
+                .filter(ForumComment.thread_id.in_(thread_ids))
+                .group_by(ForumComment.thread_id)
+                .all()
+            )
+            comment_counts = {thread_id: count for thread_id, count in rows}
+
+        result = {
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "total_pages": (total + limit - 1) // limit,
+            "threads": [
+                {
+                    "id": thread.id,
+                    "category": thread.category,
+                    "category_label": FORUM_CATEGORY_LABELS.get(thread.category, thread.category),
+                    "title": thread.title,
+                    "content": thread.content,
+                    "author_name": thread.author_name,
+                    "author_email": thread.author_email,
+                    "created_at": thread.created_at.isoformat() if thread.created_at else None,
+                    "updated_at": thread.updated_at.isoformat() if thread.updated_at else None,
+                    "view_count": thread.view_count or 0,
+                    "like_count": thread.like_count or 0,
+                    "comment_count": comment_counts.get(thread.id, 0)
+                }
+                for thread in threads
+            ]
+        }
+
+        return jsonify(result), 200
+    except Exception as e:
+        print(f"Forum list API error: {e}")
+        return jsonify({"error": str(e), "threads": [], "total": 0}), 200
+
+
+@app.route('/api/forum/threads', methods=['POST'])
+def create_forum_thread():
+    data = request.get_json() or {}
+
+    category = (data.get('category') or '').strip()
+    title = (data.get('title') or '').strip()
+    content = (data.get('content') or '').strip()
+    author_name = (data.get('author_name') or 'ゲスト').strip() or 'ゲスト'
+    author_email = (data.get('author_email') or '').strip() or None
+
+    if category not in FORUM_CATEGORY_LABELS:
+        return jsonify({"error": "カテゴリが不正です"}), 400
+    if not title:
+        return jsonify({"error": "タイトルが必要です"}), 400
+    if not content:
+        return jsonify({"error": "本文が必要です"}), 400
+    if len(title) > 100:
+        return jsonify({"error": "タイトルが長すぎます"}), 400
+
+    thread = ForumThread(
+        category=category,
+        title=title,
+        content=content,
+        author_name=author_name,
+        author_email=author_email
+    )
+
+    try:
+        db.session.add(thread)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "投稿に失敗しました", "detail": str(e)}), 500
+
+    return jsonify({
+        "message": "投稿が完了しました",
+        "thread_id": thread.id
+    }), 201
+
+
+@app.route('/api/forum/threads/<int:thread_id>', methods=['GET'])
+def get_forum_thread(thread_id):
+    thread = ForumThread.query.get(thread_id)
+    if not thread:
+        return jsonify({"error": "スレッドが見つかりません"}), 404
+
+    try:
+        thread.view_count = (thread.view_count or 0) + 1
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    comments = (
+        ForumComment.query
+        .filter_by(thread_id=thread_id)
+        .order_by(ForumComment.created_at.asc())
+        .all()
+    )
+
+    return jsonify({
+        "thread": {
+            "id": thread.id,
+            "category": thread.category,
+            "category_label": FORUM_CATEGORY_LABELS.get(thread.category, thread.category),
+            "title": thread.title,
+            "content": thread.content,
+            "author_name": thread.author_name,
+            "author_email": thread.author_email,
+            "created_at": thread.created_at.isoformat() if thread.created_at else None,
+            "updated_at": thread.updated_at.isoformat() if thread.updated_at else None,
+            "view_count": thread.view_count or 0,
+            "like_count": thread.like_count or 0,
+            "comment_count": len(comments)
+        },
+        "comments": [
+            {
+                "id": comment.id,
+                "thread_id": comment.thread_id,
+                "author_name": comment.author_name,
+                "author_email": comment.author_email,
+                "content": comment.content,
+                "like_count": comment.like_count or 0,
+                "created_at": comment.created_at.isoformat() if comment.created_at else None
+            }
+            for comment in comments
+        ]
+    }), 200
+
+
+@app.route('/api/forum/threads/<int:thread_id>/comments', methods=['POST'])
+def create_forum_comment(thread_id):
+    thread = ForumThread.query.get(thread_id)
+    if not thread:
+        return jsonify({"error": "スレッドが見つかりません"}), 404
+
+    data = request.get_json() or {}
+    content = (data.get('content') or '').strip()
+    author_name = (data.get('author_name') or 'ゲスト').strip() or 'ゲスト'
+    author_email = (data.get('author_email') or '').strip() or None
+
+    if not content:
+        return jsonify({"error": "コメント内容が必要です"}), 400
+
+    comment = ForumComment(
+        thread_id=thread_id,
+        author_name=author_name,
+        author_email=author_email,
+        content=content
+    )
+
+    try:
+        db.session.add(comment)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "コメント投稿に失敗しました", "detail": str(e)}), 500
+
+    return jsonify({
+        "message": "コメントを投稿しました",
+        "comment": {
+            "id": comment.id,
+            "thread_id": comment.thread_id,
+            "author_name": comment.author_name,
+            "author_email": comment.author_email,
+            "content": comment.content,
+            "like_count": comment.like_count or 0,
+            "created_at": comment.created_at.isoformat() if comment.created_at else None
+        }
+    }), 201
+
+
+@app.route('/api/forum/threads/<int:thread_id>/like', methods=['POST'])
+def like_forum_thread(thread_id):
+    thread = ForumThread.query.get(thread_id)
+    if not thread:
+        return jsonify({"error": "スレッドが見つかりません"}), 404
+
+    thread.like_count = (thread.like_count or 0) + 1
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "いいねに失敗しました", "detail": str(e)}), 500
+
+    return jsonify({"like_count": thread.like_count}), 200
+
+
+@app.route('/api/forum/comments/<int:comment_id>/like', methods=['POST'])
+def like_forum_comment(comment_id):
+    comment = ForumComment.query.get(comment_id)
+    if not comment:
+        return jsonify({"error": "コメントが見つかりません"}), 404
+
+    comment.like_count = (comment.like_count or 0) + 1
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "いいねに失敗しました", "detail": str(e)}), 500
+
+    return jsonify({"like_count": comment.like_count}), 200
 
 
 # ============================

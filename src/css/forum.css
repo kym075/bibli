@@ -168,6 +168,8 @@ border-left-color: #667eea;
 .thread-item.question { border-left-color: #f39c12; }
 .thread-item.discussion { border-left-color: #e74c3c; }
 .thread-item.recruitment { border-left-color: #9b59b6; }
+.thread-item.recommendation { border-left-color: #3498db; }
+.thread-item.review { border-left-color: #16a085; }
 
 .thread-header {
 display: flex;
@@ -188,6 +190,13 @@ color: white;
 .category-question { background: #f39c12; }
 .category-discussion { background: #e74c3c; }
 .category-recruitment { background: #9b59b6; }
+.category-recommendation { background: #3498db; }
+.category-review { background: #16a085; }
+
+.thread-link {
+text-decoration: none;
+color: inherit;
+}
 
 .thread-author {
 font-size: 0.9rem;

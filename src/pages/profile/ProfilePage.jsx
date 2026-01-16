@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { auth } from '../../css/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -7,52 +7,72 @@ import Footer from '../../components/Footer';
 import '../../css/profile_page.css';
 
 function ProfilePage() {
-  const [user, setUser] = useState(null);
+  const { userId } = useParams();
+  const navigate = useNavigate();
+  const [currentUser, setCurrentUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('products');
   const [productFilter, setProductFilter] = useState('all');
   const [userProducts, setUserProducts] = useState([]);
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        // バックエンドからプロフィール情報を取得
-        try {
-          const response = await fetch(`http://localhost:5000/api/profile/${currentUser.email}`);
-          if (response.ok) {
-            const data = await response.json();
-            setProfile(data);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setCurrentUser(firebaseUser);
 
-            // ユーザーの出品商品を取得
-            const userResponse = await fetch(`http://localhost:5000/api/user/${currentUser.email}`);
-            if (userResponse.ok) {
-              const userData = await userResponse.json();
-
-              // seller_idで商品を検索
-              const productsResponse = await fetch(`http://localhost:5000/api/products?seller_id=${userData.id}`);
-              if (productsResponse.ok) {
-                const productsData = await productsResponse.json();
-                setUserProducts(productsData.products || []);
-              }
-            }
-          } else {
-            setError('プロフィール情報の取得に失敗しました');
+      try {
+        // URLにuserIdがない場合、ログインユーザーのプロフィールにリダイレクト
+        if (!userId && firebaseUser) {
+          const userResponse = await fetch(`http://localhost:5000/api/user/${firebaseUser.email}`);
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            navigate(`/profile/${userData.user_id}`, { replace: true });
+            return;
           }
-        } catch (err) {
-          console.error('Profile fetch error:', err);
-          setError('プロフィール情報の取得に失敗しました');
         }
-      } else {
-        setError('ログインしてください');
+
+        // URLにuserIdがない＆未ログインの場合
+        if (!userId && !firebaseUser) {
+          setError('ログインしてください');
+          setLoading(false);
+          return;
+        }
+
+        // userIdでプロフィールを取得
+        const response = await fetch(`http://localhost:5000/api/profile/id/${userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setProfile(data);
+
+          // 自分のプロフィールかどうか判定
+          if (firebaseUser) {
+            const myUserResponse = await fetch(`http://localhost:5000/api/user/${firebaseUser.email}`);
+            if (myUserResponse.ok) {
+              const myUserData = await myUserResponse.json();
+              setIsOwnProfile(myUserData.user_id === userId);
+            }
+          }
+
+          // ユーザーの出品商品を取得
+          const productsResponse = await fetch(`http://localhost:5000/api/products?seller_id=${data.id}`);
+          if (productsResponse.ok) {
+            const productsData = await productsResponse.json();
+            setUserProducts(productsData.products || []);
+          }
+        } else {
+          setError('ユーザーが見つかりません');
+        }
+      } catch (err) {
+        console.error('Profile fetch error:', err);
+        setError('プロフィール情報の取得に失敗しました');
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [userId, navigate]);
 
   if (loading) {
     return (

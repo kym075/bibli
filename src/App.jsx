@@ -49,6 +49,7 @@ function App() {
         <Route path="/register" element={<Register />} />
 
         {/* Profile */}
+        <Route path="/profile/:userId" element={<ProfilePage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/user-settings" element={<UserSettings />} />
@@ -63,6 +64,7 @@ function App() {
 
         {/* Community */}
         <Route path="/forum" element={<Forum />} />
+        <Route path="/forum/:threadId" element={<ForumDetail />} />
         <Route path="/forum-detail" element={<ForumDetail />} />
         <Route path="/forum-post" element={<ForumPost />} />
         <Route path="/news" element={<News />} />

@@ -136,7 +136,7 @@ function ProductDetail() {
 
             {product.seller && (
               <div className="seller-info">
-                <div className="seller-profile">
+                <Link to={`/profile/${product.seller.user_id}`} className="seller-profile">
                   <div className="seller-avatar">
                     {product.seller.profile_image ? (
                       <img src={product.seller.profile_image} alt={product.seller.user_name} />
@@ -151,7 +151,7 @@ function ProductDetail() {
                       <span>(5.0)</span>
                     </div>
                   </div>
-                </div>
+                </Link>
                 <button className="btn btn-secondary btn-small">👤 フォロー</button>
               </div>
             )}
