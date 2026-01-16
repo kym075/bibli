@@ -48,25 +48,22 @@ function Listing() {
       }
       const userData = await userResponse.json();
 
-      // 商品データを送信
-      // 注: 現在は画像アップロード機能が未実装のため、image_urlは空文字列
-      const productData = {
-        title: formData.title,
-        description: formData.description,
-        price: parseInt(formData.price),
-        condition: formData.condition,
-        sale_type: formData.saleType,
-        seller_id: userData.id,
-        category: formData.category,
-        image_url: '' // TODO: 画像アップロード機能実装後、実際の画像URLを設定
-      };
+      const formPayload = new FormData();
+      formPayload.append('title', formData.title);
+      formPayload.append('description', formData.description);
+      formPayload.append('price', parseInt(formData.price, 10));
+      formPayload.append('condition', formData.condition);
+      formPayload.append('sale_type', formData.saleType);
+      formPayload.append('seller_id', userData.id);
+      formPayload.append('category', formData.category);
+
+      if (selectedImages.length > 0) {
+        formPayload.append('image', selectedImages[0].file);
+      }
 
       const response = await fetch('http://localhost:5000/api/products', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(productData)
+        body: formPayload
       });
 
       if (!response.ok) {
