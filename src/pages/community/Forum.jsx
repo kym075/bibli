@@ -19,6 +19,7 @@ const CATEGORY_ORDER = ['all', 'chat', 'question', 'discussion', 'recruitment', 
 function Forum() {
   const [threads, setThreads] = useState([]);
   const [category, setCategory] = useState('all');
+  const [sort, setSort] = useState('newest');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -31,6 +32,9 @@ function Forum() {
       const params = new URLSearchParams();
       if (category && category !== 'all') {
         params.append('category', category);
+      }
+      if (sort) {
+        params.append('sort', sort);
       }
       params.append('page', currentPage);
       params.append('limit', 10);
@@ -55,10 +59,15 @@ function Forum() {
 
   useEffect(() => {
     fetchThreads();
-  }, [category, currentPage]);
+  }, [category, sort, currentPage]);
 
   const handleCategoryChange = (value) => {
     setCategory(value);
+    setCurrentPage(1);
+  };
+
+  const handleSortChange = (value) => {
+    setSort(value);
     setCurrentPage(1);
   };
 
@@ -96,7 +105,7 @@ function Forum() {
       <Header />
       <main className="main-content">
         <div className="page-header fade-in">
-          <h1 className="page-title">?? 掲示板</h1>
+          <h1 className="page-title">掲示板</h1>
           <p className="page-subtitle">「本好きの熱量で繋がる」コミュニティ</p>
           <p className="page-description">本について語り合い、新しい発見や出会いを見つけましょう</p>
         </div>
@@ -109,7 +118,20 @@ function Forum() {
 
         <div className="forum-container fade-in">
           <div className="category-filter">
-            <div className="filter-title">?? カテゴリで絞り込み</div>
+            <div className="filter-title">カテゴリで絞り込み</div>
+            <div className="sort-controls">
+              <label htmlFor="forumSort" className="sort-label">並び替え</label>
+              <select
+                id="forumSort"
+                className="sort-select"
+                value={sort}
+                onChange={(e) => handleSortChange(e.target.value)}
+              >
+                <option value="newest">新しい順</option>
+                <option value="oldest">古い順</option>
+                <option value="popular">いいね順</option>
+              </select>
+            </div>
             <div className="category-tags">
               {CATEGORY_ORDER.map((key) => (
                 <button
@@ -144,9 +166,9 @@ function Forum() {
                   <h3 className="thread-title">{thread.title}</h3>
                   <p className="thread-preview">{getPreviewText(thread.content)}</p>
                   <div className="thread-stats">
-                    <span className="stat-item comments-stat">{thread.comment_count || 0} コメント</span>
-                    <span className="stat-item likes-stat">{thread.like_count || 0} いいね</span>
-                    <span className="stat-item views-stat">{thread.view_count || 0} 閲覧</span>
+                    <span className="stat-item comments-stat">💬 {thread.comment_count || 0}</span>
+                    <span className="stat-item likes-stat">👍 {thread.like_count || 0}</span>
+                    <span className="stat-item views-stat">👁 {thread.view_count || 0}</span>
                   </div>
                 </div>
               </Link>

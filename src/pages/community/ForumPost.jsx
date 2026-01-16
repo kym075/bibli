@@ -5,15 +5,6 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/forum_post.css';
 
-const CATEGORY_LABELS = {
-  chat: '雑談',
-  question: '質問',
-  discussion: '考察',
-  recruitment: '募集',
-  recommendation: 'おすすめ',
-  review: '感想・レビュー'
-};
-
 function ForumPost() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -208,24 +199,6 @@ function ForumPost() {
               </div>
             </div>
 
-            <div className="preview-section">
-              <div className="preview-title">投稿プレビュー</div>
-              <div className="preview-container" id="previewContainer">
-                <div className="preview-header">
-                  <div className="preview-category" id="previewCategory">
-                    {CATEGORY_LABELS[formData.category] || 'カテゴリ'}
-                  </div>
-                  <div className="preview-author">?? あなた - 今</div>
-                </div>
-                <div className="preview-thread-title" id="previewTitle">
-                  {formData.title || 'タイトルをここに入力してください'}
-                </div>
-                <div className="preview-content" id="previewContent">
-                  {formData.content || '本文をここに入力してください...'}
-                </div>
-              </div>
-            </div>
-
             <div className="submit-section">
               <button
                 type="submit"
@@ -235,14 +208,6 @@ function ForumPost() {
               >
                 {isSubmitting ? '投稿中...' : '投稿する'}
               </button>
-              <div className="draft-actions">
-                <button type="button" className="draft-btn" id="saveDraftBtn">
-                  ?? 下書き保存
-                </button>
-                <button type="button" className="draft-btn" id="loadDraftBtn">
-                  ?? 下書きを読み込む
-                </button>
-              </div>
             </div>
           </form>
         </div>

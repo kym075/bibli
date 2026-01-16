@@ -111,6 +111,29 @@ margin-bottom: 1rem;
 font-weight: 600;
 }
 
+.sort-controls {
+display: flex;
+align-items: center;
+gap: 0.8rem;
+margin-bottom: 1rem;
+flex-wrap: wrap;
+}
+
+.sort-label {
+font-size: 0.9rem;
+color: #2c3e50;
+font-weight: 600;
+}
+
+.sort-select {
+padding: 0.5rem 1rem;
+border: 2px solid #e9ecef;
+border-radius: 10px;
+background: white;
+color: #2c3e50;
+font-size: 0.9rem;
+}
+
 .category-tags {
 display: flex;
 flex-wrap: wrap;
@@ -246,12 +269,8 @@ gap: 0.5rem;
 }
 
 .stat-item::before {
-font-size: 1rem;
+content: "";
 }
-
-.comments-stat::before { content: "💬"; }
-.likes-stat::before { content: "👍"; }
-.views-stat::before { content: "👁️"; }
 
 .hot-badge {
 position: absolute;
@@ -454,6 +473,10 @@ color: white;
 }
 
 .category-tags {
+    justify-content: center;
+}
+
+.sort-controls {
     justify-content: center;
 }
 

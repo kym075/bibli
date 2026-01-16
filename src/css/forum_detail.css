@@ -95,6 +95,13 @@
     font-size: 0.9rem;
 }
 
+.thread-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.8rem 2rem;
+}
+
 .meta-item {
     display: flex;
     align-items: center;
@@ -104,8 +111,8 @@
 .thread-stats {
     display: flex;
     gap: 1.5rem;
-    margin-top: 1rem;
     font-size: 0.9rem;
+    margin-left: auto;
 }
 
 .stat-item {
@@ -113,6 +120,12 @@
     align-items: center;
     gap: 0.3rem;
     color: #7f8c8d;
+}
+
+.stat-icon {
+    width: 1.2rem;
+    display: inline-flex;
+    justify-content: center;
 }
 
 /* 元の投稿 */
@@ -127,6 +140,14 @@
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
     border-bottom: 2px solid #f8f9fa;
+}
+
+.post-meta {
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
 }
 
 .author-avatar {
@@ -164,6 +185,33 @@
 .post-time {
     color: #95a5a6;
     font-size: 0.9rem;
+}
+
+.follow-btn {
+    background: white;
+    border: 2px solid #667eea;
+    color: #667eea;
+    padding: 0.4rem 0.9rem;
+    border-radius: 18px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.follow-btn:hover {
+    background: #667eea;
+    color: white;
+}
+
+.follow-btn.following {
+    border-color: #2ecc71;
+    color: #2ecc71;
+}
+
+.follow-btn.following:hover {
+    background: #2ecc71;
+    color: white;
 }
 
 .post-content {
@@ -303,6 +351,11 @@
 
 .comment-action:hover {
     color: #667eea;
+}
+
+.comment-action.liked {
+    color: #e74c3c;
+    font-weight: 600;
 }
 
 /* コメント投稿フォーム */
@@ -490,9 +543,23 @@
         gap: 0.5rem;
     }
 
+    .thread-meta-row {
+        align-items: flex-start;
+    }
+
+    .thread-stats {
+        margin-left: 0;
+        flex-wrap: wrap;
+    }
+
     .post-actions {
         flex-wrap: wrap;
         gap: 0.5rem;
+    }
+
+    .post-meta {
+        margin-left: 0;
+        align-items: flex-start;
     }
 
     .form-actions {

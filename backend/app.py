@@ -104,6 +104,15 @@ class ForumComment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     thread = db.relationship('ForumThread', backref=db.backref('comments', cascade='all, delete-orphan'))
+
+
+class ForumFollow(db.Model):
+    __tablename__ = "forum_follows"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    follower_email = db.Column(db.String(120), nullable=False)
+    followee_email = db.Column(db.String(120), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
  
  
 # ============================
@@ -670,6 +679,8 @@ def get_forum_threads():
                 ForumThread.view_count.desc(),
                 ForumThread.created_at.desc()
             )
+        elif sort == 'oldest':
+            query = query.order_by(ForumThread.created_at.asc())
         else:
             query = query.order_by(ForumThread.created_at.desc())
 
@@ -865,6 +876,22 @@ def like_forum_thread(thread_id):
     return jsonify({"like_count": thread.like_count}), 200
 
 
+@app.route('/api/forum/threads/<int:thread_id>/unlike', methods=['POST'])
+def unlike_forum_thread(thread_id):
+    thread = ForumThread.query.get(thread_id)
+    if not thread:
+        return jsonify({"error": "スレッドが見つかりません"}), 404
+
+    thread.like_count = max((thread.like_count or 0) - 1, 0)
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "いいね解除に失敗しました", "detail": str(e)}), 500
+
+    return jsonify({"like_count": thread.like_count}), 200
+
+
 @app.route('/api/forum/comments/<int:comment_id>/like', methods=['POST'])
 def like_forum_comment(comment_id):
     comment = ForumComment.query.get(comment_id)
@@ -879,6 +906,98 @@ def like_forum_comment(comment_id):
         return jsonify({"error": "いいねに失敗しました", "detail": str(e)}), 500
 
     return jsonify({"like_count": comment.like_count}), 200
+
+
+@app.route('/api/forum/comments/<int:comment_id>/unlike', methods=['POST'])
+def unlike_forum_comment(comment_id):
+    comment = ForumComment.query.get(comment_id)
+    if not comment:
+        return jsonify({"error": "コメントが見つかりません"}), 404
+
+    comment.like_count = max((comment.like_count or 0) - 1, 0)
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "いいね解除に失敗しました", "detail": str(e)}), 500
+
+    return jsonify({"like_count": comment.like_count}), 200
+
+
+@app.route('/api/forum/follow/status', methods=['GET'])
+def get_forum_follow_status():
+    follower_email = (request.args.get('follower_email') or '').strip()
+    followee_email = (request.args.get('followee_email') or '').strip()
+
+    if not follower_email or not followee_email:
+        return jsonify({"error": "follower_email と followee_email が必要です"}), 400
+
+    is_following = ForumFollow.query.filter_by(
+        follower_email=follower_email,
+        followee_email=followee_email
+    ).first() is not None
+
+    return jsonify({"following": is_following}), 200
+
+
+@app.route('/api/forum/follow', methods=['POST'])
+def follow_user():
+    data = request.get_json() or {}
+    follower_email = (data.get('follower_email') or '').strip()
+    followee_email = (data.get('followee_email') or '').strip()
+
+    if not follower_email or not followee_email:
+        return jsonify({"error": "follower_email と followee_email が必要です"}), 400
+    if follower_email == followee_email:
+        return jsonify({"error": "自分自身はフォローできません"}), 400
+
+    existing = ForumFollow.query.filter_by(
+        follower_email=follower_email,
+        followee_email=followee_email
+    ).first()
+    if existing:
+        return jsonify({"message": "既にフォロー済みです"}), 200
+
+    follow = ForumFollow(
+        follower_email=follower_email,
+        followee_email=followee_email
+    )
+
+    try:
+        db.session.add(follow)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "フォローに失敗しました", "detail": str(e)}), 500
+
+    return jsonify({"message": "フォローしました"}), 201
+
+
+@app.route('/api/forum/unfollow', methods=['POST'])
+def unfollow_user():
+    data = request.get_json() or {}
+    follower_email = (data.get('follower_email') or '').strip()
+    followee_email = (data.get('followee_email') or '').strip()
+
+    if not follower_email or not followee_email:
+        return jsonify({"error": "follower_email と followee_email が必要です"}), 400
+
+    follow = ForumFollow.query.filter_by(
+        follower_email=follower_email,
+        followee_email=followee_email
+    ).first()
+
+    if not follow:
+        return jsonify({"message": "フォローしていません"}), 200
+
+    try:
+        db.session.delete(follow)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "フォロー解除に失敗しました", "detail": str(e)}), 500
+
+    return jsonify({"message": "フォロー解除しました"}), 200
 
 
 # ============================

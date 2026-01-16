@@ -1,11 +1,13 @@
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { auth } from '../../css/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/forum_detail.css';
 
 function ForumDetail() {
+  const navigate = useNavigate();
   const { threadId } = useParams();
   const [searchParams] = useSearchParams();
   const resolvedThreadId = threadId || searchParams.get('id');
@@ -14,10 +16,13 @@ function ForumDetail() {
   const [commentInput, setCommentInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [hasLikedThread, setHasLikedThread] = useState(false);
   const [likedComments, setLikedComments] = useState({});
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
 
   const getThreadLikeKey = (id) => `forum-thread-like-${id}`;
   const getCommentLikeKey = (id) => `forum-comment-like-${id}`;
@@ -45,6 +50,14 @@ function ForumDetail() {
     });
     return map;
   };
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const fetchThread = async () => {
     if (!resolvedThreadId) {
@@ -80,6 +93,37 @@ function ForumDetail() {
     fetchThread();
   }, [resolvedThreadId]);
 
+  useEffect(() => {
+    const followerEmail = currentUser?.email;
+    const followeeEmail = thread?.author_email;
+
+    if (!followerEmail || !followeeEmail || followerEmail === followeeEmail) {
+      setIsFollowing(false);
+      return;
+    }
+
+    const fetchFollowStatus = async () => {
+      setIsFollowLoading(true);
+      try {
+        const params = new URLSearchParams({
+          follower_email: followerEmail,
+          followee_email: followeeEmail
+        });
+        const response = await fetch(`http://localhost:5000/api/forum/follow/status?${params}`);
+        const data = await response.json();
+        if (response.ok) {
+          setIsFollowing(Boolean(data.following));
+        }
+      } catch (err) {
+        console.error('Follow status error:', err);
+      } finally {
+        setIsFollowLoading(false);
+      }
+    };
+
+    fetchFollowStatus();
+  }, [currentUser, thread]);
+
   const getRelativeTime = (dateString) => {
     if (!dateString) return '';
     const now = new Date();
@@ -96,18 +140,24 @@ function ForumDetail() {
   };
 
   const handleLike = async () => {
-    if (!thread || hasLikedThread) return;
+    if (!thread) return;
+    const nextLiked = !hasLikedThread;
     setIsLiking(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/forum/threads/${thread.id}/like`, {
+      const action = nextLiked ? 'like' : 'unlike';
+      const response = await fetch(`http://localhost:5000/api/forum/threads/${thread.id}/${action}`, {
         method: 'POST'
       });
       const data = await response.json();
       if (response.ok) {
         setThread(prev => ({ ...prev, like_count: data.like_count }));
-        setHasLikedThread(true);
+        setHasLikedThread(nextLiked);
         try {
-          localStorage.setItem(getThreadLikeKey(thread.id), '1');
+          if (nextLiked) {
+            localStorage.setItem(getThreadLikeKey(thread.id), '1');
+          } else {
+            localStorage.removeItem(getThreadLikeKey(thread.id));
+          }
         } catch (err) {
           console.error('Thread like write error:', err);
         }
@@ -158,9 +208,10 @@ function ForumDetail() {
   };
 
   const handleCommentLike = async (commentId) => {
-    if (likedComments[commentId]) return;
+    const nextLiked = !likedComments[commentId];
     try {
-      const response = await fetch(`http://localhost:5000/api/forum/comments/${commentId}/like`, {
+      const action = nextLiked ? 'like' : 'unlike';
+      const response = await fetch(`http://localhost:5000/api/forum/comments/${commentId}/${action}`, {
         method: 'POST'
       });
       const data = await response.json();
@@ -170,15 +221,53 @@ function ForumDetail() {
             comment.id === commentId ? { ...comment, like_count: data.like_count } : comment
           )
         );
-        setLikedComments(prev => ({ ...prev, [commentId]: true }));
+        setLikedComments(prev => ({ ...prev, [commentId]: nextLiked }));
         try {
-          localStorage.setItem(getCommentLikeKey(commentId), '1');
+          if (nextLiked) {
+            localStorage.setItem(getCommentLikeKey(commentId), '1');
+          } else {
+            localStorage.removeItem(getCommentLikeKey(commentId));
+          }
         } catch (err) {
           console.error('Comment like write error:', err);
         }
       }
     } catch (err) {
       console.error('Comment like error:', err);
+    }
+  };
+
+  const handleFollowToggle = async () => {
+    const followerEmail = currentUser?.email;
+    const followeeEmail = thread?.author_email;
+
+    if (!followeeEmail) return;
+    if (!followerEmail) {
+      navigate('/login');
+      return;
+    }
+    if (followerEmail === followeeEmail) return;
+
+    setIsFollowLoading(true);
+    try {
+      const endpoint = isFollowing ? 'unfollow' : 'follow';
+      const response = await fetch(`http://localhost:5000/api/forum/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          follower_email: followerEmail,
+          followee_email: followeeEmail
+        })
+      });
+      if (response.ok) {
+        setIsFollowing(prev => !prev);
+      }
+    } catch (err) {
+      console.error('Follow toggle error:', err);
+    } finally {
+      setIsFollowLoading(false);
     }
   };
 
@@ -207,6 +296,9 @@ function ForumDetail() {
     );
   }
 
+  const canFollow = Boolean(thread.author_email) && currentUser?.email !== thread.author_email;
+  const followLabel = currentUser ? (isFollowing ? 'フォロー中' : 'フォロー') : 'ログインでフォロー';
+
   return (
     <>
       <Header />
@@ -219,25 +311,30 @@ function ForumDetail() {
           <div className="thread-header">
             <div className="thread-category">{thread.category_label}</div>
             <h1 className="thread-title">{thread.title}</h1>
-            <div className="thread-meta">
-              <div className="meta-item">
-                <span>投稿日:</span>
-                <span>{new Date(thread.created_at).toLocaleString('ja-JP')}</span>
+            <div className="thread-meta-row">
+              <div className="thread-meta">
+                <div className="meta-item">
+                  <span>投稿日:</span>
+                  <span>{new Date(thread.created_at).toLocaleString('ja-JP')}</span>
+                </div>
+                <div className="meta-item">
+                  <span>投稿者:</span>
+                  <span>{thread.author_name}</span>
+                </div>
               </div>
-              <div className="meta-item">
-                <span>投稿者:</span>
-                <span>{thread.author_name}</span>
-              </div>
-            </div>
-            <div className="thread-stats">
-              <div className="stat-item">
-                <span>{thread.comment_count || 0} コメント</span>
-              </div>
-              <div className="stat-item">
-                <span>{thread.view_count || 0} 閲覧</span>
-              </div>
-              <div className="stat-item">
-                <span>{thread.like_count || 0} いいね</span>
+              <div className="thread-stats">
+                <div className="stat-item">
+                  <span className="stat-icon">💬</span>
+                  <span>{thread.comment_count || 0}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-icon">👁</span>
+                  <span>{thread.view_count || 0}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-icon">👍</span>
+                  <span>{thread.like_count || 0}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -249,7 +346,18 @@ function ForumDetail() {
                 <div className="author-name">{thread.author_name}</div>
                 <div className="author-badge">投稿者</div>
               </div>
-              <div className="post-time">{getRelativeTime(thread.created_at)}</div>
+              <div className="post-meta">
+                <div className="post-time">{getRelativeTime(thread.created_at)}</div>
+                {canFollow && (
+                  <button
+                    className={`follow-btn ${isFollowing ? 'following' : ''}`}
+                    onClick={handleFollowToggle}
+                    disabled={isFollowLoading}
+                  >
+                    {followLabel}
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="post-content">
@@ -259,14 +367,18 @@ function ForumDetail() {
             </div>
 
             <div className="post-actions">
-              <button className="action-btn" onClick={handleLike} disabled={isLiking || hasLikedThread}>
-                <span>{hasLikedThread ? 'いいね済み' : 'いいね'} ({thread.like_count || 0})</span>
+              <button
+                className={`action-btn ${hasLikedThread ? 'liked' : ''}`}
+                onClick={handleLike}
+                disabled={isLiking}
+              >
+                <span>👍 {thread.like_count || 0}</span>
               </button>
               <button className="action-btn">
-                <span>シェア</span>
+                <span>🔗 シェア</span>
               </button>
               <button className="action-btn">
-                <span>報告</span>
+                <span>⚠ 報告</span>
               </button>
             </div>
           </div>
@@ -287,11 +399,10 @@ function ForumDetail() {
               <div className="comment-content">{comment.content}</div>
               <div className="comment-actions">
                 <button
-                  className="comment-action"
+                  className={`comment-action ${likedComments[comment.id] ? 'liked' : ''}`}
                   onClick={() => handleCommentLike(comment.id)}
-                  disabled={likedComments[comment.id]}
                 >
-                  <span>いいね {comment.like_count || 0}</span>
+                  <span>👍 {comment.like_count || 0}</span>
                 </button>
               </div>
             </div>
