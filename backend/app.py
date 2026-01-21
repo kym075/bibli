@@ -128,6 +128,16 @@ class Purchase(db.Model):
     product = db.relationship('Product')
 
 
+class ProductView(db.Model):
+    __tablename__ = "product_views"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    viewed_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    product = db.relationship('Product')
+
+
 class ForumThread(db.Model):
     __tablename__ = "forum_threads"
 
@@ -452,8 +462,14 @@ def get_products():
         elif sort == 'price_desc':
             query = query.order_by(Product.price.desc())
         elif sort == 'popular':
-            # TODO: 人気順のロジック（いいね数やビュー数で並び替え）
-            query = query.order_by(Product.created_at.desc())
+            query = (
+                query.outerjoin(ProductView, ProductView.product_id == Product.id)
+                .group_by(Product.id)
+                .order_by(
+                    db.func.count(ProductView.id).desc(),
+                    Product.created_at.desc()
+                )
+            )
         else:  # newest (デフォルト)
             query = query.order_by(Product.created_at.desc())
 
@@ -502,6 +518,13 @@ def get_product_detail(product_id):
 
         if not product:
             return jsonify({"error": "商品が見つかりません"}), 404
+
+        try:
+            db.session.add(ProductView(product_id=product.id))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
 
         # 出品者情報を取得
         seller = User.query.filter_by(id=product.seller_id).first()

@@ -6,6 +6,60 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/forum_detail.css';
 
+const IconBase = ({ children, className = 'icon' }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    width="18"
+    height="18"
+    aria-hidden="true"
+    focusable="false"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {children}
+  </svg>
+);
+
+const CommentIcon = (props) => (
+  <IconBase {...props}>
+    <path d="M21 12a8 8 0 0 1-8 8H7l-4 4V8a4 4 0 0 1 4-4h6a8 8 0 0 1 8 8Z" />
+    <path d="M8 9h8M8 13h5" />
+  </IconBase>
+);
+
+const EyeIcon = (props) => (
+  <IconBase {...props}>
+    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
+    <circle cx="12" cy="12" r="3" />
+  </IconBase>
+);
+
+const ThumbIcon = (props) => (
+  <IconBase {...props}>
+    <path d="M7 11v8a2 2 0 0 0 2 2h6a2 2 0 0 0 1.9-1.37l2.1-6A2 2 0 0 0 17 10h-5l.6-3a2 2 0 0 0-3.92-.8L7 11Z" />
+    <path d="M7 11H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h3" />
+  </IconBase>
+);
+
+const ShareIcon = (props) => (
+  <IconBase {...props}>
+    <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7" />
+    <path d="M16 6l-4-4-4 4" />
+    <path d="M12 2v14" />
+  </IconBase>
+);
+
+const FlagIcon = (props) => (
+  <IconBase {...props}>
+    <path d="M5 3v18" />
+    <path d="M5 4h12l-2 4 2 4H5" />
+  </IconBase>
+);
+
 function ForumDetail() {
   const navigate = useNavigate();
   const { threadId } = useParams();
@@ -342,15 +396,15 @@ function ForumDetail() {
               </div>
               <div className="thread-stats">
                 <div className="stat-item">
-                  <span className="stat-icon">💬</span>
+                  <span className="stat-icon"><CommentIcon /></span>
                   <span>{thread.comment_count || 0}</span>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-icon">👁</span>
+                  <span className="stat-icon"><EyeIcon /></span>
                   <span>{thread.view_count || 0}</span>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-icon">👍</span>
+                  <span className="stat-icon"><ThumbIcon /></span>
                   <span>{thread.like_count || 0}</span>
                 </div>
               </div>
@@ -390,13 +444,13 @@ function ForumDetail() {
                 onClick={handleLike}
                 disabled={isLiking}
               >
-                <span>👍 {thread.like_count || 0}</span>
+                <ThumbIcon /><span>{thread.like_count || 0}</span>
               </button>
               <button className="action-btn">
-                <span>🔗 シェア</span>
+                <ShareIcon /><span>シェア</span>
               </button>
               <button className="action-btn">
-                <span>⚠ 報告</span>
+                <FlagIcon /><span>報告</span>
               </button>
             </div>
           </div>
@@ -420,7 +474,7 @@ function ForumDetail() {
                   className={`comment-action ${likedComments[comment.id] ? 'liked' : ''}`}
                   onClick={() => handleCommentLike(comment.id)}
                 >
-                  <span>👍 {comment.like_count || 0}</span>
+                  <ThumbIcon /><span>{comment.like_count || 0}</span>
                 </button>
               </div>
             </div>
