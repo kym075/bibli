@@ -3,13 +3,13 @@
 // Firebaseコンソールから取得した実際の値に置き換えてください
 
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID",
-    databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com"
+    apiKey: "AIzaSyB-MZHfYzwZ-uUjuE_gNFLO44G3jO9xF6g",
+    authDomain: "bibli-12f66.firebaseapp.com",
+    projectId: "bibli-12f66",
+    storageBucket: "bibli-12f66.firebasestrage.app",
+    messagingSenderId: "1008130646964",
+    appId: "1:1008130646964:web:50962c5ea483ea7721c8e1",
+    databaseURL: "https://bibli-12f66.firebaseio.com"
 };
 
 // Firebaseの初期化（モジュール形式の場合はimport/exportを使用）
