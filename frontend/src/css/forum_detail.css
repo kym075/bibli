@@ -128,6 +128,23 @@
     justify-content: center;
 }
 
+.icon {
+    width: 1rem;
+    height: 1rem;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.action-btn .icon {
+    width: 1.1rem;
+    height: 1.1rem;
+}
+
+.comment-action .icon {
+    width: 0.9rem;
+    height: 0.9rem;
+}
+
 /* 元の投稿 */
 .original-post {
     padding: 2rem;
@@ -273,7 +290,7 @@
 }
 
 .comments-header::before {
-    content: "💬";
+    content: "";
     font-size: 1.2rem;
 }
 
@@ -377,7 +394,7 @@
 }
 
 .form-title::before {
-    content: "✏️";
+    content: "";
     font-size: 1.1rem;
 }
 
@@ -456,7 +473,7 @@
 }
 
 .related-title::before {
-    content: "🔗";
+    content: "";
     font-size: 1.1rem;
 }
 

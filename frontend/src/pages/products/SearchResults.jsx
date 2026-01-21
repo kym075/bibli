@@ -147,7 +147,7 @@ function SearchResults() {
       <main className="main-content">
         {/* 検索結果ヘッダー */}
         <div className="search-header">
-          <h1 className="search-results-title">🔍 検索結果</h1>
+          <h1 className="search-results-title">検索結果</h1>
           <p className="search-info">
             {filters.keyword && (
               <>
@@ -162,7 +162,7 @@ function SearchResults() {
         <div className="filter-sort-area">
           <div className="controls-row">
             <div className="control-group">
-              <span className="control-label">📊 ソート機能</span>
+              <span className="control-label">ソート機能</span>
               <div className="select-wrapper">
                 <select
                   className="custom-select"
@@ -178,7 +178,7 @@ function SearchResults() {
             </div>
 
             <div className="control-group">
-              <span className="control-label">💰 価格帯</span>
+              <span className="control-label">価格帯</span>
               <div className="price-range">
                 <input
                   type="number"
@@ -202,7 +202,7 @@ function SearchResults() {
 
           <div className="controls-row">
             <div className="control-group">
-              <span className="control-label">📖 商品の状態</span>
+              <span className="control-label">商品の状態</span>
               <div className="select-wrapper">
                 <select
                   className="custom-select"
@@ -218,7 +218,7 @@ function SearchResults() {
             </div>
 
             <div className="control-group">
-              <span className="control-label">🛒 販売形式</span>
+              <span className="control-label">販売形式</span>
               <div className="select-wrapper">
                 <select
                   className="custom-select"
