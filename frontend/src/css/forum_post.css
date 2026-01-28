@@ -10,11 +10,13 @@
     text-align: center;
     margin-bottom: 3rem;
     padding: 3rem 2rem;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
-    border-radius: 20px;
+    background: var(--surface);
+    border-radius: var(--radius);
     position: relative;
     overflow: hidden;
     animation: fadeInUp 0.6s ease-out;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
 }
 
 @keyframes fadeInUp {
@@ -31,22 +33,13 @@
 .page-header::before {
     content: '';
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
-    animation: rotate 20s linear infinite;
-}
-
-@keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    inset: 0;
+    background: radial-gradient(circle at 20% 20%, rgba(47, 93, 80, 0.08), transparent 60%);
 }
 
 .page-title {
     font-size: 2.5rem;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 1rem;
     position: relative;
     z-index: 1;
@@ -54,7 +47,7 @@
 
 .page-description {
     font-size: 1.1rem;
-    color: #7f8c8d;
+    color: var(--muted);
     position: relative;
     z-index: 1;
 }
@@ -68,19 +61,21 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--border);
     padding: 0.8rem 1.5rem;
-    border-radius: 25px;
+    border-radius: 12px;
     text-decoration: none;
     font-weight: 500;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: var(--shadow);
 }
 
 .back-btn:hover {
     transform: translateY(-3px);
-    box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
+    border-color: var(--accent);
+    color: var(--accent);
 }
 
 .back-btn::before {
@@ -90,11 +85,12 @@
 
 /* フォームコンテナ */
 .form-container {
-    background: white;
-    border-radius: 20px;
+    background: var(--surface);
+    border-radius: var(--radius);
     padding: 3rem;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow);
     animation: fadeIn 0.6s ease-out 0.2s both;
+    border: 1px solid var(--border);
 }
 
 @keyframes fadeIn {
@@ -116,23 +112,23 @@
 .form-label {
     display: block;
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 0.8rem;
     font-size: 1.1rem;
 }
 
 .required {
-    color: #e74c3c;
+    color: var(--accent-warm);
     margin-left: 0.3rem;
 }
 
 .form-select {
     width: 100%;
     padding: 1rem;
-    border: 2px solid #e9ecef;
+    border: 1px solid var(--border);
     border-radius: 12px;
     font-size: 1rem;
-    background: #f8f9fa;
+    background: var(--surface-muted);
     transition: all 0.3s ease;
     appearance: none;
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
@@ -144,37 +140,37 @@
 
 .form-select:focus {
     outline: none;
-    border-color: #667eea;
-    background: white;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: var(--accent);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(47, 93, 80, 0.12);
 }
 
 .form-input {
     width: 100%;
     padding: 1rem;
-    border: 2px solid #e9ecef;
+    border: 1px solid var(--border);
     border-radius: 12px;
     font-size: 1rem;
-    background: #f8f9fa;
+    background: var(--surface-muted);
     transition: all 0.3s ease;
 }
 
 .form-input:focus {
     outline: none;
-    border-color: #667eea;
-    background: white;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: var(--accent);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(47, 93, 80, 0.12);
 }
 
 .form-textarea {
     width: 100%;
     min-height: 200px;
     padding: 1rem;
-    border: 2px solid #e9ecef;
+    border: 1px solid var(--border);
     border-radius: 12px;
     font-size: 1rem;
     font-family: inherit;
-    background: #f8f9fa;
+    background: var(--surface-muted);
     resize: vertical;
     transition: all 0.3s ease;
     line-height: 1.6;
@@ -182,22 +178,22 @@
 
 .form-textarea:focus {
     outline: none;
-    border-color: #667eea;
-    background: white;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: var(--accent);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(47, 93, 80, 0.12);
 }
 
 /* カテゴリ説明 */
 .category-descriptions {
-    background: #f8f9fa;
+    background: var(--surface-muted);
     border-radius: 12px;
     padding: 1.5rem;
     margin-top: 1rem;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid var(--accent);
 }
 
 .category-descriptions h4 {
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
@@ -205,8 +201,7 @@
 }
 
 .category-descriptions h4::before {
-    content: "📝";
-    font-size: 1rem;
+    content: "";
 }
 
 .category-list {
@@ -219,9 +214,9 @@
     align-items: center;
     gap: 1rem;
     padding: 0.8rem;
-    background: white;
+    background: var(--surface);
     border-radius: 8px;
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--border);
 }
 
 .category-icon {
@@ -237,12 +232,12 @@
 }
 
 
-.category-chat { background: #2ecc71; }
-.category-question { background: #f39c12; }
-.category-discussion { background: #e74c3c; }
-.category-recruitment { background: #9b59b6; }
-.category-recommendation { background: #3498db; text-align: center;}
-.category-review { background: #1abc9c; }
+.category-chat { background: #2f5d50; }
+.category-question { background: #b46b3d; }
+.category-discussion { background: #8b3f2f; }
+.category-recruitment { background: #3c5a6b; }
+.category-recommendation { background: #5f7d56; text-align: center;}
+.category-review { background: #6d4c41; }
 
 .category-info {
     flex: 1;
@@ -250,12 +245,12 @@
 
 .category-name {
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 0.2rem;
 }
 
 .category-description {
-    color: #7f8c8d;
+    color: var(--muted);
     font-size: 0.9rem;
 }
 
@@ -266,7 +261,7 @@
     align-items: center;
     margin-top: 0.5rem;
     font-size: 0.9rem;
-    color: #7f8c8d;
+    color: var(--muted);
 }
 
 .count-info {
@@ -275,7 +270,7 @@
 }
 
 .help-text {
-    color: #7f8c8d;
+    color: var(--muted);
     font-size: 0.9rem;
     margin-top: 0.5rem;
     line-height: 1.5;
@@ -285,12 +280,12 @@
 .preview-section {
     margin-top: 2rem;
     padding-top: 2rem;
-    border-top: 2px solid #f8f9fa;
+    border-top: 1px solid var(--border);
 }
 
 .preview-title {
     font-size: 1.2rem;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
@@ -298,15 +293,14 @@
 }
 
 .preview-title::before {
-    content: "👁️";
-    font-size: 1.1rem;
+    content: "";
 }
 
 .preview-container {
-    background: #f8f9fa;
+    background: var(--surface-muted);
     border-radius: 12px;
     padding: 1.5rem;
-    border: 2px dashed #e9ecef;
+    border: 1px dashed var(--border);
     min-height: 150px;
     display: none;
 }
@@ -322,7 +316,7 @@
     gap: 1rem;
     margin-bottom: 1rem;
     padding-bottom: 1rem;
-    border-bottom: 2px solid #e9ecef;
+    border-bottom: 1px solid var(--border);
 }
 
 .preview-category {
@@ -334,19 +328,19 @@
 }
 
 .preview-author {
-    color: #7f8c8d;
+    color: var(--muted);
     font-size: 0.9rem;
 }
 
 .preview-thread-title {
     font-size: 1.3rem;
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 1rem;
 }
 
 .preview-content {
-    color: #555;
+    color: var(--ink);
     line-height: 1.6;
     white-space: pre-wrap;
 }
@@ -356,20 +350,20 @@
     text-align: center;
     margin-top: 3rem;
     padding-top: 2rem;
-    border-top: 2px solid #f8f9fa;
+    border-top: 1px solid var(--border);
 }
 
 .submit-btn {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: var(--accent);
     color: white;
     border: none;
     padding: 1.5rem 4rem;
-    border-radius: 50px;
+    border-radius: 12px;
     font-size: 1.3rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    box-shadow: none;
     display: inline-flex;
     align-items: center;
     gap: 0.8rem;
@@ -377,19 +371,18 @@
 
 .submit-btn:hover:not(:disabled) {
     transform: translateY(-3px);
-    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+    background: var(--accent-strong);
 }
 
 .submit-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+    box-shadow: none;
 }
 
 .submit-btn::before {
-    content: "📤";
-    font-size: 1.2rem;
+    content: "";
 }
 
 /* 下書き保存 */
@@ -401,11 +394,11 @@
 }
 
 .draft-btn {
-    background: white;
-    color: #667eea;
-    border: 2px solid #667eea;
+    background: var(--surface);
+    color: var(--accent);
+    border: 1px solid var(--accent);
     padding: 0.8rem 2rem;
-    border-radius: 25px;
+    border-radius: 12px;
     font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
@@ -413,14 +406,14 @@
 }
 
 .draft-btn:hover {
-    background: #667eea;
+    background: var(--accent);
     color: white;
     transform: translateY(-2px);
 }
 
 /* エラーメッセージ */
 .error-message {
-    color: #e74c3c;
+    color: var(--accent-warm);
     font-size: 0.9rem;
     margin-top: 0.5rem;
     display: flex;
@@ -429,18 +422,17 @@
 }
 
 .error-message::before {
-    content: "⚠️";
-    font-size: 0.8rem;
+    content: "";
 }
 
 .field-error {
-    border-color: #e74c3c !important;
-    background: rgba(231, 76, 60, 0.05) !important;
+    border-color: var(--accent-warm) !important;
+    background: rgba(180, 107, 61, 0.08) !important;
 }
 
 /* 成功メッセージ */
 .success-message {
-    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    background: var(--accent);
     color: white;
     padding: 1rem;
     border-radius: 8px;
@@ -451,8 +443,7 @@
 }
 
 .success-message::before {
-    content: "✅";
-    font-size: 1rem;
+    content: "";
 }
 
 /* レスポンシブデザイン */

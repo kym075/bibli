@@ -1,3 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
+
+:root {
+  --bg: #f4efe6;
+  --surface: #fffaf2;
+  --surface-muted: #f6f1e8;
+  --ink: #2b2a27;
+  --muted: #6f655b;
+  --accent: #2f5d50;
+  --accent-strong: #1f3f35;
+  --accent-warm: #b46b3d;
+  --border: #e1d9cc;
+  --shadow: 0 10px 30px rgba(43, 42, 39, 0.08);
+  --radius: 14px;
+}
+
 *,
 *::before,
 *::after {
@@ -12,10 +28,19 @@ html {
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
     line-height: 1.6;
-    color: #333;
-    background: #f8f9fa;
+    color: var(--ink);
+    background-color: var(--bg);
+    background-image: radial-gradient(rgba(47, 93, 80, 0.06) 1px, transparent 1px),
+      linear-gradient(120deg, rgba(180, 107, 61, 0.08), transparent 45%);
+    background-size: 24px 24px, 100% 100%;
+    background-attachment: fixed;
+}
+
+h1, h2, h3, h4, h5, h6, .logo {
+    font-family: 'Shippori Mincho B1', 'Yu Mincho', serif;
+    letter-spacing: 0.02em;
 }
 
 img, picture, video, canvas, svg {
@@ -42,10 +67,15 @@ input, button, textarea, select {
 
 /* ヘッダー */
 .header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: rgba(255, 250, 242, 0.9);
+    color: var(--ink);
     padding: 1rem 0;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 2000;
+    backdrop-filter: blur(8px);
 }
 
 .header-content {
@@ -73,15 +103,20 @@ input, button, textarea, select {
     font-size: 2rem;
     font-weight: bold;
     text-decoration: none;
-    color: white;
+    color: var(--ink);
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
-.logo::before {
-    content: "📚";
-    font-size: 1.5rem;
+.logo::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: inline-block;
+    margin-left: 0.4rem;
 }
 
 .search-bar {
@@ -93,16 +128,16 @@ input, button, textarea, select {
 .search-bar input {
     width: 100%;
     padding: 1rem 1rem;
-    border: none;
-    border-radius: 25px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
     font-size: 1rem;
     outline: none;
-    background: rgba(255,255,255,0.9);
+    background: var(--surface);
 }
 
 .search-bar input:focus {
-    background: white;
-    box-shadow: 0 0 0 3px rgba(255,255,255,0.3);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(47, 93, 80, 0.15);
 }
 
 .header-buttons {
@@ -112,34 +147,38 @@ input, button, textarea, select {
 
 .btn {
     padding: 0.7rem 1.5rem;
-    border: none;
-    border-radius: 25px;
+    border: 1px solid transparent;
+    border-radius: 12px;
     font-size: 0.9rem;
-    font-weight: 500;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     text-decoration: none;
     display: inline-block;
+    background: transparent;
 }
 
 .btn-primary {
-    background: #ff6b6b;
+    background: var(--accent);
     color: white;
+    box-shadow: 0 6px 16px rgba(47, 93, 80, 0.2);
 }
 
 .btn-primary:hover {
-    background: #ff5252;
+    background: var(--accent-strong);
     transform: translateY(-2px);
 }
 
 .btn-secondary {
-    background: rgba(255,255,255,0.2);
-    color: white;
-    border: 2px solid rgba(255,255,255,0.3);
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
 }
 
 .btn-secondary:hover {
-    background: rgba(255,255,255,0.3);
+    background: var(--accent);
+    color: white;
     transform: translateY(-2px);
 }
 
@@ -152,10 +191,11 @@ input, button, textarea, select {
 
 /* フッター */
 .footer {
-    background: #2c3e50;
-    color: white;
+    background: #1f1b16;
+    color: #f6f1e8;
     padding: 2rem 0;
     text-align: center;
+    border-top: 1px solid #2f2a24;
 }
 
 .footer-content {
@@ -169,13 +209,13 @@ input, button, textarea, select {
 }
 
 .footer-link {
-    color: #bdc3c7;
+    color: #cfc5b7;
     text-decoration: none;
     transition: color 0.3s ease;
 }
 
 .footer-link:hover {
-    color: white;
+    color: #f6f1e8;
 }
 
 /* ハンバーガーメニュー */
@@ -199,7 +239,7 @@ input, button, textarea, select {
     display: block;
     width: 25px;
     height: 3px;
-    background: white;
+    background: var(--ink);
     margin: 3px 0;
     transition: 0.3s;
     transform-origin: center;
@@ -221,13 +261,14 @@ input, button, textarea, select {
     position: absolute;
     top: 100%;
     right: 0;
-    background: white;
+    background: var(--surface);
     min-width: 200px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-    border-radius: 8px;
+    box-shadow: var(--shadow);
+    border-radius: 12px;
     overflow: hidden;
     display: none;
     z-index: 1000;
+    border: 1px solid var(--border);
 }
 
 .hamburger-dropdown.show {
@@ -238,10 +279,10 @@ input, button, textarea, select {
     display: flex;
     align-items: center;
     padding: 15px 20px;
-    color: #333;
+    color: var(--ink);
     text-decoration: none;
     transition: all 0.3s ease;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--border);
     gap: 15px;
 }
 
@@ -250,8 +291,8 @@ input, button, textarea, select {
 }
 
 .dropdown-item:hover {
-    background-color: #f8f9fa;
-    color: #667eea;
+    background-color: var(--surface-muted);
+    color: var(--accent-strong);
 }
 
 .dropdown-icon {
@@ -260,16 +301,19 @@ input, button, textarea, select {
     justify-content: center;
     width: 40px;
     height: 40px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
     border-radius: 50%;
-    font-size: 18px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    box-shadow: none;
 }
 
 .dropdown-item:hover .dropdown-icon {
     transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: none;
 }
 
 .dropdown-text {

@@ -2,7 +2,7 @@
 
 .main-content {
     min-height: calc(100vh - 200px);
-    background: #f5f5f5;
+    background: transparent;
     padding: 2rem 1rem;
 }
 
@@ -15,41 +15,41 @@
 .page-title {
     font-size: 2rem;
     font-weight: 700;
-    color: #2c3e50;
+    color: var(--ink);
     text-align: center;
     margin-bottom: 0.5rem;
 }
 
 .page-subtitle {
     font-size: 1rem;
-    color: #7f8c8d;
+    color: var(--muted);
     text-align: center;
     margin-bottom: 2.5rem;
 }
 
 .update-date {
     font-size: 0.9rem;
-    color: #95a5a6;
+    color: var(--muted);
     text-align: center;
     margin-bottom: 2.5rem;
 }
 
 /* よくある質問セクション */
 .faq-section {
-    background: white;
-    border-radius: 8px;
+    background: var(--surface);
+    border-radius: var(--radius);
     padding: 2rem;
     margin-bottom: 2.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border);
 }
 
 .section-title {
     font-size: 1.4rem;
     font-weight: 700;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 1.5rem;
     padding-bottom: 0.75rem;
-    border-bottom: 2px solid #3498db;
+    border-bottom: 2px solid var(--accent);
 }
 
 .faq-list {
@@ -59,7 +59,7 @@
 }
 
 .faq-item {
-    border-left: 3px solid #3498db;
+    border-left: 3px solid var(--accent);
     padding-left: 1rem;
 }
 
@@ -77,11 +77,11 @@
 }
 
 .faq-question .faq-icon {
-    color: #3498db;
+    color: var(--accent);
 }
 
 .faq-answer .faq-icon {
-    color: #27ae60;
+    color: var(--accent-strong);
 }
 
 .faq-text {
@@ -91,25 +91,25 @@
 
 .faq-question .faq-text {
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--ink);
 }
 
 .faq-answer .faq-text {
-    color: #555;
+    color: var(--ink);
 }
 
 /* お問い合わせフォームセクション */
 .contact-form-section {
-    background: white;
-    border-radius: 8px;
+    background: var(--surface);
+    border-radius: var(--radius);
     padding: 2rem;
     margin-bottom: 2.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border);
 }
 
 .form-description {
     font-size: 0.95rem;
-    color: #7f8c8d;
+    color: var(--muted);
     margin-bottom: 2rem;
     line-height: 1.6;
 }
@@ -128,18 +128,18 @@
 .form-label {
     font-size: 0.95rem;
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 0.5rem;
 }
 
 .form-label .required {
-    color: #e74c3c;
+    color: var(--accent-warm);
     margin-left: 0.25rem;
 }
 
 .form-input {
     padding: 0.85rem 1rem;
-    border: 2px solid #e0e0e0;
+    border: 2px solid var(--border);
     border-radius: 6px;
     font-size: 1rem;
     transition: all 0.3s ease;
@@ -148,8 +148,8 @@
 
 .form-input:focus {
     outline: none;
-    border-color: #3498db;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(47, 93, 80, 0.12);
 }
 
 .form-select {
@@ -163,14 +163,14 @@
 
 .help-text {
     font-size: 0.85rem;
-    color: #95a5a6;
+    color: var(--muted);
     margin-top: 0.4rem;
 }
 
 .submit-btn {
     width: 100%;
     padding: 1rem;
-    background: #3498db;
+    background: var(--accent);
     color: white;
     border: none;
     border-radius: 6px;
@@ -182,9 +182,7 @@
 }
 
 .submit-btn:hover {
-    background: #2980b9;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    background: var(--accent-strong);
 }
 
 .submit-btn:active {
@@ -203,45 +201,58 @@
 }
 
 .support-card {
-    background: white;
-    border-radius: 8px;
+    background: var(--surface);
+    border-radius: var(--radius);
     padding: 1.75rem;
     text-align: center;
     text-decoration: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border);
     transition: all 0.3s ease;
 }
 
 .support-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+    border-color: var(--accent);
 }
 
 .support-icon {
-    font-size: 2.5rem;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface-muted);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
     margin-bottom: 1rem;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .support-title {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 0.5rem;
 }
 
 .support-description {
     font-size: 0.9rem;
-    color: #7f8c8d;
+    color: var(--muted);
     line-height: 1.5;
 }
 
 /* 規約・ポリシー用のドキュメントスタイル */
 .document-content {
-    background: white;
-    border-radius: 8px;
+    background: var(--surface);
+    border-radius: var(--radius);
     padding: 2.5rem;
     margin-bottom: 2rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border);
     line-height: 1.8;
 }
 
@@ -256,27 +267,27 @@
 .document-heading {
     font-size: 1.3rem;
     font-weight: 700;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
-    border-bottom: 2px solid #ecf0f1;
+    border-bottom: 2px solid var(--surface-muted);
 }
 
 .document-subheading {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #34495e;
+    color: var(--ink);
     margin: 1.5rem 0 1rem 0;
 }
 
 .document-section > p {
-    color: #555;
+    color: var(--ink);
     margin-bottom: 1rem;
 }
 
 .document-list {
     padding-left: 2rem;
-    color: #555;
+    color: var(--ink);
 }
 
 .document-list > li {
@@ -295,12 +306,12 @@
 
 .note {
     font-size: 0.9rem;
-    color: #7f8c8d;
+    color: var(--muted);
     font-style: italic;
 }
 
 .contact-info {
-    background: #f8f9fa;
+    background: var(--surface-muted);
     padding: 1.25rem;
     border-radius: 6px;
     margin-top: 1rem;
@@ -311,7 +322,7 @@
 }
 
 .contact-info a {
-    color: #3498db;
+    color: var(--accent);
     text-decoration: none;
 }
 
@@ -327,7 +338,7 @@
 .btn-back {
     display: inline-block;
     padding: 0.75rem 2rem;
-    background: #3498db;
+    background: var(--accent);
     color: white;
     text-decoration: none;
     border-radius: 6px;
@@ -336,7 +347,7 @@
 }
 
 .btn-back:hover {
-    background: #2980b9;
+    background: var(--accent);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
 }

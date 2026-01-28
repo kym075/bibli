@@ -10,12 +10,24 @@ main.main-content {
 }
 
 .pickup-area {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: white;
+    background: var(--surface);
+    color: var(--ink);
     padding: 2rem;
-    border-radius: 15px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
     margin-bottom: 3rem;
     text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.pickup-area::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, rgba(47, 93, 80, 0.08), transparent 55%);
+    pointer-events: none;
 }
 
 .pickup-area h2 {
@@ -35,16 +47,18 @@ main.main-content {
 .section-title {
     font-size: 1.5rem;
     margin-bottom: 1.5rem;
-    color: #2c3e50;
-    position: relative;
-    padding-left: 1rem;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 .section-title::before {
-    content: "▼";
-    position: absolute;
-    left: -0.5rem;
-    color: #667eea;
+    content: "";
+    width: 24px;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--accent);
 }
 
 .categories,.genres {
@@ -55,20 +69,21 @@ main.main-content {
 }
 
 .category-btn,.genre-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--border);
     padding: 0.8rem 1.5rem;
-    border-radius: 25px;
+    border-radius: 999px;
     font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: none;
 }
 
 .category-btn:hover {
     transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    border-color: var(--accent);
+    color: var(--accent);
 }
 
 .book-grid {
@@ -79,9 +94,10 @@ main.main-content {
 }
 
 .book-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
     overflow: hidden;
     transition: all 0.3s ease;
     cursor: pointer;
@@ -95,7 +111,7 @@ main.main-content {
 .book-image {
     width: 100%;
     height: 200px;
-    background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+    background: linear-gradient(135deg, rgba(47, 93, 80, 0.08), rgba(47, 93, 80, 0));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -105,14 +121,8 @@ main.main-content {
 }
 
 .book-image::before {
-    content: "📖";
+    content: "";
     position: absolute;
-    animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
 }
 
 .book-info {
@@ -123,13 +133,13 @@ main.main-content {
     font-size: 1.1rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
-    color: #2c3e50;
+    color: var(--ink);
 }
 
 .book-price {
     font-size: 1.3rem;
     font-weight: bold;
-    color: #e74c3c;
+    color: var(--accent-warm);
 }
 
 .special-links {
@@ -139,17 +149,19 @@ main.main-content {
 }
 
 .special-link {
-    background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
-    color: white;
+    background: var(--surface);
+    color: var(--ink);
     padding: 1rem 2rem;
-    border-radius: 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
     text-decoration: none;
     font-weight: 500;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+    box-shadow: var(--shadow);
 }
 
 .special-link:hover {
     transform: translateY(-3px);
-    box-shadow: 0 6px 25px rgba(78, 205, 196, 0.4);
+    border-color: var(--accent);
+    color: var(--accent);
 }

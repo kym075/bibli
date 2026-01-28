@@ -117,14 +117,14 @@ function Listing() {
       <Header />
       <main className="main-content">
         <div className="page-title">
-          <h1>📚 商品を出品する</h1>
+          <h1>商品を出品する</h1>
           <p>あなたの大切な本を新しい読者に届けませんか？</p>
         </div>
 
         <div className="form-container fade-in">
           <form id="listingForm" onSubmit={handleSubmit}>
             <div className="success-message" id="successMessage">
-              ✅ 出品が完了しました！商品は審査後に公開されます。
+              出品が完了しました！商品は審査後に公開されます。
             </div>
 
             {/* 商品情報の入力 */}
@@ -137,7 +137,7 @@ function Listing() {
                 <div className="help-text">最大10枚まで登録できます。1枚目の画像がメイン画像として表示されます。</div>
 
                 <div className="image-upload-area" id="imageUploadArea" onClick={handleImageUploadClick} style={{cursor: 'pointer'}}>
-                  <span className="upload-icon">📷</span>
+                  <span className="upload-icon">IMG</span>
                   <div className="upload-text">ファイルを選択またはドラッグ＆ドロップ</div>
                   <div className="upload-subtext">JPG, PNG, GIF (最大5MB)</div>
                   <input type="file" className="file-input" id="imageInput" multiple accept="image/*" onChange={handleImageChange} style={{display: 'none'}} />
@@ -375,7 +375,7 @@ function Listing() {
             {/* 送信ボタン */}
             <div className="submit-section">
               <button type="submit" className="submit-btn" disabled={isSubmitting}>
-                {isSubmitting ? '出品中...' : '📤 出品する'}
+                {isSubmitting ? '出品中...' : '出品する'}
               </button>
               <div className="help-text" style={{marginTop: '1rem'}}>
                 出品後、運営による審査を経て公開されます。審査は通常24時間以内に完了します。

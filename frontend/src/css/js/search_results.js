@@ -7,11 +7,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (isActive) {
                 btn.classList.remove('active');
-                btn.innerHTML = '♡';
+                btn.innerHTML = 'LIKE';
                 btn.title = 'お気に入りに追加';
             } else {
                 btn.classList.add('active');
-                btn.innerHTML = '❤️';
+                btn.innerHTML = 'LIKED';
                 btn.title = 'お気に入りから削除';
             }
             

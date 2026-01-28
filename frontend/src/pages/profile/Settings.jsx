@@ -19,28 +19,28 @@ function Settings() {
             <div className="settings-list">
               <Link to="/user-settings" className="settings-item">
                 <div className="item-left">
-                  <span className="item-icon">👤</span>
+                  <span className="item-icon">U</span>
                   <span className="item-text">ユーザー設定</span>
                 </div>
                 <span className="item-arrow">›</span>
               </Link>
               <a href="#" className="settings-item">
                 <div className="item-left">
-                  <span className="item-icon">✉️</span>
+                  <span className="item-icon">M</span>
                   <span className="item-text">メールアドレス</span>
                 </div>
                 <span className="item-value">example@email.com</span>
               </a>
               <a href="#" className="settings-item">
                 <div className="item-left">
-                  <span className="item-icon">📱</span>
+                  <span className="item-icon">T</span>
                   <span className="item-text">電話番号</span>
                 </div>
                 <span className="item-value">090-****-5678</span>
               </a>
               <a href="#" className="settings-item">
                 <div className="item-left">
-                  <span className="item-icon">🔒</span>
+                  <span className="item-icon">P</span>
                   <span className="item-text">パスワード変更</span>
                 </div>
                 <span className="item-arrow">›</span>
@@ -54,21 +54,21 @@ function Settings() {
             <div className="settings-list">
               <a href="#" className="settings-item" data-modal="payment">
                 <div className="item-left">
-                  <span className="item-icon">💳</span>
+                  <span className="item-icon">C</span>
                   <span className="item-text">クレジットカード</span>
                 </div>
                 <span className="item-arrow">›</span>
               </a>
               <a href="#" className="settings-item">
                 <div className="item-left">
-                  <span className="item-icon">🏦</span>
+                  <span className="item-icon">B</span>
                   <span className="item-text">振込先口座</span>
                 </div>
                 <span className="item-arrow">›</span>
               </a>
               <a href="#" className="settings-item">
                 <div className="item-left">
-                  <span className="item-icon">💰</span>
+                  <span className="item-icon">S</span>
                   <span className="item-text">売上金・ポイント</span>
                 </div>
                 <span className="item-value">¥0</span>
@@ -83,7 +83,7 @@ function Settings() {
             <div className="settings-list">
               <div className="settings-item toggle-item">
                 <div className="item-left">
-                  <span className="item-icon">🔔</span>
+                  <span className="item-icon">N</span>
                   <span className="item-text">プッシュ通知</span>
                 </div>
                 <label className="toggle-switch">
@@ -93,7 +93,7 @@ function Settings() {
               </div>
               <div className="settings-item toggle-item">
                 <div className="item-left">
-                  <span className="item-icon">📧</span>
+                  <span className="item-icon">E</span>
                   <span className="item-text">メール通知</span>
                 </div>
                 <label className="toggle-switch">
@@ -103,7 +103,7 @@ function Settings() {
               </div>
               <div className="settings-item toggle-item">
                 <div className="item-left">
-                  <span className="item-icon">💬</span>
+                  <span className="item-icon">M</span>
                   <span className="item-text">メッセージ通知</span>
                 </div>
                 <label className="toggle-switch">
@@ -113,7 +113,7 @@ function Settings() {
               </div>
               <div className="settings-item toggle-item">
                 <div className="item-left">
-                  <span className="item-icon">🛍️</span>
+                  <span className="item-icon">C</span>
                   <span className="item-text">お知らせ・キャンペーン</span>
                 </div>
                 <label className="toggle-switch">
@@ -130,7 +130,7 @@ function Settings() {
             <div className="settings-list">
               <div className="settings-item toggle-item">
                 <div className="item-left">
-                  <span className="item-icon">🔐</span>
+                  <span className="item-icon">L</span>
                   <span className="item-text">プロフィールを非公開</span>
                 </div>
                 <label className="toggle-switch">
@@ -140,7 +140,7 @@ function Settings() {
               </div>
               <a href="#" className="settings-item">
                 <div className="item-left">
-                  <span className="item-icon">🚫</span>
+                  <span className="item-icon">B</span>
                   <span className="item-text">ブロックリスト</span>
                 </div>
                 <span className="item-arrow">›</span>
@@ -154,35 +154,35 @@ function Settings() {
             <div className="settings-list">
               <Link to="/contact" className="settings-item">
                 <div className="item-left">
-                  <span className="item-icon">📞</span>
+                  <span className="item-icon">C</span>
                   <span className="item-text">お問い合わせ</span>
                 </div>
                 <span className="item-arrow">›</span>
               </Link>
               <Link to="/terms" className="settings-item">
                 <div className="item-left">
-                  <span className="item-icon">📄</span>
+                  <span className="item-icon">T</span>
                   <span className="item-text">利用規約</span>
                 </div>
                 <span className="item-arrow">›</span>
               </Link>
               <Link to="/privacy" className="settings-item">
                 <div className="item-left">
-                  <span className="item-icon">🔏</span>
+                  <span className="item-icon">P</span>
                   <span className="item-text">プライバシーポリシー</span>
                 </div>
                 <span className="item-arrow">›</span>
               </Link>
               <Link to="/commercial" className="settings-item">
                 <div className="item-left">
-                  <span className="item-icon">⚖️</span>
+                  <span className="item-icon">L</span>
                   <span className="item-text">特定商取引法に基づく表記</span>
                 </div>
                 <span className="item-arrow">›</span>
               </Link>
               <a href="#" className="settings-item">
                 <div className="item-left">
-                  <span className="item-icon">ℹ️</span>
+                  <span className="item-icon">V</span>
                   <span className="item-text">アプリバージョン</span>
                 </div>
                 <span className="item-value">v1.0.0</span>
@@ -195,7 +195,7 @@ function Settings() {
             <div className="settings-list">
               <a href="#" className="settings-item danger-item" id="logoutBtn">
                 <div className="item-left">
-                  <span className="item-icon">🚪</span>
+                  <span className="item-icon">O</span>
                   <span className="item-text">ログアウト</span>
                 </div>
               </a>

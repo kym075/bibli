@@ -6,6 +6,45 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/forum.css';
 
+const IconBase = ({ children, className = 'stat-icon' }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    width="16"
+    height="16"
+    aria-hidden="true"
+    focusable="false"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {children}
+  </svg>
+);
+
+const CommentIcon = (props) => (
+  <IconBase {...props}>
+    <path d="M21 12a8 8 0 0 1-8 8H7l-4 4V8a4 4 0 0 1 4-4h6a8 8 0 0 1 8 8Z" />
+    <path d="M8 9h8M8 13h5" />
+  </IconBase>
+);
+
+const EyeIcon = (props) => (
+  <IconBase {...props}>
+    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
+    <circle cx="12" cy="12" r="3" />
+  </IconBase>
+);
+
+const ThumbIcon = (props) => (
+  <IconBase {...props}>
+    <path d="M7 11v8a2 2 0 0 0 2 2h6a2 2 0 0 0 1.9-1.37l2.1-6A2 2 0 0 0 17 10h-5l.6-3a2 2 0 0 0-3.92-.8L7 11Z" />
+    <path d="M7 11H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h3" />
+  </IconBase>
+);
+
 const CATEGORY_LABELS = {
   all: 'すべて',
   chat: '雑談',
@@ -200,9 +239,9 @@ function Forum() {
                   <h3 className="thread-title">{thread.title}</h3>
                   <p className="thread-preview">{getPreviewText(thread.content)}</p>
                   <div className="thread-stats">
-                    <span className="stat-item comments-stat">💬 {thread.comment_count || 0}</span>
-                    <span className="stat-item likes-stat">👍 {thread.like_count || 0}</span>
-                    <span className="stat-item views-stat">👁 {thread.view_count || 0}</span>
+                    <span className="stat-item comments-stat"><CommentIcon /><span>{thread.comment_count || 0}</span></span>
+                    <span className="stat-item likes-stat"><ThumbIcon /><span>{thread.like_count || 0}</span></span>
+                    <span className="stat-item views-stat"><EyeIcon /><span>{thread.view_count || 0}</span></span>
                   </div>
                 </div>
               </Link>

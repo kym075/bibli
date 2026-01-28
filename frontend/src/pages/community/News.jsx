@@ -13,7 +13,7 @@ function News() {
       <Header />
       <main className="main-content">
         <div className="page-title">
-          <h1>📢 お知らせ</h1>
+          <h1>お知らせ</h1>
           <p>重要な情報やアップデート情報をお届けします</p>
         </div>
 
@@ -25,14 +25,14 @@ function News() {
               data-tab="news"
               onClick={() => setActiveTab('news')}
             >
-              📋 運営からのお知らせ
+              運営からのお知らせ
             </button>
             <button
               className={`tab-btn ${activeTab === 'notifications' ? 'active' : ''}`}
               data-tab="notifications"
               onClick={() => setActiveTab('notifications')}
             >
-              🔔 あなたへの通知 <span id="unreadCount" style={{background: '#ff6b6b', color: 'white', borderRadius: '50%', padding: '0.2rem 0.5rem', fontSize: '0.8rem', marginLeft: '0.5rem'}}>3</span>
+              あなたへの通知 <span id="unreadCount" style={{background: 'var(--accent-warm)', color: 'white', borderRadius: '50%', padding: '0.2rem 0.5rem', fontSize: '0.8rem', marginLeft: '0.5rem'}}>3</span>
             </button>
           </div>
 
@@ -54,7 +54,7 @@ function News() {
                   </p>
                   <div className="news-actions">
                     <Link to="/news/1" className="read-more">詳細を見る →</Link>
-                    <span className="news-status">📌 固定</span>
+                    <span className="news-status">固定</span>
                   </div>
                 </div>
 
@@ -70,7 +70,7 @@ function News() {
                   </p>
                   <div className="news-actions">
                     <a href="#" className="read-more">詳細を見る →</a>
-                    <span className="news-status">⭐ 人気</span>
+                    <span className="news-status">人気</span>
                   </div>
                 </div>
 
@@ -86,7 +86,7 @@ function News() {
                   </p>
                   <div className="news-actions">
                     <a href="#" className="read-more">詳細を見る →</a>
-                    <span className="news-status">🎉 開始</span>
+                    <span className="news-status">開始</span>
                   </div>
                 </div>
 
@@ -102,7 +102,7 @@ function News() {
                   </p>
                   <div className="news-actions">
                     <a href="#" className="read-more">詳細を見る →</a>
-                    <span className="news-status">🔍 改善</span>
+                    <span className="news-status">改善</span>
                   </div>
                 </div>
 
@@ -117,7 +117,7 @@ function News() {
                   </p>
                   <div className="news-actions">
                     <a href="#" className="read-more">詳細を見る →</a>
-                    <span className="news-status">🎁 キャンペーン</span>
+                    <span className="news-status">キャンペーン</span>
                   </div>
                 </div>
               </div>
@@ -130,7 +130,7 @@ function News() {
                 <div className="notification-item unread">
                   <div className="unread-indicator"></div>
                   <div className="notification-header">
-                    <div className="notification-icon">💰</div>
+                    <div className="notification-icon">S</div>
                     <div className="notification-content">
                       <div className="notification-title">商品が売れました！</div>
                       <div className="notification-message">
@@ -144,7 +144,7 @@ function News() {
                 <div className="notification-item unread">
                   <div className="unread-indicator"></div>
                   <div className="notification-header">
-                    <div className="notification-icon">💬</div>
+                    <div className="notification-icon">M</div>
                     <div className="notification-content">
                       <div className="notification-title">新しいメッセージ</div>
                       <div className="notification-message">
@@ -158,7 +158,7 @@ function News() {
                 <div className="notification-item unread">
                   <div className="unread-indicator"></div>
                   <div className="notification-header">
-                    <div className="notification-icon">✅</div>
+                    <div className="notification-icon">OK</div>
                     <div className="notification-content">
                       <div className="notification-title">商品審査完了</div>
                       <div className="notification-message">
@@ -172,7 +172,7 @@ function News() {
                 {/* 既読通知 */}
                 <div className="notification-item">
                   <div className="notification-header">
-                    <div className="notification-icon">🎉</div>
+                    <div className="notification-icon">P</div>
                     <div className="notification-content">
                       <div className="notification-title">出品完了</div>
                       <div className="notification-message">
@@ -185,14 +185,14 @@ function News() {
 
                 <div className="notification-item">
                   <div className="notification-header">
-                    <div className="notification-icon">⭐</div>
+                    <div className="notification-icon">R</div>
                     <div className="notification-content">
-                      <div className="notification-title">評価を受けました</div>
-                      <div className="notification-message">
-                        取引相手から評価「★★★★★」をいただきました。ありがとうございました！
+                        <div className="notification-title">評価を受けました</div>
+                        <div className="notification-message">
+                        取引相手から評価「5-star」をいただきました。ありがとうございました！
+                        </div>
+                        <div className="notification-time">3日前</div>
                       </div>
-                      <div className="notification-time">3日前</div>
-                    </div>
                   </div>
                 </div>
               </div>

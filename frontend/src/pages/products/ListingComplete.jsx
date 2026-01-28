@@ -15,7 +15,7 @@ function ListingComplete() {
       <main className="main-content">
         <div className="success-container">
           <div className="success-content">
-            <div className="success-icon">🎉</div>
+            <div className="success-icon">OK</div>
             <h1 className="success-title">出品が完了しました！</h1>
             <p className="success-message">
               ありがとうございます！<br />
@@ -25,19 +25,19 @@ function ListingComplete() {
 
             <div className="action-buttons">
               <Link to="/profile" className="action-btn btn-check" id="checkBtn">
-                📋 出品した商品を確認する
+                出品した商品を確認する
               </Link>
               <Link to="/products/listing" className="action-btn btn-continue" id="continueBtn">
-                ➕ 続けて別の本を出品する
+                続けて別の本を出品する
               </Link>
               <Link to="/" className="action-btn btn-home" id="homeBtn">
-                🏠 トップページへ戻る
+                トップページへ戻る
               </Link>
             </div>
 
             <div className="additional-info">
               <div className="info-title">
-                📋 今後の流れについて
+                今後の流れについて
               </div>
               <ul className="info-list">
                 <li>運営チームが商品情報を確認します（通常24時間以内）</li>

@@ -56,11 +56,11 @@ document.addEventListener('DOMContentLoaded', function() {
     followBtn.addEventListener('click', function() {
         isFollowing = !isFollowing;
         if (isFollowing) {
-            this.textContent = '✅ フォロー中';
+            this.textContent = 'フォロー中';
             this.style.background = '#2ecc71';
             this.style.borderColor = '#2ecc71';
         } else {
-            this.textContent = '👤 フォロー';
+            this.textContent = 'フォロー';
             this.style.background = 'rgba(255,255,255,0.2)';
             this.style.borderColor = 'rgba(255,255,255,0.3)';
         }

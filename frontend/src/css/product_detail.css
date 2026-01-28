@@ -3,7 +3,7 @@
     max-width: 1200px;
     margin: 80px auto 40px;
     padding: 0 20px;
-    background-color: #f5f5f5;
+    background-color: transparent;
 }
 
 /* 商品コンテナ */
@@ -25,13 +25,14 @@
 .main-image {
     width: 100%;
     aspect-ratio: 1;
-    background: #f5f5f5;
-    border-radius: 4px;
+    background: var(--surface);
+    border-radius: var(--radius);
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     margin-bottom: 16px;
+    border: 1px solid var(--border);
 }
 
 .main-image img {
@@ -53,8 +54,8 @@
 .thumbnail {
     width: 75px;
     height: 75px;
-    background: #f5f5f5;
-    border-radius: 4px;
+    background: var(--surface);
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -62,7 +63,7 @@
     transition: all 0.2s ease;
     font-size: 1.5rem;
     flex-shrink: 0;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border);
 }
 
 .thumbnail:hover {
@@ -70,7 +71,7 @@
 }
 
 .thumbnail.active {
-    border: 2px solid #3CCACE;
+    border: 2px solid var(--accent);
 }
 
 /* 右カラム: 商品情報 */
@@ -83,15 +84,17 @@
 }
 
 .product-info {
-    background: white;
+    background: var(--surface);
     padding: 24px;
-    border-radius: 4px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
 }
 
 .product-title {
     font-size: 24px;
     font-weight: 600;
-    color: #222;
+    color: var(--ink);
     margin-bottom: 16px;
     line-height: 1.4;
 }
@@ -104,15 +107,15 @@
 }
 
 .product-meta span {
-    background: #f5f5f5;
+    background: var(--surface-muted);
     padding: 4px 12px;
     border-radius: 4px;
     font-size: 13px;
-    color: #666;
+    color: var(--muted);
 }
 
 .condition-badge {
-    background: #3CCACE;
+    background: var(--accent);
     color: white;
     padding: 4px 12px;
     border-radius: 4px;
@@ -125,7 +128,7 @@
 .price {
     font-size: 36px;
     font-weight: 700;
-    color: #222;
+    color: var(--ink);
     margin-bottom: 24px;
     display: flex;
     align-items: baseline;
@@ -151,7 +154,7 @@
     font-size: 16px;
     font-weight: 600;
     border: none;
-    border-radius: 100px;
+    border-radius: 14px;
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: center;
@@ -163,16 +166,16 @@
 }
 
 .btn-purchase {
-    background: #ea352d;
+    background: var(--accent);
     color: white;
 }
 
 .btn-purchase:hover {
-    background: #d32f2f;
+    background: var(--accent-strong);
 }
 
 .btn-purchase:active {
-    background: #c62828;
+    background: var(--accent-strong);
 }
 
 .secondary-actions {
@@ -183,25 +186,25 @@
 
 .btn-outline {
     flex: 1;
-    background: white;
-    color: #666;
-    border: 1px solid #e0e0e0;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--border);
     padding: 12px;
     font-size: 14px;
-    border-radius: 100px;
+    border-radius: 12px;
 }
 
 .btn-outline:hover {
-    background: #f5f5f5;
+    background: var(--surface-muted);
 }
 
 .btn-cancel {
-    border-color: #e74c3c;
-    color: #e74c3c;
+    border-color: var(--accent-warm);
+    color: var(--accent-warm);
 }
 
 .btn-cancel:hover {
-    background: #fdecea;
+    background: rgba(180, 107, 61, 0.12);
 }
 
 .btn-cancel:disabled {
@@ -211,21 +214,21 @@
 
 .cancel-message {
     font-size: 0.9rem;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 16px;
 }
 
 .cancel-message.is-error {
-    color: #e74c3c;
+    color: var(--accent-warm);
 }
 
 .cancel-message.is-success {
-    color: #2ecc71;
+    color: var(--accent);
 }
 
 /* 出品者情報 */
 .seller-info {
-    background: #f5f5f5;
+    background: var(--surface-muted);
     padding: 16px;
     border-radius: 4px;
     margin-bottom: 24px;
@@ -242,7 +245,7 @@
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    background: #e0e0e0;
+    background: var(--border);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -259,7 +262,7 @@
 .seller-details h4 {
     font-size: 14px;
     font-weight: 600;
-    color: #222;
+    color: var(--ink);
     margin-bottom: 4px;
 }
 
@@ -267,11 +270,11 @@
     display: flex;
     gap: 4px;
     font-size: 12px;
-    color: #666;
+    color: var(--muted);
 }
 
 .rating span:first-child {
-    color: #ffa726;
+    color: var(--accent-warm);
 }
 
 .btn-small {
@@ -285,22 +288,22 @@
 }
 
 .btn-primary {
-    background: #3CCACE;
+    background: var(--accent);
     color: white;
 }
 
 .btn-primary:hover {
-    background: #2fb3bd;
+    background: var(--accent-strong);
 }
 
 .btn-secondary {
-    background: white;
-    color: #3CCACE;
-    border: 1px solid #3CCACE;
+    background: var(--surface);
+    color: var(--accent);
+    border: 1px solid var(--accent);
 }
 
 .btn-secondary:hover {
-    background: #f0f9fa;
+    background: var(--surface-muted);
 }
 
 /* コミュニケーションアクション */
@@ -317,7 +320,7 @@
 
 /* 商品説明エリア */
 .product-description {
-    background: white;
+    background: var(--surface);
     padding: 32px;
     border-radius: 4px;
 }
@@ -333,14 +336,14 @@
 .description-section h3 {
     font-size: 18px;
     font-weight: 600;
-    color: #222;
+    color: var(--ink);
     margin-bottom: 20px;
     padding-bottom: 12px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--border);
 }
 
 .description-text {
-    color: #333;
+    color: var(--ink);
     line-height: 1.8;
     font-size: 14px;
     white-space: pre-wrap;
@@ -354,7 +357,7 @@
 .specs {
     display: table;
     width: 100%;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid var(--border);
 }
 
 .spec-item {
@@ -365,24 +368,24 @@
 .spec-value {
     display: table-cell;
     padding: 16px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--border);
     font-size: 14px;
 }
 
 .spec-label {
     width: 35%;
-    background: #f5f5f5;
-    color: #666;
+    background: var(--surface-muted);
+    color: var(--muted);
     font-weight: 500;
 }
 
 .spec-value {
-    color: #222;
+    color: var(--ink);
 }
 
 /* 関連商品エリア */
 .related-products {
-    background: white;
+    background: var(--surface);
     padding: 32px;
     border-radius: 4px;
 }
@@ -390,7 +393,7 @@
 .related-products h3 {
     font-size: 22px;
     font-weight: 600;
-    color: #222;
+    color: var(--ink);
     margin-bottom: 24px;
 }
 
