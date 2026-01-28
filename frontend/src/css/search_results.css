@@ -5,32 +5,33 @@
 
 .search-results-title {
     font-size: 1.8rem;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 0.5rem;
 }
 
 .search-info {
-    color: #7f8c8d;
+    color: var(--muted);
     font-size: 1.1rem;
 }
 
 .search-keyword {
-    color: #667eea;
+    color: var(--accent);
     font-weight: 600;
 }
 
 .results-count {
-    color: #e74c3c;
+    color: var(--accent-warm);
     font-weight: 600;
 }
 
 /* 絞り込み・ソートエリア */
 .filter-sort-area {
-    background: white;
-    border-radius: 15px;
+    background: var(--surface);
+    border-radius: var(--radius);
     padding: 1.5rem;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow);
     margin-bottom: 2rem;
+    border: 1px solid var(--border);
 }
 
 .controls-row {
@@ -53,7 +54,7 @@
 
 .control-label {
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--ink);
     white-space: nowrap;
 }
 
@@ -63,11 +64,11 @@
 
 .custom-select {
     appearance: none;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: rgb(0, 0, 0);
-    border: none;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--border);
     padding: 0.6rem 2rem 0.6rem 1rem;
-    border-radius: 20px;
+    border-radius: 10px;
     font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -76,7 +77,7 @@
 
 .custom-select:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    border-color: var(--accent);
 }
 
 .select-wrapper::after {
@@ -85,7 +86,7 @@
     right: 0.8rem;
     top: 50%;
     transform: translateY(-50%);
-    color: white;
+    color: var(--muted);
     pointer-events: none;
     font-size: 0.8rem;
 }
@@ -99,14 +100,15 @@
 .price-input {
     width: 100px;
     padding: 0.6rem;
-    border: 2px solid #e9ecef;
+    border: 1px solid var(--border);
     border-radius: 8px;
     font-size: 0.9rem;
     text-align: center;
+    background: var(--surface);
 }
 
 .price-input:focus {
-    border-color: #667eea;
+    border-color: var(--accent);
     outline: none;
 }
 
@@ -119,24 +121,25 @@
 }
 
 .product-card {
-    background: white;
-    border-radius: 15px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
     overflow: hidden;
     transition: all 0.3s ease;
     cursor: pointer;
     position: relative;
+    border: 1px solid var(--border);
 }
 
 .product-card:hover {
     transform: translateY(-8px);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+    box-shadow: 0 14px 32px rgba(43, 42, 39, 0.15);
 }
 
 .product-image {
     width: 100%;
     height: 220px;
-    background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+    background: linear-gradient(135deg, rgba(47, 93, 80, 0.1), rgba(47, 93, 80, 0));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -148,20 +151,14 @@
 .product-image::before {
     content: "";
     position: absolute;
-    animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-8px); }
 }
 
 .favorite-btn {
     position: absolute;
     top: 1rem;
     right: 1rem;
-    background: rgba(255, 255, 255, 0.9);
-    border: none;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid var(--border);
     border-radius: 50%;
     width: 40px;
     height: 40px;
@@ -171,18 +168,26 @@
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 1.2rem;
+    color: var(--accent);
     backdrop-filter: blur(10px);
 }
 
 .favorite-btn:hover {
-    background: white;
+    background: var(--surface);
     transform: scale(1.1);
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
 .favorite-btn.active {
-    background: #ff6b6b;
+    background: var(--accent-warm);
     color: white;
+    border-color: transparent;
+}
+
+.favorite-icon {
+    display: block;
+    width: 18px;
+    height: 18px;
 }
 
 .product-info {
@@ -192,7 +197,7 @@
 .product-title {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 0.5rem;
     line-height: 1.4;
     height: 2.8rem;
@@ -206,7 +211,7 @@
 .product-price {
     font-size: 1.4rem;
     font-weight: bold;
-    color: #e74c3c;
+    color: var(--accent-warm);
     margin-bottom: 0.5rem;
 }
 
@@ -214,12 +219,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #7f8c8d;
+    color: var(--muted);
     font-size: 0.9rem;
 }
 
 .condition-badge {
-    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    background: var(--accent);
     color: white;
     padding: 0.2rem 0.6rem;
     border-radius: 12px;
@@ -238,9 +243,9 @@
 
 .pagination-btn {
     padding: 0.8rem 1.2rem;
-    border: 2px solid #e9ecef;
-    background: white;
-    color: #666;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink);
     text-decoration: none;
     border-radius: 8px;
     transition: all 0.3s ease;
@@ -248,13 +253,13 @@
 }
 
 .pagination-btn:hover {
-    border-color: #667eea;
-    color: #667eea;
+    border-color: var(--accent);
+    color: var(--accent);
     transform: translateY(-2px);
 }
 
 .pagination-btn.active {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: var(--accent);
     color: white;
     border-color: transparent;
 }
@@ -266,15 +271,15 @@
 
 .pagination-btn.disabled:hover {
     transform: none;
-    border-color: #e9ecef;
-    color: #666;
+    border-color: var(--border);
+    color: var(--muted);
 }
 
 /* 結果なしの状態 */
 .no-results {
     text-align: center;
     padding: 4rem 2rem;
-    color: #7f8c8d;
+    color: var(--muted);
 }
 
 .no-results-icon {
@@ -285,7 +290,7 @@
 .no-results-message {
     font-size: 1.3rem;
     margin-bottom: 1rem;
-    color: #2c3e50;
+    color: var(--ink);
 }
 
 .no-results-suggestion {
@@ -294,11 +299,11 @@
 }
 
 .search-again-btn {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: var(--accent);
     color: white;
     border: none;
     padding: 1rem 2rem;
-    border-radius: 25px;
+    border-radius: 12px;
     font-size: 1rem;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -306,5 +311,5 @@
 
 .search-again-btn:hover {
     transform: translateY(-3px);
-    box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
+    background: var(--accent-strong);
 }

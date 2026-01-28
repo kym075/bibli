@@ -11,17 +11,15 @@
 
 /* 成功コンテナ */
 .success-container {
-    background: white;
+    background: var(--surface);
     border-radius: 25px;
     padding: 4rem 3rem;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow);
     text-align: center;
     position: relative;
     overflow: hidden;
     animation: slideUp 0.8s ease-out;
-    border: 3px solid transparent;
-    background: linear-gradient(white, white) padding-box,
-                linear-gradient(135deg, #2ecc71, #27ae60) border-box;
+    border: 1px solid var(--border);
 }
 
 @keyframes slideUp {
@@ -38,22 +36,9 @@
 .success-container::before {
     content: '';
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(45deg, 
-        rgba(46, 204, 113, 0.05) 0%,
-        transparent 50%,
-        rgba(39, 174, 96, 0.05) 100%
-    );
-    animation: rotate 20s linear infinite;
+    inset: 0;
+    background: linear-gradient(120deg, rgba(47, 93, 80, 0.08), transparent 60%);
     z-index: 0;
-}
-
-@keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
 }
 
 .success-content {
@@ -63,31 +48,24 @@
 
 /* 成功アイコン */
 .success-icon {
-    font-size: 6rem;
-    margin-bottom: 2rem;
-    animation: bounce 1.5s ease-out;
-    display: inline-block;
-}
-
-@keyframes bounce {
-    0%, 20%, 50%, 80%, 100% {
-        transform: translateY(0) scale(1);
-    }
-    10% {
-        transform: translateY(-20px) scale(1.1);
-    }
-    40% {
-        transform: translateY(-10px) scale(1.05);
-    }
-    60% {
-        transform: translateY(-5px) scale(1.02);
-    }
+    width: 88px;
+    height: 88px;
+    margin: 0 auto 2rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-muted);
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* 成功タイトル */
 .success-title {
     font-size: 2.8rem;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 1.5rem;
     font-weight: bold;
     animation: fadeInUp 0.8s ease-out 0.3s both;
@@ -107,30 +85,31 @@
 /* 成功メッセージ */
 .success-message {
     font-size: 1.2rem;
-    color: #7f8c8d;
+    color: var(--muted);
     margin-bottom: 3rem;
     line-height: 1.8;
     animation: fadeInUp 0.8s ease-out 0.5s both;
 }
 
 .success-message strong {
-    color: #2ecc71;
+    color: var(--accent);
     font-weight: 600;
 }
 
 /* 注文情報 */
 .order-info {
-    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    background: var(--surface-muted);
     padding: 2rem;
     border-radius: 15px;
     margin-bottom: 3rem;
-    border-left: 4px solid #2ecc71;
+    border-left: 4px solid var(--accent);
     animation: fadeInUp 0.8s ease-out 0.7s both;
+    border: 1px solid var(--border);
 }
 
 .order-title {
     font-size: 1.1rem;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 1rem;
     font-weight: 600;
     display: flex;
@@ -139,7 +118,7 @@
 }
 
 .order-title::before {
-    content: "📋";
+    content: "";
     font-size: 1rem;
 }
 
@@ -154,37 +133,38 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.5rem 0;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid var(--border);
 }
 
 .order-row:last-child {
     border-bottom: none;
     font-weight: bold;
-    color: #2c3e50;
+    color: var(--ink);
 }
 
 .order-label {
-    color: #7f8c8d;
+    color: var(--muted);
 }
 
 .order-value {
     font-weight: 500;
-    color: #2c3e50;
+    color: var(--ink);
 }
 
 /* 次のステップ */
 .next-steps {
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    background: var(--surface-muted);
     padding: 2rem;
     border-radius: 15px;
     margin-bottom: 3rem;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid var(--accent);
     animation: fadeInUp 0.8s ease-out 0.9s both;
+    border: 1px solid var(--border);
 }
 
 .steps-title {
     font-size: 1.1rem;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 1rem;
     font-weight: 600;
     display: flex;
@@ -193,13 +173,13 @@
 }
 
 .steps-title::before {
-    content: "📦";
+    content: "";
     font-size: 1rem;
 }
 
 .steps-list {
     text-align: left;
-    color: #555;
+    color: var(--ink);
     line-height: 1.8;
 }
 
@@ -211,7 +191,7 @@
 }
 
 .step-number {
-    background: #667eea;
+    background: var(--accent);
     color: white;
     width: 24px;
     height: 24px;
@@ -238,7 +218,7 @@
 .action-btn {
     padding: 1.2rem 2.5rem;
     border: none;
-    border-radius: 50px;
+    border-radius: 12px;
     font-size: 1.1rem;
     font-weight: 600;
     cursor: pointer;
@@ -248,45 +228,31 @@
     align-items: center;
     justify-content: center;
     gap: 0.8rem;
-    position: relative;
-    overflow: hidden;
-}
-
-.action-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    transition: left 0.6s;
-}
-
-.action-btn:hover::before {
-    left: 100%;
+    border: 1px solid transparent;
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    background: var(--accent);
     color: white;
-    box-shadow: 0 6px 20px rgba(46, 204, 113, 0.3);
+    box-shadow: none;
 }
 
 .btn-primary:hover {
     transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(46, 204, 113, 0.4);
+    background: var(--accent-strong);
 }
 
 .btn-secondary {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+    background: var(--surface);
+    color: var(--accent);
+    border-color: var(--accent);
+    box-shadow: none;
 }
 
 .btn-secondary:hover {
     transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    background: var(--accent);
+    color: white;
 }
 
 /* 追加アクション */
@@ -299,11 +265,11 @@
 }
 
 .additional-btn {
-    background: white;
-    color: #667eea;
-    border: 2px solid #667eea;
+    background: var(--surface);
+    color: var(--accent);
+    border: 1px solid var(--accent);
     padding: 0.8rem 1.5rem;
-    border-radius: 25px;
+    border-radius: 12px;
     font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
@@ -315,7 +281,7 @@
 }
 
 .additional-btn:hover {
-    background: #667eea;
+    background: var(--accent);
     color: white;
     transform: translateY(-2px);
 }
@@ -384,22 +350,22 @@
     position: absolute;
     width: 8px;
     height: 8px;
-    background: #2ecc71;
+    background: var(--accent);
     animation: confetti-fall 3s linear infinite;
 }
 
 .confetti-piece:nth-child(odd) {
-    background: #667eea;
+    background: var(--accent);
     animation-delay: -1s;
 }
 
 .confetti-piece:nth-child(3n) {
-    background: #ff6b6b;
+    background: var(--accent-warm);
     animation-delay: -2s;
 }
 
 .confetti-piece:nth-child(4n) {
-    background: #f39c12;
+    background: var(--accent-warm);
     animation-delay: -0.5s;
 }
 
@@ -416,7 +382,7 @@
 
 /* カウントダウン */
 .countdown {
-    background: linear-gradient(135deg, #ff6b6b, #ff5252);
+    background: linear-gradient(135deg, var(--accent-warm), var(--accent-warm));
     color: white;
     padding: 1rem;
     border-radius: 8px;

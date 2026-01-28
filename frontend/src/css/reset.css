@@ -67,14 +67,14 @@ img {
 }
 
 ins {
-  background-color:#ff9;
-  color:#000;
+  background-color:var(--surface-muted);
+  color:var(--ink);
   text-decoration:none;
 }
 
 mark {
-  background-color:#ff9;
-  color:#000;
+  background-color:var(--surface-muted);
+  color:var(--ink);
   font-style:italic;
   font-weight:bold;
 }
@@ -84,7 +84,7 @@ del {
 }
 
 abbr[title], dfn[title] {
-  border-bottom:1px dotted #000;
+  border-bottom:1px dotted var(--ink);
   cursor:help;
 }
 
@@ -99,7 +99,7 @@ hr {
   display:block;
   height:1px;
   border:0;
-  border-top:1px solid #cccccc;
+  border-top:1px solid var(--border);
   margin:1em 0;
   padding:0;
 }

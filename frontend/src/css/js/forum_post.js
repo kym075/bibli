@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
             previewContainer.classList.remove('active');
             titleCount.textContent = '0';
             contentCount.textContent = '0';
-            submitBtn.textContent = '✏️ 投稿する';
+            submitBtn.textContent = '投稿する';
             submitBtn.disabled = true;
             
             // ページトップにスクロール

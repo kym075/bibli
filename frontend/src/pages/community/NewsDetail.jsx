@@ -1,11 +1,9 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/news_detail.css';
 
 function NewsDetail() {
-  const navigate = useNavigate();
-
   return (
     <>
       <Header />
@@ -27,15 +25,15 @@ function NewsDetail() {
             <h1 className="article-title">メンテナンスのお知らせ</h1>
             <div className="article-meta">
               <div className="meta-item">
-                <span className="meta-icon">📅</span>
+                <span className="meta-icon">DATE</span>
                 <span>2025年7月14日</span>
               </div>
               <div className="meta-item">
-                <span className="meta-icon">👤</span>
+                <span className="meta-icon">TEAM</span>
                 <span>Bibli運営チーム</span>
               </div>
               <div className="meta-item">
-                <span className="meta-icon">🏷️</span>
+                <span className="meta-icon">TAG</span>
                 <span>システムメンテナンス</span>
               </div>
             </div>
@@ -54,7 +52,7 @@ function NewsDetail() {
             </div>
 
             <div className="content-section">
-              <h2>📋 メンテナンス詳細</h2>
+              <h2>メンテナンス詳細</h2>
 
               <table className="schedule-table">
                 <thead>
@@ -85,7 +83,7 @@ function NewsDetail() {
             </div>
 
             <div className="content-section">
-              <h2>🚫 メンテナンス中にご利用いただけない機能</h2>
+              <h2>メンテナンス中にご利用いただけない機能</h2>
               <ul>
                 <li>ウェブサイト・モバイルアプリへのアクセス</li>
                 <li>商品の検索・閲覧・購入</li>
@@ -97,7 +95,7 @@ function NewsDetail() {
             </div>
 
             <div className="content-section">
-              <h2>✅ メンテナンス完了後の改善点</h2>
+              <h2>メンテナンス完了後の改善点</h2>
               <h3>性能向上</h3>
               <ul>
                 <li>ページの読み込み速度が約30%向上</li>
@@ -121,19 +119,19 @@ function NewsDetail() {
             </div>
 
             <div className="content-section">
-              <h2>📞 緊急時のお問い合わせについて</h2>
+              <h2>緊急時のお問い合わせについて</h2>
               <p>メンテナンス期間中に緊急のお問い合わせがございましたら、以下の方法でご連絡ください：</p>
             </div>
 
             <div className="contact-box">
-              <h4>🏃‍♂️ 緊急時連絡先</h4>
+              <h4>緊急時連絡先</h4>
               <p>メール：<a href="mailto:emergency@bibli.jp" className="contact-link">emergency@bibli.jp</a></p>
               <p>電話：050-1234-5678（24時間対応）</p>
               <p>※通常のお問い合わせは、メンテナンス完了後にご利用ください</p>
             </div>
 
             <div className="content-section">
-              <h2>🙏 お客様へのお願い</h2>
+              <h2>お客様へのお願い</h2>
               <p>メンテナンス開始前に、以下の点にご注意ください：</p>
               <ul>
                 <li><strong>取引中の商品</strong>：メンテナンス前に必要な連絡は事前に完了してください</li>
@@ -144,7 +142,7 @@ function NewsDetail() {
 
             <div className="content-section">
               <p>今後ともBibliをよろしくお願いいたします。ご質問やご不明な点がございましたら、お気軽にお問い合わせください。</p>
-              <p style={{textAlign: 'right', marginTop: '2rem', color: '#7f8c8d'}}>
+              <p style={{textAlign: 'right', marginTop: '2rem', color: 'var(--muted)'}}>
                 <strong>Bibli運営チーム</strong>
               </p>
             </div>
@@ -152,7 +150,7 @@ function NewsDetail() {
 
           {/* 関連記事 */}
           <section className="related-articles">
-            <h3 className="related-title">📖 関連するお知らせ</h3>
+            <h3 className="related-title">関連するお知らせ</h3>
             <div className="related-list">
               <a href="#" className="related-item">
                 <span className="related-date">2025/07/10</span>

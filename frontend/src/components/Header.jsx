@@ -96,7 +96,7 @@ function Header() {
               <>
                 {/* ログイン中 */}
                 <button onClick={handleLogout} className="btn btn-secondary">
-                  ログアウト(仮)
+                  ログアウト
                 </button>
               </>
             )}
@@ -112,19 +112,19 @@ function Header() {
               <>
                 {/* ▼ログイン中のメニュー */}
                 <Link to="/profile" className="dropdown-item">
-                  <span className="dropdown-icon">👤</span>
+                  <span className="dropdown-icon">P</span>
                   <span className="dropdown-text">プロフィール</span>
                 </Link>
                 <Link to="/news" className="dropdown-item">
-                  <span className="dropdown-icon">🔔</span>
+                  <span className="dropdown-icon">N</span>
                   <span className="dropdown-text">お知らせ</span>
                 </Link>
                 <Link to="/forum" className="dropdown-item">
-                  <span className="dropdown-icon">💬</span>
+                  <span className="dropdown-icon">B</span>
                   <span className="dropdown-text">掲示板</span>
                 </Link>
                 <Link to="/settings" className="dropdown-item">
-                  <span className="dropdown-icon">⚙️</span>
+                  <span className="dropdown-icon">S</span>
                   <span className="dropdown-text">設定</span>
                 </Link>
               </>
@@ -132,11 +132,11 @@ function Header() {
               <>
                 {/* ▼未ログインの時は最低限 */}
                 <Link to="/login" className="dropdown-item">
-                  <span className="dropdown-icon">🔑</span>
+                  <span className="dropdown-icon">L</span>
                   <span className="dropdown-text">ログイン</span>
                 </Link>
                 <Link to="/register" className="dropdown-item">
-                  <span className="dropdown-icon">📝</span>
+                  <span className="dropdown-icon">R</span>
                   <span className="dropdown-text">新規登録</span>
                 </Link>
               </>

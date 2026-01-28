@@ -135,7 +135,7 @@ function ProfilePage() {
               {profile.profile_image ? (
                 <img src={profile.profile_image} alt="プロフィール" />
               ) : (
-                '📚'
+                'USER'
               )}
             </div>
             <div className="profile-info">
@@ -146,11 +146,11 @@ function ProfilePage() {
                 </div>
                 <div className="profile-actions">
                   <button className="action-btn btn-follow" id="followBtn">
-                    👤 フォローする
+                    フォローする
                   </button>
                   <Link to="/user-settings">
                     <button className="action-btn btn-usrsettings" id="usrSettingsBtn">
-                      ⚙️ ユーザー設定
+                      ユーザー設定
                     </button>
                   </Link>
                 </div>
@@ -184,21 +184,21 @@ function ProfilePage() {
         <section className="user-details">
           <div className="details-grid">
             <div className="detail-item">
-              <div className="detail-icon">📅</div>
+              <div className="detail-icon">D</div>
               <div className="detail-content">
                 <div className="detail-label">登録日</div>
                 <div className="detail-value">{formatDate(profile.created_at)}</div>
               </div>
             </div>
             <div className="detail-item">
-              <div className="detail-icon">📦</div>
+              <div className="detail-icon">S</div>
               <div className="detail-content">
                 <div className="detail-label">発送日数</div>
                 <div className="detail-value">1-2日で発送</div>
               </div>
             </div>
             <div className="detail-item">
-              <div className="detail-icon">📍</div>
+              <div className="detail-icon">L</div>
               <div className="detail-content">
                 <div className="detail-label">発送元</div>
                 <div className="detail-value">{extractPrefecture(profile.address)}</div>
@@ -269,7 +269,7 @@ function ProfilePage() {
 
               {userProducts.length === 0 ? (
                 <div className="empty-state">
-                  <div className="empty-icon">📦</div>
+                  <div className="empty-icon">P</div>
                   <div className="empty-message">出品商品がありません</div>
                   <div className="empty-description">商品を出品すると、ここに表示されます</div>
                 </div>
@@ -289,7 +289,7 @@ function ProfilePage() {
                           {product.image_url ? (
                             <img src={product.image_url} alt={product.title} />
                           ) : (
-                            <div className="no-image">📖</div>
+                            <div className="no-image">NO</div>
                           )}
                         </div>
                         <div className="product-info">
@@ -306,7 +306,7 @@ function ProfilePage() {
             {/* === PURCHASE HISTORY SUBSECTION === */}
             <div className={`tab-panel ${activeTab === 'purchases' ? 'active' : ''}`} id="purchases-panel">
               <div className="empty-state">
-                <div className="empty-icon">🛒</div>
+                <div className="empty-icon">H</div>
                 <div className="empty-message">購入履歴がありません</div>
                 <div className="empty-description">商品を購入すると、ここに表示されます</div>
               </div>
@@ -315,7 +315,7 @@ function ProfilePage() {
             {/* === REVIEWS SUBSECTION === */}
             <div className={`tab-panel ${activeTab === 'reviews' ? 'active' : ''}`} id="reviews-panel">
               <div className="empty-state">
-                <div className="empty-icon">⭐</div>
+                <div className="empty-icon">R</div>
                 <div className="empty-message">評価・レビューがありません</div>
                 <div className="empty-description">取引が完了すると、評価が表示されます</div>
               </div>
@@ -324,7 +324,7 @@ function ProfilePage() {
             {/* === FAVORITES SUBSECTION === */}
             <div className={`tab-panel ${activeTab === 'favorites' ? 'active' : ''}`} id="favorites-panel">
               <div className="empty-state">
-                <div className="empty-icon">📚</div>
+                <div className="empty-icon">F</div>
                 <div className="empty-message">お気に入りの本</div>
                 <div className="empty-description">このユーザーのお気に入り本は公開されていません</div>
               </div>

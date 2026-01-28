@@ -5,7 +5,7 @@
     display: flex;
     margin: auto;
     padding: 2rem 1rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: transparent;
 }
 
 .register-container {
@@ -15,10 +15,11 @@
 }
 
 .register-box {
-    background: white;
+    background: var(--surface);
     border-radius: 12px;
     padding: 3rem 2.5rem;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
     margin: 2rem 0;
 }
 
@@ -26,14 +27,14 @@
     font-size: 2rem;
     font-weight: 700;
     text-align: center;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 0.5rem;
 }
 
 .register-subtitle {
     font-size: 0.95rem;
     text-align: center;
-    color: #7f8c8d;
+    color: var(--muted);
     margin-bottom: 2rem;
 }
 
@@ -51,18 +52,18 @@
 .form-label {
     font-size: 0.9rem;
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 0.5rem;
 }
 
 .form-label .required {
-    color: #e74c3c;
+    color: var(--accent-warm);
     margin-left: 0.25rem;
 }
 
 .form-input {
     padding: 0.85rem 1rem;
-    border: 2px solid #e0e0e0;
+    border: 2px solid var(--border);
     border-radius: 8px;
     font-size: 1rem;
     transition: all 0.3s ease;
@@ -70,23 +71,23 @@
 
 .form-input:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(47, 93, 80, 0.1);
 }
 
 .form-input.error {
-    border-color: #e74c3c;
+    border-color: var(--accent-warm);
 }
 
 .help-text {
     font-size: 0.8rem;
-    color: #95a5a6;
+    color: var(--muted);
     margin-top: 0.4rem;
 }
 
 .error-message {
     font-size: 0.85rem;
-    color: #e74c3c;
+    color: var(--accent-warm);
     margin-top: 0.4rem;
     min-height: 1.2rem;
 }
@@ -100,7 +101,7 @@
     align-items: flex-start;
     gap: 0.5rem;
     cursor: pointer;
-    color: #555;
+    color: var(--ink);
     font-size: 0.9rem;
 }
 
@@ -110,7 +111,7 @@
 }
 
 .checkbox-label .link {
-    color: #667eea;
+    color: var(--accent);
     text-decoration: none;
     font-weight: 500;
 }
@@ -122,7 +123,7 @@
 .register-btn {
     width: 100%;
     padding: 1rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--accent);
     color: white;
     border: none;
     border-radius: 8px;
@@ -135,7 +136,7 @@
 
 .register-btn:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    background: var(--accent-strong);
 }
 
 .register-btn:active:not(:disabled) {
@@ -152,7 +153,7 @@
     align-items: center;
     text-align: center;
     margin: 2rem 0;
-    color: #95a5a6;
+    color: var(--muted);
     font-size: 0.9rem;
 }
 
@@ -160,7 +161,7 @@
 .divider::after {
     content: '';
     flex: 1;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--border);
 }
 
 .divider span {
@@ -173,16 +174,16 @@
 
 .login-link p {
     font-size: 0.9rem;
-    color: #7f8c8d;
+    color: var(--muted);
     margin-bottom: 1rem;
 }
 
 .login-link-btn {
     display: inline-block;
     padding: 0.75rem 2rem;
-    background: white;
-    color: #667eea;
-    border: 2px solid #667eea;
+    background: var(--surface);
+    color: var(--accent);
+    border: 1px solid var(--accent);
     border-radius: 8px;
     font-size: 0.95rem;
     font-weight: 600;
@@ -191,10 +192,10 @@
 }
 
 .login-link-btn:hover {
-    background: #667eea;
+    background: var(--accent);
     color: white;
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+    box-shadow: none;
 }
 
 /* レスポンシブ対応 */

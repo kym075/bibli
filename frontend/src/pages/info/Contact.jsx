@@ -1,12 +1,9 @@
-import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/inquiry.css';
 
 function Contact() {
-  const navigate = useNavigate();
-
   const handleSubmit = (e) => {
     e.preventDefault();
     // Form submission logic
@@ -102,17 +99,17 @@ function Contact() {
             <h2 className="section-title">その他のサポート</h2>
             <div className="support-cards">
               <Link to="/terms" className="support-card">
-                <div className="support-icon">📄</div>
+                <div className="support-icon">T</div>
                 <div className="support-title">利用規約</div>
                 <div className="support-description">サービス利用時のルールをご確認いただけます</div>
               </Link>
               <Link to="/privacy" className="support-card">
-                <div className="support-icon">🔏</div>
+                <div className="support-icon">P</div>
                 <div className="support-title">プライバシーポリシー</div>
                 <div className="support-description">個人情報の取り扱いについて</div>
               </Link>
               <Link to="/commercial" className="support-card">
-                <div className="support-icon">⚖️</div>
+                <div className="support-icon">L</div>
                 <div className="support-title">特定商取引法に基づく表記</div>
                 <div className="support-description">事業者情報と取引条件</div>
               </Link>

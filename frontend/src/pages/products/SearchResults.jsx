@@ -4,6 +4,24 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/search_results.css';
 
+const HeartIcon = ({ filled }) => (
+  <svg
+    className="favorite-icon"
+    viewBox="0 0 24 24"
+    width="18"
+    height="18"
+    aria-hidden="true"
+    focusable="false"
+    fill={filled ? 'currentColor' : 'none'}
+    stroke="currentColor"
+    strokeWidth="1.6"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M12 20s-7-4.6-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.4-7 10-7 10Z" />
+  </svg>
+);
+
 function SearchResults() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
@@ -260,7 +278,7 @@ function SearchResults() {
                           toggleFavorite(product.id);
                         }}
                       >
-                        {favorites.has(product.id) ? '❤️' : '♡'}
+                        <HeartIcon filled={favorites.has(product.id)} />
                       </button>
                     </div>
                     <div className="product-info">

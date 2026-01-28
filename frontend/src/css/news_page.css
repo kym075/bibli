@@ -12,7 +12,7 @@
 
 .page-title h1 {
     font-size: 2.5rem;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 0.5rem;
     display: flex;
     align-items: center;
@@ -21,23 +21,23 @@
 }
 
 .page-title p {
-    color: #7f8c8d;
+    color: var(--muted);
     font-size: 1.1rem;
 }
 
 /* タブ切り替え */
 .tabs-container {
-    background: white;
-    border-radius: 15px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
     overflow: hidden;
     margin-bottom: 2rem;
 }
 
 .tabs-header {
     display: flex;
-    background: #f8f9fa;
-    border-bottom: 2px solid #e9ecef;
+    background: var(--surface-muted);
+    border-bottom: 2px solid var(--border);
 }
 
 .tab-btn {
@@ -49,7 +49,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    color: #7f8c8d;
+    color: var(--muted);
     position: relative;
     display: flex;
     align-items: center;
@@ -58,8 +58,8 @@
 }
 
 .tab-btn.active {
-    color: #2c3e50;
-    background: white;
+    color: var(--ink);
+    background: var(--surface);
 }
 
 .tab-btn.active::after {
@@ -69,12 +69,12 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: var(--accent);
 }
 
 .tab-btn:hover:not(.active) {
-    background: rgba(102, 126, 234, 0.05);
-    color: #667eea;
+    background: rgba(47, 93, 80, 0.05);
+    color: var(--accent);
 }
 
 /* タブコンテンツ */
@@ -105,34 +105,34 @@
 }
 
 .news-item {
-    background: #f8f9fa;
+    background: var(--surface);
     border-radius: 12px;
     padding: 1.5rem;
     border-left: 4px solid transparent;
+    border: 1px solid var(--border);
     transition: all 0.3s ease;
     cursor: pointer;
     position: relative;
 }
 
 .news-item:hover {
-    background: white;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    transform: translateX(5px);
+    background: var(--surface-muted);
+    border-color: var(--accent);
 }
 
 .news-item.important {
-    border-left-color: #e74c3c;
-    background: linear-gradient(135deg, rgba(231, 76, 60, 0.05), rgba(231, 76, 60, 0.02));
+    border-left-color: var(--accent-warm);
+    background: var(--surface);
 }
 
 .news-item.update {
-    border-left-color: #667eea;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(102, 126, 234, 0.02));
+    border-left-color: var(--accent);
+    background: var(--surface);
 }
 
 .news-item.general {
-    border-left-color: #2ecc71;
-    background: linear-gradient(135deg, rgba(46, 204, 113, 0.05), rgba(46, 204, 113, 0.02));
+    border-left-color: var(--accent);
+    background: var(--surface);
 }
 
 .news-header {
@@ -143,10 +143,10 @@
 }
 
 .news-date {
-    color: #667eea;
+    color: var(--accent);
     font-weight: 600;
     font-size: 0.9rem;
-    background: rgba(102, 126, 234, 0.1);
+    background: var(--surface-muted);
     padding: 0.3rem 0.8rem;
     border-radius: 15px;
 }
@@ -159,29 +159,29 @@
 }
 
 .category-important {
-    background: #e74c3c;
+    background: var(--accent-warm);
     color: white;
 }
 
 .category-update {
-    background: #667eea;
+    background: var(--accent);
     color: white;
 }
 
 .category-general {
-    background: #2ecc71;
+    background: var(--accent);
     color: white;
 }
 
 .news-title {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 0.5rem;
 }
 
 .news-preview {
-    color: #7f8c8d;
+    color: var(--muted);
     line-height: 1.5;
     margin-bottom: 1rem;
 }
@@ -193,7 +193,7 @@
 }
 
 .read-more {
-    color: #667eea;
+    color: var(--accent);
     text-decoration: none;
     font-weight: 500;
     display: flex;
@@ -203,17 +203,17 @@
 }
 
 .read-more:hover {
-    color: #5a67d8;
-    transform: translateX(5px);
+    color: var(--accent);
+    text-decoration: underline;
 }
 
 .news-status {
     font-size: 0.8rem;
-    color: #95a5a6;
+    color: var(--muted);
 }
 
 .new-badge {
-    background: #ff6b6b;
+    background: var(--accent-warm);
     color: white;
     font-size: 0.7rem;
     font-weight: bold;
@@ -232,24 +232,24 @@
 
 /* 通知リスト */
 .notification-item {
-    background: #f8f9fa;
+    background: var(--surface);
     border-radius: 12px;
     padding: 1.5rem;
     margin-bottom: 1rem;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid var(--accent);
+    border: 1px solid var(--border);
     transition: all 0.3s ease;
     position: relative;
 }
 
 .notification-item:hover {
-    background: white;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    transform: translateX(5px);
+    background: var(--surface-muted);
+    border-color: var(--accent);
 }
 
 .notification-item.unread {
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(102, 126, 234, 0.05));
-    border-left-color: #ff6b6b;
+    background: var(--surface-muted);
+    border-left-color: var(--accent-warm);
 }
 
 .notification-header {
@@ -266,9 +266,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    color: var(--accent);
 }
 
 .notification-content {
@@ -277,18 +280,18 @@
 
 .notification-title {
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--ink);
     margin-bottom: 0.3rem;
 }
 
 .notification-message {
-    color: #7f8c8d;
+    color: var(--muted);
     line-height: 1.4;
 }
 
 .notification-time {
     font-size: 0.8rem;
-    color: #95a5a6;
+    color: var(--muted);
     margin-top: 0.5rem;
 }
 
@@ -296,7 +299,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #ff6b6b;
+    background: var(--accent-warm);
     position: absolute;
     top: 1rem;
     right: 1rem;
@@ -306,18 +309,20 @@
 .empty-state {
     text-align: center;
     padding: 4rem 2rem;
-    color: #7f8c8d;
+    color: var(--muted);
 }
 
 .empty-icon {
-    font-size: 4rem;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--accent);
     margin-bottom: 1rem;
 }
 
 .empty-message {
     font-size: 1.2rem;
     margin-bottom: 0.5rem;
-    color: #2c3e50;
+    color: var(--ink);
 }
 
 .empty-description {

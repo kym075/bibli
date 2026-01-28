@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (isFollowing) {
                     this.classList.add('following');
-                    this.innerHTML = '✅ フォロー中';
+                    this.innerHTML = 'フォロー中';
                     
                     // フォロワー数を増やす
                     const followerCount = document.querySelector('.stat-item:last-child .stat-number');
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                 } else {
                     this.classList.remove('following');
-                    this.innerHTML = '👤 フォローする';
+                    this.innerHTML = 'フォローする';
                     
                     // フォロワー数を減らす
                     const followerCount = document.querySelector('.stat-item:last-child .stat-number');
