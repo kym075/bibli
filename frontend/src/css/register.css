@@ -49,6 +49,39 @@
     flex-direction: column;
 }
 
+.input-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.input-row .form-input,
+.input-row input {
+    flex: 1;
+}
+
+.input-btn {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--accent);
+    padding: 0 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.input-btn:hover:not(:disabled) {
+    background: var(--accent);
+    color: white;
+}
+
+.input-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .form-label {
     font-size: 0.9rem;
     font-weight: 600;

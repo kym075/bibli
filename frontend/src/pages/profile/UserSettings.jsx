@@ -17,6 +17,7 @@ function UserSettings() {
     phone_number: '',
     birth_date: '',
     real_name: '',
+    name_kana: '',
     password: '',
     passwordConf: ''
   });
@@ -39,6 +40,7 @@ function UserSettings() {
               phone_number: data.phone_number || '',
               birth_date: data.birth_date || '',
               real_name: data.real_name || '',
+              name_kana: data.name_kana || '',
               password: '',
               passwordConf: ''
             });
@@ -84,7 +86,8 @@ function UserSettings() {
       address: formData.address,
       phone_number: formData.phone_number,
       birth_date: formData.birth_date,
-      real_name: formData.real_name
+      real_name: formData.real_name,
+      name_kana: formData.name_kana
     };
 
     if (formData.password) {
@@ -175,14 +178,26 @@ function UserSettings() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="real_name">本名:</label>
+            <label htmlFor="real_name">氏名（漢字）:</label>
             <input
               type="text"
               id="real_name"
               name="real_name"
               value={formData.real_name}
               onChange={handleChange}
-              placeholder="本名を入力"
+              placeholder="氏名（漢字）を入力"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="name_kana">氏名（フリガナ）:</label>
+            <input
+              type="text"
+              id="name_kana"
+              name="name_kana"
+              value={formData.name_kana}
+              onChange={handleChange}
+              placeholder="フリガナを入力"
               required
             />
           </div>
