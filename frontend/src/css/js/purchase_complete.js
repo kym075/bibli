@@ -1,3 +1,39 @@
+const showMessage = (message, type = 'info', options = {}) => {
+    if (typeof window.showAppMessage !== 'function') {
+        window.showAppMessage = (msg, t = 'info', opts = {}) => {
+            const duration = typeof opts.duration === 'number' ? opts.duration : 4000;
+            const root = document.querySelector('.main-content') || document.body;
+            let banner = document.querySelector('.page-message');
+
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.className = 'page-message';
+                if (root.firstChild) {
+                    root.insertBefore(banner, root.firstChild);
+                } else {
+                    root.appendChild(banner);
+                }
+            }
+
+            banner.textContent = msg;
+            banner.classList.remove('error', 'success', 'info');
+            banner.classList.add(t, 'visible');
+
+            if (banner._timer) {
+                clearTimeout(banner._timer);
+            }
+
+            if (duration > 0) {
+                banner._timer = setTimeout(() => {
+                    banner.classList.remove('visible');
+                }, duration);
+            }
+        };
+    }
+
+    window.showAppMessage(message, type, options);
+};
+
 document.addEventListener('DOMContentLoaded', function() {
             // 紙吹雪エフェクト
             function createConfetti() {
@@ -25,26 +61,26 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('homeBtn').addEventListener('click', function(e) {
                 e.preventDefault();
                 console.log('トップページへ移動');
-                alert('トップページに移動します');
+                showMessage('トップページに移動します', 'info');
                 window.location.href = 'index.html';
             });
 
             document.getElementById('historyBtn').addEventListener('click', function(e) {
                 e.preventDefault();
                 console.log('購入履歴ページへ移動');
-                alert('マイページの購入履歴に移動します');
+                showMessage('マイページの購入履歴に移動します', 'info');
             });
 
             document.getElementById('contactBtn').addEventListener('click', function(e) {
                 e.preventDefault();
                 console.log('出品者とのメッセージ画面へ');
-                alert('出品者とのメッセージ画面を開きます');
+                showMessage('出品者とのメッセージ画面を開きます', 'info');
             });
 
             document.getElementById('supportBtn').addEventListener('click', function(e) {
                 e.preventDefault();
                 console.log('サポート問い合わせ');
-                alert('サポート問い合わせフォームを開きます');
+                showMessage('サポート問い合わせフォームを開きます', 'info');
             });
 
             document.getElementById('shareBtn').addEventListener('click', function(e) {
@@ -59,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // フォールバック
                     const text = 'Bibli で夏目漱石作品集を購入しました！';
                     navigator.clipboard.writeText(text).then(() => {
-                        alert('シェアテキストをクリップボードにコピーしました');
+                        showMessage('シェアテキストをクリップボードにコピーしました', 'success');
                     });
                 }
             });

@@ -1,3 +1,39 @@
+const showMessage = (message, type = 'info', options = {}) => {
+    if (typeof window.showAppMessage !== 'function') {
+        window.showAppMessage = (msg, t = 'info', opts = {}) => {
+            const duration = typeof opts.duration === 'number' ? opts.duration : 4000;
+            const root = document.querySelector('.main-content') || document.body;
+            let banner = document.querySelector('.page-message');
+
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.className = 'page-message';
+                if (root.firstChild) {
+                    root.insertBefore(banner, root.firstChild);
+                } else {
+                    root.appendChild(banner);
+                }
+            }
+
+            banner.textContent = msg;
+            banner.classList.remove('error', 'success', 'info');
+            banner.classList.add(t, 'visible');
+
+            if (banner._timer) {
+                clearTimeout(banner._timer);
+            }
+
+            if (duration > 0) {
+                banner._timer = setTimeout(() => {
+                    banner.classList.remove('visible');
+                }, duration);
+            }
+        };
+    }
+
+    window.showAppMessage(message, type, options);
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     // DOM要素の取得
     const purchaseBtn = document.getElementById('purchaseBtn');
@@ -40,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 実際のアプリでは購入完了ページにリダイレクト
             setTimeout(() => {
-                alert('購入完了ページに移動します');
+                showMessage('購入完了ページに移動します', 'info');
                 console.log('購入完了ページへリダイレクト');
                 window.location.href = 'purchase_complete.html';
             }, 2000);
@@ -153,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (newAddress && newAddress.trim() !== '') {
             const addressLine = document.querySelector('.address-line');
             addressLine.textContent = newAddress;
-            alert('お届け先を変更しました');
+            showMessage('お届け先を変更しました', 'success');
         }
     });
 
@@ -183,7 +219,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 cardInfo.textContent = '選択済み';
             }
 
-            alert('支払い方法を変更しました');
+            showMessage('支払い方法を変更しました', 'success');
         }
     });
 
@@ -198,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // セキュリティ情報の表示
     const securityInfo = document.querySelector('.security-info');
     securityInfo.addEventListener('click', function() {
-        alert('SSL暗号化通信について\n\nお客様の個人情報や決済情報は、SSL（Secure Socket Layer）暗号化技術により保護されています。第三者による不正な傍受や改ざんから安全に守られているため、安心してお買い物をお楽しみください。');
+        showMessage('SSL暗号化通信について: お客様の個人情報や決済情報はSSL暗号化技術により保護されています。安心してお買い物をお楽しみください。', 'info', { duration: 6000 });
     });
 
     // 商品画像のホバー効果

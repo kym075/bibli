@@ -1,3 +1,39 @@
+const showMessage = (message, type = 'info', options = {}) => {
+    if (typeof window.showAppMessage !== 'function') {
+        window.showAppMessage = (msg, t = 'info', opts = {}) => {
+            const duration = typeof opts.duration === 'number' ? opts.duration : 4000;
+            const root = document.querySelector('.main-content') || document.body;
+            let banner = document.querySelector('.page-message');
+
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.className = 'page-message';
+                if (root.firstChild) {
+                    root.insertBefore(banner, root.firstChild);
+                } else {
+                    root.appendChild(banner);
+                }
+            }
+
+            banner.textContent = msg;
+            banner.classList.remove('error', 'success', 'info');
+            banner.classList.add(t, 'visible');
+
+            if (banner._timer) {
+                clearTimeout(banner._timer);
+            }
+
+            if (duration > 0) {
+                banner._timer = setTimeout(() => {
+                    banner.classList.remove('visible');
+                }, duration);
+            }
+        };
+    }
+
+    window.showAppMessage(message, type, options);
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     // 画像アップロード処理
     const imageUploadArea = document.getElementById('imageUploadArea');
@@ -37,17 +73,17 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleImageFiles(files) {
         files.forEach(file => {
             if (uploadedImages.length >= 10) {
-                alert('画像は最大10枚まで登録できます。');
+                showMessage('画像は最大10枚まで登録できます。', 'error');
                 return;
             }
 
             if (file.size > 5 * 1024 * 1024) {
-                alert('ファイルサイズは5MB以下にしてください。');
+                showMessage('ファイルサイズは5MB以下にしてください。', 'error');
                 return;
             }
 
             if (!file.type.startsWith('image/')) {
-                alert('画像ファイルのみアップロード可能です。');
+                showMessage('画像ファイルのみアップロード可能です。', 'error');
                 return;
             }
 
@@ -167,12 +203,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const shipping = document.getElementById('shipping').value;
 
             if (!bookTitle || !category || !condition || !description || !price || !shipping) {
-                alert('必須項目を入力してください。');
+                showMessage('必須項目を入力してください。', 'error');
                 return;
             }
 
             if (uploadedImages.length === 0) {
-                alert('商品画像を1枚以上アップロードしてください。');
+                showMessage('商品画像を1枚以上アップロードしてください。', 'error');
                 return;
             }
 

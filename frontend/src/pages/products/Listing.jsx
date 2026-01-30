@@ -20,6 +20,7 @@ function Listing() {
   });
   const [selectedImages, setSelectedImages] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,18 +28,18 @@ function Listing() {
     // ログインチェック
     const currentUser = auth.currentUser;
     if (!currentUser) {
-      alert('商品を出品するにはログインが必要です');
-      navigate('/login');
+      navigate('/login', { state: { message: '商品を出品するにはログインが必要です' } });
       return;
     }
 
     // バリデーション
     if (!formData.title || !formData.price || !formData.category || !formData.condition) {
-      alert('必須項目を入力してください');
+      setFormError('必須項目を入力してください');
       return;
     }
 
     setIsSubmitting(true);
+    setFormError('');
 
     try {
       // ユーザーIDを取得（Firebaseのメールアドレスでデータベースから検索）
@@ -73,7 +74,7 @@ function Listing() {
       navigate('/products/listing-complete');
     } catch (error) {
       console.error('Error submitting product:', error);
-      alert('商品の出品に失敗しました。もう一度お試しください。');
+      setFormError('商品の出品に失敗しました。もう一度お試しください。');
     } finally {
       setIsSubmitting(false);
     }
@@ -82,6 +83,7 @@ function Listing() {
   const handleInputChange = (e) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
+    if (formError) setFormError('');
   };
 
   const handleImageUploadClick = () => {
@@ -91,7 +93,7 @@ function Listing() {
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length + selectedImages.length > 10) {
-      alert('最大10枚までアップロードできます');
+      setFormError('最大10枚までアップロードできます');
       return;
     }
 
@@ -101,6 +103,7 @@ function Listing() {
     }));
 
     setSelectedImages(prev => [...prev, ...newImages]);
+    if (formError) setFormError('');
   };
 
   const removeImage = (index) => {
@@ -123,6 +126,7 @@ function Listing() {
 
         <div className="form-container fade-in">
           <form id="listingForm" onSubmit={handleSubmit}>
+            {formError && <div className="error-message">{formError}</div>}
             <div className="success-message" id="successMessage">
               出品が完了しました！商品は審査後に公開されます。
             </div>

@@ -1,4 +1,39 @@
 // アカウント登録フォームの処理
+const showMessage = (message, type = 'info', options = {}) => {
+    if (typeof window.showAppMessage !== 'function') {
+        window.showAppMessage = (msg, t = 'info', opts = {}) => {
+            const duration = typeof opts.duration === 'number' ? opts.duration : 4000;
+            const root = document.querySelector('.main-content') || document.body;
+            let banner = document.querySelector('.page-message');
+
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.className = 'page-message';
+                if (root.firstChild) {
+                    root.insertBefore(banner, root.firstChild);
+                } else {
+                    root.appendChild(banner);
+                }
+            }
+
+            banner.textContent = msg;
+            banner.classList.remove('error', 'success', 'info');
+            banner.classList.add(t, 'visible');
+
+            if (banner._timer) {
+                clearTimeout(banner._timer);
+            }
+
+            if (duration > 0) {
+                banner._timer = setTimeout(() => {
+                    banner.classList.remove('visible');
+                }, duration);
+            }
+        };
+    }
+
+    window.showAppMessage(message, type, options);
+};
 
 document.addEventListener('DOMContentLoaded', function() {
     const registerForm = document.getElementById('registerForm');
@@ -35,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 例: fetch('/api/register', { method: 'POST', body: JSON.stringify(formData) })
 
         // シミュレーション: 成功メッセージとリダイレクト
-        alert('アカウント登録が完了しました！');
+        showMessage('アカウント登録が完了しました', 'success');
 
         // ログインページへリダイレクト
         window.location.href = 'login.html';
@@ -111,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 利用規約同意のバリデーション
         if (!agreeTermsCheckbox.checked) {
-            alert('利用規約とプライバシーポリシーに同意してください');
+            showMessage('利用規約とプライバシーポリシーに同意してください', 'error');
             isValid = false;
         }
 

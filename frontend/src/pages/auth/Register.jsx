@@ -20,6 +20,7 @@ function Register() {
   });
 
   const [errors, setErrors] = useState({});
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -84,8 +85,10 @@ function Register() {
         throw new Error(errorData.error || 'データベースへの登録に失敗しました');
       }
 
-      alert("アカウントの作成が完了しました！");
-      navigate("/");
+      setSuccessMessage('アカウントの作成が完了しました');
+      setTimeout(() => {
+        navigate('/');
+      }, 1200);
 
     } catch (error) {
       console.error("Register error:", error);
@@ -111,6 +114,7 @@ function Register() {
             <h1 className="register-title">新規登録</h1>
             <p className="register-subtitle">Bibliのアカウントを作成</p>
 
+            {successMessage && <div className="page-message success visible">{successMessage}</div>}
             {errors.general && <div className="error-message">{errors.general}</div>}
 
             <form onSubmit={handleSubmit} className="register-form">

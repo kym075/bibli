@@ -189,6 +189,39 @@ input, button, textarea, select {
     padding: 2rem;
 }
 
+/* ページ内メッセージ */
+.page-message {
+    display: none;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.9rem 1.1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface-muted);
+    color: var(--ink);
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+}
+
+.page-message.visible {
+    display: flex;
+}
+
+.page-message.error {
+    border-color: var(--accent-warm);
+    background: rgba(180, 107, 61, 0.12);
+}
+
+.page-message.success {
+    border-color: var(--accent);
+    background: rgba(47, 93, 80, 0.12);
+}
+
+.page-message.info {
+    border-color: var(--border);
+    background: var(--surface-muted);
+}
+
 /* フッター */
 .footer {
     background: #1f1b16;

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../css/firebase";
 import Header from '../../components/Header';
@@ -8,6 +8,7 @@ import '../../css/login.css';
 
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -22,6 +23,7 @@ function Login() {
       [name]: type === 'checkbox' ? checked : value
     }));
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+    if (errors.general) setErrors(prev => ({ ...prev, general: '' }));
   };
 
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -70,6 +72,13 @@ function Login() {
       setErrors({ general: message });
     }
   };
+
+  useEffect(() => {
+    const loginMessage = location.state?.message;
+    if (loginMessage) {
+      setErrors(prev => ({ ...prev, general: loginMessage }));
+    }
+  }, [location.state]);
 
   return (
     <>
