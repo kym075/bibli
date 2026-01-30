@@ -17,6 +17,17 @@ function ProfilePage() {
   const [productFilter, setProductFilter] = useState('all');
   const [userProducts, setUserProducts] = useState([]);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
+
+  useEffect(() => {
+    if (!profile) return;
+    setFollowCounts({
+      followers: profile.follower_count ?? 0,
+      following: profile.following_count ?? 0
+    });
+  }, [profile]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -73,6 +84,79 @@ function ProfilePage() {
 
     return () => unsubscribe();
   }, [userId, navigate]);
+
+  useEffect(() => {
+    const followerEmail = currentUser?.email;
+    const followeeEmail = profile?.email;
+
+    if (!followerEmail || !followeeEmail || followerEmail === followeeEmail) {
+      setIsFollowing(false);
+      return;
+    }
+
+    const fetchFollowStatus = async () => {
+      setIsFollowLoading(true);
+      try {
+        const params = new URLSearchParams({
+          follower_email: followerEmail,
+          followee_email: followeeEmail
+        });
+        const response = await fetch(`http://localhost:5000/api/follow/status?${params}`);
+        const data = await response.json();
+        if (response.ok) {
+          setIsFollowing(Boolean(data.following));
+        }
+      } catch (err) {
+        console.error('Follow status error:', err);
+      } finally {
+        setIsFollowLoading(false);
+      }
+    };
+
+    fetchFollowStatus();
+  }, [currentUser, profile]);
+
+  const handleFollowToggle = async () => {
+    const followerEmail = currentUser?.email;
+    const followeeEmail = profile?.email;
+
+    if (!followerEmail) {
+      navigate('/login');
+      return;
+    }
+    if (!followeeEmail || followerEmail === followeeEmail) {
+      return;
+    }
+
+    setIsFollowLoading(true);
+    try {
+      const endpoint = isFollowing ? 'unfollow' : 'follow';
+      const response = await fetch(`http://localhost:5000/api/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          follower_email: followerEmail,
+          followee_email: followeeEmail
+        })
+      });
+      if (response.ok) {
+        setIsFollowing(prev => !prev);
+        setFollowCounts(prev => ({
+          ...prev,
+          followers: Math.max(0, prev.followers + (isFollowing ? -1 : 1))
+        }));
+      } else {
+        const data = await response.json();
+        console.error('Follow toggle error:', data.error || data.message);
+      }
+    } catch (err) {
+      console.error('Follow toggle error:', err);
+    } finally {
+      setIsFollowLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -145,9 +229,16 @@ function ProfilePage() {
                   <div className="verified-badge">認証済み</div>
                 </div>
                 <div className="profile-actions">
-                  <button className="action-btn btn-follow" id="followBtn">
-                    フォローする
-                  </button>
+                  {!isOwnProfile && (
+                    <button
+                      className={`action-btn btn-follow ${isFollowing ? 'following' : ''}`}
+                      id="followBtn"
+                      onClick={handleFollowToggle}
+                      disabled={isFollowLoading || !profile?.email || currentUser?.email === profile?.email}
+                    >
+                      {!currentUser ? 'ログインでフォロー' : (isFollowing ? 'フォロー中' : 'フォローする')}
+                    </button>
+                  )}
                   <Link to="/user-settings">
                     <button className="action-btn btn-usrsettings" id="usrSettingsBtn">
                       ユーザー設定
@@ -172,8 +263,12 @@ function ProfilePage() {
                   <span className="stat-label">評価</span>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-number">0</span>
+                  <span className="stat-number">{followCounts.followers}</span>
                   <span className="stat-label">フォロワー</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-number">{followCounts.following}</span>
+                  <span className="stat-label">フォロー</span>
                 </div>
               </div>
             </div>

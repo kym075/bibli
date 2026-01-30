@@ -231,7 +231,10 @@ function Listing() {
 
               {/* 出品画像 */}
               <div className="form-group">
-                <label className="form-label">出品画像<span className="required">*</span></label>
+                <label className="form-label form-label-row">
+                  <span className="label-text">出品画像<span className="required">*</span></span>
+                  {fieldErrors.images && <span className="form-error-inline">{fieldErrors.images}</span>}
+                </label>
                 <div className="help-text">最大10枚まで登録できます。1枚目の画像がメイン画像として表示されます。</div>
 
                 <div className="image-upload-area" id="imageUploadArea" onClick={handleImageUploadClick} style={{cursor: 'pointer'}}>
@@ -240,7 +243,7 @@ function Listing() {
                   <div className="upload-subtext">JPG, PNG, GIF (最大5MB)</div>
                   <input type="file" className="file-input" id="imageInput" multiple accept="image/*" onChange={handleImageChange} style={{display: 'none'}} />
                 </div>
-                {fieldErrors.images && <div className="error-message">{fieldErrors.images}</div>}
+                
 
                 <div className="image-preview-container" id="imagePreviewContainer">
                   {selectedImages.map((image, index) => (
@@ -275,7 +278,10 @@ function Listing() {
 
               {/* 書籍タイトル */}
               <div className="form-group">
-                <label htmlFor="title" className="form-label">書籍タイトル<span className="required">*</span></label>
+                <label htmlFor="title" className="form-label form-label-row">
+                  <span className="label-text">書籍タイトル<span className="required">*</span></span>
+                  {fieldErrors.title && <span className="form-error-inline">{fieldErrors.title}</span>}
+                </label>
                 <input
                   type="text"
                   id="title"
@@ -284,13 +290,16 @@ function Listing() {
                   value={formData.title}
                   onChange={handleInputChange}
                 />
-                {fieldErrors.title && <div className="error-message">{fieldErrors.title}</div>}
+                
                 <div className="help-text">正確なタイトルを入力してください。</div>
               </div>
 
               {/* カテゴリ */}
               <div className="form-group">
-                <label htmlFor="category" className="form-label">カテゴリ<span className="required">*</span></label>
+                <label htmlFor="category" className="form-label form-label-row">
+                  <span className="label-text">カテゴリ<span className="required">*</span></span>
+                  {fieldErrors.category && <span className="form-error-inline">{fieldErrors.category}</span>}
+                </label>
                 <select
                   id="category"
                   className="form-input form-select"
@@ -307,7 +316,7 @@ function Listing() {
                   <option value="自己啓発">自己啓発</option>
                   <option value="その他">その他</option>
                 </select>
-                {fieldErrors.category && <div className="error-message">{fieldErrors.category}</div>}
+                
               </div>
 
               {/* ジャンル */}
@@ -335,7 +344,10 @@ function Listing() {
 
               {/* 商品の状態 */}
               <div className="form-group">
-                <label htmlFor="condition" className="form-label">商品の状態<span className="required">*</span></label>
+                <label htmlFor="condition" className="form-label form-label-row">
+                  <span className="label-text">商品の状態<span className="required">*</span></span>
+                  {fieldErrors.condition && <span className="form-error-inline">{fieldErrors.condition}</span>}
+                </label>
                 <select
                   id="condition"
                   className="form-input form-select"
@@ -347,12 +359,15 @@ function Listing() {
                   <option value="good">良い</option>
                   <option value="fair">普通</option>
                 </select>
-                {fieldErrors.condition && <div className="error-message">{fieldErrors.condition}</div>}
+                
               </div>
 
               {/* 商品説明 */}
               <div className="form-group">
-                <label htmlFor="description" className="form-label">商品説明<span className="required">*</span></label>
+                <label htmlFor="description" className="form-label form-label-row">
+                  <span className="label-text">商品説明<span className="required">*</span></span>
+                  {fieldErrors.description && <span className="form-error-inline">{fieldErrors.description}</span>}
+                </label>
                 <textarea
                   id="description"
                   className="form-input form-textarea"
@@ -360,7 +375,7 @@ function Listing() {
                   value={formData.description}
                   onChange={handleInputChange}
                 ></textarea>
-                {fieldErrors.description && <div className="error-message">{fieldErrors.description}</div>}
+                
                 <div className="help-text">購入者が安心して購入できるよう、詳しい状態を記載してください。</div>
               </div>
 
@@ -392,7 +407,10 @@ function Listing() {
 
               {/* 販売価格 */}
               <div className="form-group">
-                <label htmlFor="price" className="form-label">販売価格<span className="required">*</span></label>
+                <label htmlFor="price" className="form-label form-label-row">
+                  <span className="label-text">販売価格<span className="required">*</span></span>
+                  {fieldErrors.price && <span className="form-error-inline">{fieldErrors.price}</span>}
+                </label>
                 <div style={{position: 'relative'}}>
                   <span style={{position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#7f8c8d', fontWeight: '600'}}>¥</span>
                   <input
@@ -407,7 +425,7 @@ function Listing() {
                     max="999999"
                   />
                 </div>
-                {fieldErrors.price && <div className="error-message">{fieldErrors.price}</div>}
+                
 
                 <div className="price-calculator" id="priceCalculator">
                   <div className="price-row">
@@ -440,7 +458,10 @@ function Listing() {
 
               {/* 発送元の地域 */}
               <div className="form-group">
-                <label htmlFor="shippingOrigin" className="form-label">発送元の地域<span className="required">*</span></label>
+                <label htmlFor="shippingOrigin" className="form-label form-label-row">
+                  <span className="label-text">発送元の地域<span className="required">*</span></span>
+                  {fieldErrors.shippingOrigin && <span className="form-error-inline">{fieldErrors.shippingOrigin}</span>}
+                </label>
                 <select
                   id="shippingOrigin"
                   className="form-input form-select"
@@ -458,12 +479,15 @@ function Listing() {
                   <option value="九州">九州</option>
                   <option value="沖縄">沖縄</option>
                 </select>
-                {fieldErrors.shippingOrigin && <div className="error-message">{fieldErrors.shippingOrigin}</div>}
+                
               </div>
 
               {/* 発送までの日数 */}
               <div className="form-group">
-                <label htmlFor="shippingDays" className="form-label">発送までの日数<span className="required">*</span></label>
+                <label htmlFor="shippingDays" className="form-label form-label-row">
+                  <span className="label-text">発送までの日数<span className="required">*</span></span>
+                  {fieldErrors.shippingDays && <span className="form-error-inline">{fieldErrors.shippingDays}</span>}
+                </label>
                 <select
                   id="shippingDays"
                   className="form-input form-select"
@@ -475,12 +499,15 @@ function Listing() {
                   <option value="2-3日">2-3日で発送</option>
                   <option value="4-7日">4-7日で発送</option>
                 </select>
-                {fieldErrors.shippingDays && <div className="error-message">{fieldErrors.shippingDays}</div>}
+                
               </div>
 
               {/* 配送方法 */}
               <div className="form-group">
-                <label htmlFor="shipping" className="form-label">配送方法<span className="required">*</span></label>
+                <label htmlFor="shipping" className="form-label form-label-row">
+                  <span className="label-text">配送方法<span className="required">*</span></span>
+                  {fieldErrors.shipping && <span className="form-error-inline">{fieldErrors.shipping}</span>}
+                </label>
                 <select
                   id="shipping"
                   className="form-input form-select"
@@ -495,7 +522,7 @@ function Listing() {
                   <option value="letter-pack">レターパック (¥370〜)</option>
                   <option value="other">その他</option>
                 </select>
-                {fieldErrors.shipping && <div className="error-message">{fieldErrors.shipping}</div>}
+                
                 <div className="help-text">配送料は購入者負担となります。</div>
               </div>
             </div>
