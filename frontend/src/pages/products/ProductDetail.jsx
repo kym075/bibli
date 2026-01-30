@@ -20,6 +20,8 @@ function ProductDetail() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');
   const [cancelMessage, setCancelMessage] = useState('');
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
 
   useEffect(() => {
     if (!productId) {
@@ -82,6 +84,37 @@ function ProductDetail() {
     setIsOwnProduct(product.seller.id === currentUserId);
   }, [product, currentUserId]);
 
+  useEffect(() => {
+    const followerEmail = currentUser?.email;
+    const followeeEmail = product?.seller?.email;
+
+    if (!followerEmail || !followeeEmail || followerEmail === followeeEmail) {
+      setIsFollowing(false);
+      return;
+    }
+
+    const fetchFollowStatus = async () => {
+      setIsFollowLoading(true);
+      try {
+        const params = new URLSearchParams({
+          follower_email: followerEmail,
+          followee_email: followeeEmail
+        });
+        const response = await fetch(`http://localhost:5000/api/follow/status?${params}`);
+        const data = await response.json();
+        if (response.ok) {
+          setIsFollowing(Boolean(data.following));
+        }
+      } catch (err) {
+        console.error('Follow status error:', err);
+      } finally {
+        setIsFollowLoading(false);
+      }
+    };
+
+    fetchFollowStatus();
+  }, [currentUser, product]);
+
   // 商品状態のラベル変換
   const getConditionLabel = (condition) => {
     const labels = {
@@ -120,6 +153,44 @@ function ProductDetail() {
       return;
     }
     navigate(`/checkout?product_id=${product.id}`);
+  };
+
+  const handleFollowToggle = async () => {
+    const followerEmail = currentUser?.email;
+    const followeeEmail = product?.seller?.email;
+
+    if (!followerEmail) {
+      navigate('/login');
+      return;
+    }
+    if (!followeeEmail || followerEmail === followeeEmail) {
+      return;
+    }
+
+    setIsFollowLoading(true);
+    try {
+      const endpoint = isFollowing ? 'unfollow' : 'follow';
+      const response = await fetch(`http://localhost:5000/api/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          follower_email: followerEmail,
+          followee_email: followeeEmail
+        })
+      });
+      if (response.ok) {
+        setIsFollowing(prev => !prev);
+      } else {
+        const data = await response.json();
+        console.error('Follow error:', data.error || data.message);
+      }
+    } catch (err) {
+      console.error('Follow error:', err);
+    } finally {
+      setIsFollowLoading(false);
+    }
   };
 
   const handleCancelListing = async () => {
@@ -225,19 +296,24 @@ function ProductDetail() {
 
               <div className="price">\{product.price?.toLocaleString()}</div>
 
-              <div className="action-buttons">
+              <div className={`action-buttons ${isOwnProduct ? '' : 'is-row'}`}>
                 {isOwnProduct ? (
                   <button className="btn-large btn-purchase" style={{width: '100%'}} disabled>
                     自分の商品は購入できません
                   </button>
                 ) : (
-                  <button className="btn-large btn-purchase" style={{width: '100%'}} onClick={handlePurchaseClick}>
-                    今すぐ購入
-                  </button>
+                  <>
+                    <button className="btn-large btn-purchase" onClick={handlePurchaseClick}>
+                      今すぐ購入
+                    </button>
+                    <button className="btn-large btn-outline">
+                      お気に入り
+                    </button>
+                  </>
                 )}
               </div>
 
-              {isOwnProduct ? (
+              {isOwnProduct && (
                 <div className="secondary-actions">
                   <button
                     className="btn-large btn-outline btn-cancel"
@@ -245,15 +321,6 @@ function ProductDetail() {
                     disabled={isCancelling || productStatus !== 1}
                   >
                     {productStatus !== 1 ? '出品取り消し済み' : (isCancelling ? '取り消し中...' : '出品を取り消す')}
-                  </button>
-                </div>
-              ) : (
-                <div className="secondary-actions">
-                  <button className="btn-large btn-outline">
-                    値下げ依頼
-                  </button>
-                  <button className="btn-large btn-outline">
-                    お気に入り
                   </button>
                 </div>
               )}
@@ -280,7 +347,13 @@ function ProductDetail() {
                       </div>
                     </div>
                   </Link>
-                  <button className="btn btn-secondary btn-small">フォロー</button>
+                  <button
+                    className={`btn btn-secondary btn-small ${isFollowing ? 'following' : ''}`}
+                    onClick={handleFollowToggle}
+                    disabled={isFollowLoading || currentUser?.email === product?.seller?.email || !product?.seller?.email}
+                  >
+                    {!currentUser ? 'ログインでフォロー' : (isFollowing ? 'フォロー中' : 'フォロー')}
+                  </button>
                 </div>
               )}
 

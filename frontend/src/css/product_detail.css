@@ -148,6 +148,15 @@
     margin-bottom: 24px;
 }
 
+.action-buttons.is-row {
+    flex-direction: row;
+}
+
+.action-buttons.is-row .btn-large {
+    width: auto;
+    flex: 1;
+}
+
 .btn-large {
     width: 100%;
     padding: 16px;
@@ -408,6 +417,10 @@
     .main-content {
         margin-top: 60px;
         padding: 0;
+    }
+
+    .action-buttons.is-row {
+        flex-direction: column;
     }
 
     .product-detail-layout {

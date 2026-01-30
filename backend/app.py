@@ -312,6 +312,9 @@ def get_profile(email):
     if not user:
         return jsonify({"error": "ユーザーが見つかりません"}), 404
 
+    follower_count = ForumFollow.query.filter_by(followee_email=user.email).count()
+    following_count = ForumFollow.query.filter_by(follower_email=user.email).count()
+
     return jsonify({
         "id": user.id,
         "user_id": user.user_id,
@@ -325,7 +328,9 @@ def get_profile(email):
         "real_name": user.real_name or user.name,
         "name_kana": user.name_kana,
         "created_at": user.created_at.isoformat() if user.created_at else None,
-        "status": user.status
+        "status": user.status,
+        "follower_count": follower_count,
+        "following_count": following_count
     }), 200
 
 
@@ -338,6 +343,9 @@ def get_profile_by_id(user_id):
     if not user:
         return jsonify({"error": "ユーザーが見つかりません"}), 404
 
+    follower_count = ForumFollow.query.filter_by(followee_email=user.email).count()
+    following_count = ForumFollow.query.filter_by(follower_email=user.email).count()
+
     return jsonify({
         "id": user.id,
         "user_id": user.user_id,
@@ -345,7 +353,9 @@ def get_profile_by_id(user_id):
         "email": user.email,
         "profile_image": user.profile_image,
         "bio": user.bio,
-        "created_at": user.created_at.isoformat() if user.created_at else None
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+        "follower_count": follower_count,
+        "following_count": following_count
     }), 200
 
 
@@ -550,6 +560,7 @@ def get_product_detail(product_id):
                 "id": seller.id if seller else None,
                 "user_id": seller.user_id if seller else None,
                 "user_name": seller.user_name if seller else "不明",
+                "email": seller.email if seller else None,
                 "profile_image": seller.profile_image if seller else None
             } if seller else None
         }
@@ -1127,6 +1138,82 @@ def follow_user():
 
 @app.route('/api/forum/unfollow', methods=['POST'])
 def unfollow_user():
+    data = request.get_json() or {}
+    follower_email = (data.get('follower_email') or '').strip()
+    followee_email = (data.get('followee_email') or '').strip()
+
+    if not follower_email or not followee_email:
+        return jsonify({"error": "follower_email と followee_email が必要です"}), 400
+
+    follow = ForumFollow.query.filter_by(
+        follower_email=follower_email,
+        followee_email=followee_email
+    ).first()
+
+    if not follow:
+        return jsonify({"message": "フォローしていません"}), 200
+
+    try:
+        db.session.delete(follow)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "フォロー解除に失敗しました", "detail": str(e)}), 500
+
+    return jsonify({"message": "フォロー解除しました"}), 200
+
+
+@app.route('/api/follow/status', methods=['GET'])
+def get_follow_status():
+    follower_email = (request.args.get('follower_email') or '').strip()
+    followee_email = (request.args.get('followee_email') or '').strip()
+
+    if not follower_email or not followee_email:
+        return jsonify({"error": "follower_email と followee_email が必要です"}), 400
+
+    is_following = ForumFollow.query.filter_by(
+        follower_email=follower_email,
+        followee_email=followee_email
+    ).first() is not None
+
+    return jsonify({"following": is_following}), 200
+
+
+@app.route('/api/follow', methods=['POST'])
+def follow_user_general():
+    data = request.get_json() or {}
+    follower_email = (data.get('follower_email') or '').strip()
+    followee_email = (data.get('followee_email') or '').strip()
+
+    if not follower_email or not followee_email:
+        return jsonify({"error": "follower_email と followee_email が必要です"}), 400
+    if follower_email == followee_email:
+        return jsonify({"error": "自分自身はフォローできません"}), 400
+
+    existing = ForumFollow.query.filter_by(
+        follower_email=follower_email,
+        followee_email=followee_email
+    ).first()
+    if existing:
+        return jsonify({"message": "既にフォロー済みです"}), 200
+
+    follow = ForumFollow(
+        follower_email=follower_email,
+        followee_email=followee_email
+    )
+
+    try:
+        db.session.add(follow)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "フォローに失敗しました", "detail": str(e)}), 500
+
+    return jsonify({"message": "フォローしました"}), 201
+
+
+@app.route('/api/unfollow', methods=['POST'])
+def unfollow_user_general():
     data = request.get_json() or {}
     follower_email = (data.get('follower_email') or '').strip()
     followee_email = (data.get('followee_email') or '').strip()

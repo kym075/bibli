@@ -447,3 +447,25 @@ input, button, textarea, select {
         justify-content: center;
     }
 }
+
+
+/* ラベル内エラーメッセージ */
+.form-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.form-label-row .label-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.form-error-inline {
+    color: var(--accent-warm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
