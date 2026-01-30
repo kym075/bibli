@@ -1,3 +1,36 @@
+// ページ内メッセージ表示
+function showAppMessage(message, type = 'info', options = {}) {
+    const duration = typeof options.duration === 'number' ? options.duration : 4000;
+    const root = document.querySelector('.main-content') || document.body;
+    let banner = document.querySelector('.page-message');
+
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.className = 'page-message';
+        if (root.firstChild) {
+            root.insertBefore(banner, root.firstChild);
+        } else {
+            root.appendChild(banner);
+        }
+    }
+
+    banner.textContent = message;
+    banner.classList.remove('error', 'success', 'info');
+    banner.classList.add(type, 'visible');
+
+    if (banner._timer) {
+        clearTimeout(banner._timer);
+    }
+
+    if (duration > 0) {
+        banner._timer = setTimeout(() => {
+            banner.classList.remove('visible');
+        }, duration);
+    }
+}
+
+window.showAppMessage = showAppMessage;
+
 // ハンバーガーメニューの開閉機能
 const hamburgerMenu = document.getElementById('hamburger-menu');
 const hamburgerDropdown = document.getElementById('hamburger-dropdown');

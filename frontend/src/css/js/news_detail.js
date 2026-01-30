@@ -1,9 +1,45 @@
+const showMessage = (message, type = 'info', options = {}) => {
+    if (typeof window.showAppMessage !== 'function') {
+        window.showAppMessage = (msg, t = 'info', opts = {}) => {
+            const duration = typeof opts.duration === 'number' ? opts.duration : 4000;
+            const root = document.querySelector('.main-content') || document.body;
+            let banner = document.querySelector('.page-message');
+
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.className = 'page-message';
+                if (root.firstChild) {
+                    root.insertBefore(banner, root.firstChild);
+                } else {
+                    root.appendChild(banner);
+                }
+            }
+
+            banner.textContent = msg;
+            banner.classList.remove('error', 'success', 'info');
+            banner.classList.add(t, 'visible');
+
+            if (banner._timer) {
+                clearTimeout(banner._timer);
+            }
+
+            if (duration > 0) {
+                banner._timer = setTimeout(() => {
+                    banner.classList.remove('visible');
+                }, duration);
+            }
+        };
+    }
+
+    window.showAppMessage(message, type, options);
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     // ブレッドクラムのお知らせリンク
     document.getElementById('newsListLink').addEventListener('click', function(e) {
         e.preventDefault();
         console.log('お知らせ一覧ページへ移動');
-        alert('お知らせ一覧ページに移動します');
+        showMessage('お知らせ一覧ページに移動します', 'info');
     });
 
     // 関連記事のクリック処理
@@ -12,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const title = this.querySelector('.related-title-text').textContent;
             console.log('関連記事へ移動:', title);
-            alert(`「${title}」の詳細ページに移動します`);
+            showMessage(`「${title}」の詳細ページに移動します`, 'info');
         });
     });
 

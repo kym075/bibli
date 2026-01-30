@@ -1,3 +1,39 @@
+const showMessage = (message, type = 'info', options = {}) => {
+    if (typeof window.showAppMessage !== 'function') {
+        window.showAppMessage = (msg, t = 'info', opts = {}) => {
+            const duration = typeof opts.duration === 'number' ? opts.duration : 4000;
+            const root = document.querySelector('.main-content') || document.body;
+            let banner = document.querySelector('.page-message');
+
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.className = 'page-message';
+                if (root.firstChild) {
+                    root.insertBefore(banner, root.firstChild);
+                } else {
+                    root.appendChild(banner);
+                }
+            }
+
+            banner.textContent = msg;
+            banner.classList.remove('error', 'success', 'info');
+            banner.classList.add(t, 'visible');
+
+            if (banner._timer) {
+                clearTimeout(banner._timer);
+            }
+
+            if (duration > 0) {
+                banner._timer = setTimeout(() => {
+                    banner.classList.remove('visible');
+                }, duration);
+            }
+        };
+    }
+
+    window.showAppMessage(message, type, options);
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     // フォーム要素の取得
     const form = document.getElementById('postForm');
@@ -35,12 +71,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (titleInput.value.trim() || contentTextarea.value.trim()) {
             if (confirm('入力した内容が失われますが、よろしいですか？')) {
                 console.log('掲示板一覧ページへ戻る');
-                alert('掲示板一覧ページに戻ります');
+                showMessage('掲示板一覧ページに戻ります', 'info');
                 window.location.href = 'forum.html';
             }
         } else {
             console.log('掲示板一覧ページへ戻る');
-            alert('掲示板一覧ページに戻ります');
+            showMessage('掲示板一覧ページに戻ります', 'info');
             window.location.href = 'forum.html';
         }
     });
@@ -204,7 +240,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         localStorage.setItem('forum_draft', JSON.stringify(draft));
-        alert('下書きを保存しました');
+        showMessage('下書きを保存しました', 'success');
     });
 
     // 下書き読み込み機能
@@ -225,10 +261,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 updatePreview();
                 validateForm();
                 
-                alert('下書きを読み込みました');
+                showMessage('下書きを読み込みました', 'success');
             }
         } else {
-            alert('保存された下書きがありません');
+            showMessage('保存された下書きがありません', 'info');
         }
     });
 

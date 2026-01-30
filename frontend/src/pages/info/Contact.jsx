@@ -1,13 +1,15 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/inquiry.css';
 
 function Contact() {
+  const [formMessage, setFormMessage] = useState('');
   const handleSubmit = (e) => {
     e.preventDefault();
     // Form submission logic
-    alert('お問い合わせを送信しました');
+    setFormMessage('お問い合わせを送信しました');
   };
 
   return (
@@ -17,6 +19,7 @@ function Contact() {
         <div className="inquiry-container">
           <h1 className="page-title">お問い合わせ</h1>
           <p className="page-subtitle">サービスに関するご質問・ご要望をお寄せください</p>
+          {formMessage && <div className="page-message success visible">{formMessage}</div>}
 
           <section className="faq-section">
             <h2 className="section-title">よくある質問</h2>

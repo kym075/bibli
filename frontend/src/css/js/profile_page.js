@@ -1,3 +1,39 @@
+const showMessage = (message, type = 'info', options = {}) => {
+    if (typeof window.showAppMessage !== 'function') {
+        window.showAppMessage = (msg, t = 'info', opts = {}) => {
+            const duration = typeof opts.duration === 'number' ? opts.duration : 4000;
+            const root = document.querySelector('.main-content') || document.body;
+            let banner = document.querySelector('.page-message');
+
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.className = 'page-message';
+                if (root.firstChild) {
+                    root.insertBefore(banner, root.firstChild);
+                } else {
+                    root.appendChild(banner);
+                }
+            }
+
+            banner.textContent = msg;
+            banner.classList.remove('error', 'success', 'info');
+            banner.classList.add(t, 'visible');
+
+            if (banner._timer) {
+                clearTimeout(banner._timer);
+            }
+
+            if (duration > 0) {
+                banner._timer = setTimeout(() => {
+                    banner.classList.remove('visible');
+                }, duration);
+            }
+        };
+    }
+
+    window.showAppMessage(message, type, options);
+};
+
 document.addEventListener('DOMContentLoaded', function() {
             // === TAB SWITCHING FUNCTIONALITY ===
             const tabButtons = document.querySelectorAll('.tab-btn');
@@ -82,7 +118,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // === MESSAGE BUTTON FUNCTIONALITY ===
             document.querySelector('.btn-message').addEventListener('click', function() {
                 console.log('メッセージ画面を開く');
-                alert('メッセージ画面を開きます');
+                showMessage('メッセージ画面を開きます', 'info');
             });
 
             // === PRODUCT CARD CLICK FUNCTIONALITY ===
@@ -90,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 card.addEventListener('click', function() {
                     const title = this.querySelector('.product-title').textContent;
                     console.log('商品詳細ページへ移動:', title);
-                    alert(`「${title}」の詳細ページに移動します`);
+                    showMessage(`「${title}」の詳細ページに移動します`, 'info');
                 });
             });
 
@@ -99,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 item.addEventListener('click', function() {
                     const title = this.querySelector('.purchase-title').textContent;
                     console.log('購入履歴詳細:', title);
-                    alert(`「${title}」の購入履歴詳細を表示します`);
+                    showMessage(`「${title}」の購入履歴詳細を表示します`, 'info');
                 });
             });
 
@@ -227,7 +263,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 rating.addEventListener('click', function() {
                     const stars = this.textContent;
                     console.log('評価をクリック:', stars);
-                    alert(`この評価について詳細を表示します: ${stars}`);
+                    showMessage(`この評価について詳細を表示します: ${stars}`, 'info');
                 });
             });
 

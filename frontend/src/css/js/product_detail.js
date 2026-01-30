@@ -1,3 +1,39 @@
+const showMessage = (message, type = 'info', options = {}) => {
+    if (typeof window.showAppMessage !== 'function') {
+        window.showAppMessage = (msg, t = 'info', opts = {}) => {
+            const duration = typeof opts.duration === 'number' ? opts.duration : 4000;
+            const root = document.querySelector('.main-content') || document.body;
+            let banner = document.querySelector('.page-message');
+
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.className = 'page-message';
+                if (root.firstChild) {
+                    root.insertBefore(banner, root.firstChild);
+                } else {
+                    root.appendChild(banner);
+                }
+            }
+
+            banner.textContent = msg;
+            banner.classList.remove('error', 'success', 'info');
+            banner.classList.add(t, 'visible');
+
+            if (banner._timer) {
+                clearTimeout(banner._timer);
+            }
+
+            if (duration > 0) {
+                banner._timer = setTimeout(() => {
+                    banner.classList.remove('visible');
+                }, duration);
+            }
+        };
+    }
+
+    window.showAppMessage(message, type, options);
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     // サムネイル画像の切り替え
     const thumbnails = document.querySelectorAll('.thumbnail');
@@ -18,11 +54,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ボタンクリック処理
     document.querySelector('.btn-cart').addEventListener('click', function() {
-        alert('カートに追加されました');
+        showMessage('カートに追加されました', 'success');
     });
 
     document.querySelector('.btn-outline').addEventListener('click', function() {
-        alert('値下げ依頼を送信しました');
+        showMessage('値下げ依頼を送信しました', 'success');
     });
 
     // お気に入りボタンの処理
@@ -35,18 +71,18 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.background = '#ff6b6b';
             this.style.color = 'white';
             this.style.borderColor = '#ff6b6b';
-            alert('お気に入りに追加されました');
+            showMessage('お気に入りに追加されました', 'success');
         } else {
             this.style.background = 'white';
             this.style.color = '#667eea';
             this.style.borderColor = '#667eea';
-            alert('お気に入りから削除されました');
+            showMessage('お気に入りから削除されました', 'info');
         }
     });
 
     // チャットボタンの処理
     document.querySelector('.communication-actions .btn-primary').addEventListener('click', function() {
-        alert('チャット画面を開きます');
+        showMessage('チャット画面を開きます', 'info');
     });
 
     // フォローボタンの処理

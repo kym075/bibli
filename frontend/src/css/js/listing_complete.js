@@ -1,3 +1,39 @@
+const showMessage = (message, type = 'info', options = {}) => {
+    if (typeof window.showAppMessage !== 'function') {
+        window.showAppMessage = (msg, t = 'info', opts = {}) => {
+            const duration = typeof opts.duration === 'number' ? opts.duration : 4000;
+            const root = document.querySelector('.main-content') || document.body;
+            let banner = document.querySelector('.page-message');
+
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.className = 'page-message';
+                if (root.firstChild) {
+                    root.insertBefore(banner, root.firstChild);
+                } else {
+                    root.appendChild(banner);
+                }
+            }
+
+            banner.textContent = msg;
+            banner.classList.remove('error', 'success', 'info');
+            banner.classList.add(t, 'visible');
+
+            if (banner._timer) {
+                clearTimeout(banner._timer);
+            }
+
+            if (duration > 0) {
+                banner._timer = setTimeout(() => {
+                    banner.classList.remove('visible');
+                }, duration);
+            }
+        };
+    }
+
+    window.showAppMessage(message, type, options);
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     // 紙吹雪エフェクト
     function createConfetti() {
@@ -27,21 +63,21 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         // マイページの出品商品一覧へ移動
         console.log('出品商品確認ページへ移動');
-        alert('マイページの出品商品一覧に移動します');
+        showMessage('マイページの出品商品一覧に移動します', 'info');
     });
 
     document.getElementById('continueBtn').addEventListener('click', function(e) {
         e.preventDefault();
         // 出品ページへ移動
         console.log('出品ページへ移動');
-        alert('新規出品ページに移動します');
+        showMessage('新規出品ページに移動します', 'info');
     });
 
     document.getElementById('homeBtn').addEventListener('click', function(e) {
         e.preventDefault();
         // トップページへ移動
         console.log('トップページへ移動');
-        alert('トップページに移動します');
+        showMessage('トップページに移動します', 'info');
     });
 
     // 検索機能
