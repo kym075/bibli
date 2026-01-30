@@ -199,7 +199,9 @@ def register():
         'password': data.get('password'),
         'address': data.get('address'),
         'phone': phone,
-        'real_name': data.get('real_name')
+        'real_name': data.get('real_name'),
+        'name_kana': data.get('name_kana'),
+        'birth_date': data.get('birth_date')
     }
 
     for field, value in required_fields.items():
@@ -218,7 +220,7 @@ def register():
         user_id=user_id_base,
         user_name=data['user_name'],
         name=data['user_name'],
-        name_kana='',
+        name_kana=data.get('name_kana', ''),
         email=data['email'],
         phone=phone,
         phone_number=phone,
@@ -321,6 +323,7 @@ def get_profile(email):
         "phone_number": user.phone_number or user.phone,
         "birth_date": user.birth_date,
         "real_name": user.real_name or user.name,
+        "name_kana": user.name_kana,
         "created_at": user.created_at.isoformat() if user.created_at else None,
         "status": user.status
     }), 200
@@ -380,6 +383,9 @@ def update_profile(email):
 
     if 'real_name' in data:
         user.real_name = data['real_name']
+
+    if 'name_kana' in data:
+        user.name_kana = data['name_kana']
 
     # パスワード変更がある場合
     if 'password' in data and data['password']:

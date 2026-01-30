@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { auth } from '../../css/firebase';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -14,16 +14,45 @@ function Listing() {
     condition: '',
     description: '',
     passion: '',
-    saleType: 'fixed',
     price: '',
-    shipping: ''
+    shipping: '',
+    shippingOrigin: '',
+    shippingDays: ''
   });
   const [selectedImages, setSelectedImages] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  useEffect(() => {
+    const interrupted = sessionStorage.getItem('listing_upload_interrupted');
+    if (interrupted) {
+      setFormError('画像アップロードが中断されました。再度アップロードしてください。');
+      sessionStorage.removeItem('listing_upload_interrupted');
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (selectedImages.length > 0 && !isSubmitting) {
+        sessionStorage.setItem('listing_upload_interrupted', '1');
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [selectedImages, isSubmitting]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) {
+      setFormError('送信中です。しばらくお待ちください。');
+      return;
+    }
+    if (!navigator.onLine) {
+      setFormError('ネットワークに接続されていません。通信状況を確認してください。');
+      return;
+    }
 
     // ログインチェック
     const currentUser = auth.currentUser;
@@ -32,14 +61,33 @@ function Listing() {
       return;
     }
 
-    // バリデーション
-    if (!formData.title || !formData.price || !formData.category || !formData.condition) {
-      setFormError('必須項目を入力してください');
+    // バリデーション（まとめて表示 + 項目別表示）
+    const nextErrors = {};
+    if (!selectedImages.length) nextErrors.images = '出品画像を追加してください';
+    if (!formData.title) nextErrors.title = '書籍タイトルを入力してください';
+    if (!formData.category) nextErrors.category = 'カテゴリを選択してください';
+    if (!formData.condition) nextErrors.condition = '商品の状態を選択してください';
+    if (!formData.description) nextErrors.description = '商品説明を入力してください';
+    if (!formData.price) nextErrors.price = '販売価格を入力してください';
+    if (!formData.shippingOrigin) nextErrors.shippingOrigin = '発送元の地域を選択してください';
+    if (!formData.shippingDays) nextErrors.shippingDays = '発送までの日数を選択してください';
+    if (!formData.shipping) nextErrors.shipping = '配送方法を選択してください';
+
+    const priceValue = parseInt(formData.price, 10);
+    if (formData.price && (!Number.isFinite(priceValue) || priceValue < 300 || priceValue > 999999)) {
+      nextErrors.price = '販売価格は300〜999999円で入力してください';
+    }
+
+    if (Object.keys(nextErrors).length) {
+      setFieldErrors(nextErrors);
+      setFormError('入力内容を確認してください。');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
     setIsSubmitting(true);
     setFormError('');
+    setFieldErrors({});
 
     try {
       // ユーザーIDを取得（Firebaseのメールアドレスでデータベースから検索）
@@ -54,9 +102,11 @@ function Listing() {
       formPayload.append('description', formData.description);
       formPayload.append('price', parseInt(formData.price, 10));
       formPayload.append('condition', formData.condition);
-      formPayload.append('sale_type', formData.saleType);
+      formPayload.append('sale_type', 'fixed');
       formPayload.append('seller_id', userData.id);
       formPayload.append('category', formData.category);
+      formPayload.append('shipping_origin', formData.shippingOrigin);
+      formPayload.append('shipping_days', formData.shippingDays);
 
       if (selectedImages.length > 0) {
         formPayload.append('image', selectedImages[0].file);
@@ -84,6 +134,9 @@ function Listing() {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
     if (formError) setFormError('');
+    if (fieldErrors[id]) {
+      setFieldErrors(prev => ({ ...prev, [id]: '' }));
+    }
   };
 
   const handleImageUploadClick = () => {
@@ -94,16 +147,39 @@ function Listing() {
     const files = Array.from(e.target.files);
     if (files.length + selectedImages.length > 10) {
       setFormError('最大10枚までアップロードできます');
+      setFieldErrors(prev => ({ ...prev, images: '出品画像は最大10枚まで追加できます' }));
       return;
     }
 
-    const newImages = files.map(file => ({
+    const validFiles = [];
+    files.forEach((file) => {
+      if (!file.type.startsWith('image/')) {
+        setFormError('画像ファイルのみアップロード可能です。');
+        setFieldErrors(prev => ({ ...prev, images: '画像ファイルのみアップロード可能です。' }));
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setFormError('ファイルサイズは5MB以下にしてください。');
+        setFieldErrors(prev => ({ ...prev, images: 'ファイルサイズは5MB以下にしてください。' }));
+        return;
+      }
+      validFiles.push(file);
+    });
+
+    if (validFiles.length === 0) {
+      return;
+    }
+
+    const newImages = validFiles.map(file => ({
       file,
       preview: URL.createObjectURL(file)
     }));
 
     setSelectedImages(prev => [...prev, ...newImages]);
     if (formError) setFormError('');
+    if (fieldErrors.images) {
+      setFieldErrors(prev => ({ ...prev, images: '' }));
+    }
   };
 
   const removeImage = (index) => {
@@ -111,9 +187,27 @@ function Listing() {
       const newImages = [...prev];
       URL.revokeObjectURL(newImages[index].preview);
       newImages.splice(index, 1);
+      if (newImages.length === 0) {
+        sessionStorage.removeItem('listing_upload_interrupted');
+      }
       return newImages;
     });
   };
+
+  const priceValue = parseInt(formData.price, 10);
+  const safePrice = Number.isFinite(priceValue) ? priceValue : 0;
+  const fee = Math.floor(safePrice * 0.1);
+  const profit = safePrice - fee;
+  const shippingFees = {
+    'yu-packet': 230,
+    'yu-packet-plus': 455,
+    'takkyubin': 450,
+    'takkyubin-normal': 700,
+    'letter-pack': 370,
+    'other': 0
+  };
+  const shippingFee = shippingFees[formData.shipping] ?? 0;
+  const buyerTotal = safePrice + shippingFee;
 
   return (
     <>
@@ -125,7 +219,7 @@ function Listing() {
         </div>
 
         <div className="form-container fade-in">
-          <form id="listingForm" onSubmit={handleSubmit}>
+          <form id="listingForm" onSubmit={handleSubmit} noValidate>
             {formError && <div className="error-message">{formError}</div>}
             <div className="success-message" id="successMessage">
               出品が完了しました！商品は審査後に公開されます。
@@ -146,6 +240,7 @@ function Listing() {
                   <div className="upload-subtext">JPG, PNG, GIF (最大5MB)</div>
                   <input type="file" className="file-input" id="imageInput" multiple accept="image/*" onChange={handleImageChange} style={{display: 'none'}} />
                 </div>
+                {fieldErrors.images && <div className="error-message">{fieldErrors.images}</div>}
 
                 <div className="image-preview-container" id="imagePreviewContainer">
                   {selectedImages.map((image, index) => (
@@ -188,8 +283,8 @@ function Listing() {
                   placeholder="例: 夏目漱石作品集"
                   value={formData.title}
                   onChange={handleInputChange}
-                  required
                 />
+                {fieldErrors.title && <div className="error-message">{fieldErrors.title}</div>}
                 <div className="help-text">正確なタイトルを入力してください。</div>
               </div>
 
@@ -201,7 +296,6 @@ function Listing() {
                   className="form-input form-select"
                   value={formData.category}
                   onChange={handleInputChange}
-                  required
                 >
                   <option value="">カテゴリを選択してください</option>
                   <option value="小説">小説</option>
@@ -213,6 +307,7 @@ function Listing() {
                   <option value="自己啓発">自己啓発</option>
                   <option value="その他">その他</option>
                 </select>
+                {fieldErrors.category && <div className="error-message">{fieldErrors.category}</div>}
               </div>
 
               {/* ジャンル */}
@@ -246,13 +341,13 @@ function Listing() {
                   className="form-input form-select"
                   value={formData.condition}
                   onChange={handleInputChange}
-                  required
                 >
                   <option value="">状態を選択してください</option>
                   <option value="excellent">非常に良い</option>
                   <option value="good">良い</option>
                   <option value="fair">普通</option>
                 </select>
+                {fieldErrors.condition && <div className="error-message">{fieldErrors.condition}</div>}
               </div>
 
               {/* 商品説明 */}
@@ -264,8 +359,8 @@ function Listing() {
                   placeholder="本の状態、おすすめポイントなどを詳しく説明してください..."
                   value={formData.description}
                   onChange={handleInputChange}
-                  required
                 ></textarea>
+                {fieldErrors.description && <div className="error-message">{fieldErrors.description}</div>}
                 <div className="help-text">購入者が安心して購入できるよう、詳しい状態を記載してください。</div>
               </div>
 
@@ -291,28 +386,9 @@ function Listing() {
               </div>
             </div>
 
-            {/* 販売形式と価格 */}
+            {/* 販売価格 */}
             <div className="form-section">
-              <h2 className="section-title">販売形式と価格</h2>
-
-              {/* 販売形式 */}
-              <div className="form-group">
-                <label className="form-label">販売形式<span className="required">*</span></label>
-                <div className="radio-group">
-                  <div className="radio-option selected" data-value="fixed">
-                    <input type="radio" name="saleType" id="saleType" value="fixed" checked={formData.saleType === 'fixed'} onChange={handleInputChange} />
-                    <label className="radio-label">固定価格</label>
-                  </div>
-                  <div className="radio-option" data-value="auction">
-                    <input type="radio" name="saleType" value="auction" checked={formData.saleType === 'auction'} onChange={handleInputChange} />
-                    <label className="radio-label">オークション</label>
-                  </div>
-                  <div className="radio-option" data-value="negotiable">
-                    <input type="radio" name="saleType" value="negotiable" checked={formData.saleType === 'negotiable'} onChange={handleInputChange} />
-                    <label className="radio-label">価格交渉可</label>
-                  </div>
-                </div>
-              </div>
+              <h2 className="section-title">販売価格</h2>
 
               {/* 販売価格 */}
               <div className="form-group">
@@ -327,24 +403,32 @@ function Listing() {
                     placeholder="1000"
                     value={formData.price}
                     onChange={handleInputChange}
-                    required
-                    min="100"
+                    min="300"
                     max="999999"
                   />
                 </div>
+                {fieldErrors.price && <div className="error-message">{fieldErrors.price}</div>}
 
                 <div className="price-calculator" id="priceCalculator">
                   <div className="price-row">
                     <span>販売価格</span>
-                    <span id="salePrice">¥0</span>
+                    <span id="salePrice">¥{safePrice.toLocaleString()}</span>
+                  </div>
+                  <div className="price-row">
+                    <span>送料</span>
+                    <span id="shippingFee">¥{shippingFee.toLocaleString()}</span>
+                  </div>
+                  <div className="price-row">
+                    <span>購入者支払額</span>
+                    <span id="buyerTotal">¥{buyerTotal.toLocaleString()}</span>
                   </div>
                   <div className="price-row">
                     <span>販売手数料 (10%)</span>
-                    <span className="fee" id="fee">¥0</span>
+                    <span className="fee" id="fee">-¥{fee.toLocaleString()}</span>
                   </div>
                   <div className="price-row total">
                     <span>販売利益</span>
-                    <span className="profit" id="profit">¥0</span>
+                    <span className="profit" id="profit">¥{profit.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
@@ -354,6 +438,46 @@ function Listing() {
             <div className="form-section">
               <h2 className="section-title">配送について</h2>
 
+              {/* 発送元の地域 */}
+              <div className="form-group">
+                <label htmlFor="shippingOrigin" className="form-label">発送元の地域<span className="required">*</span></label>
+                <select
+                  id="shippingOrigin"
+                  className="form-input form-select"
+                  value={formData.shippingOrigin}
+                  onChange={handleInputChange}
+                >
+                  <option value="">発送元の地域を選択してください</option>
+                  <option value="北海道">北海道</option>
+                  <option value="東北">東北</option>
+                  <option value="関東">関東</option>
+                  <option value="中部">中部</option>
+                  <option value="近畿">近畿</option>
+                  <option value="中国">中国</option>
+                  <option value="四国">四国</option>
+                  <option value="九州">九州</option>
+                  <option value="沖縄">沖縄</option>
+                </select>
+                {fieldErrors.shippingOrigin && <div className="error-message">{fieldErrors.shippingOrigin}</div>}
+              </div>
+
+              {/* 発送までの日数 */}
+              <div className="form-group">
+                <label htmlFor="shippingDays" className="form-label">発送までの日数<span className="required">*</span></label>
+                <select
+                  id="shippingDays"
+                  className="form-input form-select"
+                  value={formData.shippingDays}
+                  onChange={handleInputChange}
+                >
+                  <option value="">発送までの日数を選択してください</option>
+                  <option value="1-2日">1-2日で発送</option>
+                  <option value="2-3日">2-3日で発送</option>
+                  <option value="4-7日">4-7日で発送</option>
+                </select>
+                {fieldErrors.shippingDays && <div className="error-message">{fieldErrors.shippingDays}</div>}
+              </div>
+
               {/* 配送方法 */}
               <div className="form-group">
                 <label htmlFor="shipping" className="form-label">配送方法<span className="required">*</span></label>
@@ -362,7 +486,6 @@ function Listing() {
                   className="form-input form-select"
                   value={formData.shipping}
                   onChange={handleInputChange}
-                  required
                 >
                   <option value="">配送方法を選択してください</option>
                   <option value="yu-packet">ゆうパケット (¥230)</option>
@@ -372,6 +495,7 @@ function Listing() {
                   <option value="letter-pack">レターパック (¥370〜)</option>
                   <option value="other">その他</option>
                 </select>
+                {fieldErrors.shipping && <div className="error-message">{fieldErrors.shipping}</div>}
                 <div className="help-text">配送料は購入者負担となります。</div>
               </div>
             </div>
