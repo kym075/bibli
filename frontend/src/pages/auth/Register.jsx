@@ -36,6 +36,7 @@ function Register() {
     }
   };
   const isKatakana = (text) => /^[ァ-ヶー\\s]+$/.test(text);
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const validateForm = () => {
     const newErrors = {};
     if (!formData.userName.trim()) newErrors.userName = 'ユーザー名を入力してください';
@@ -53,7 +54,13 @@ function Register() {
     if (!formData.postalCode.trim()) newErrors.postalCode = '郵便番号を入力してください';
     else if (!/^\d{7}$/.test(formData.postalCode.trim()))
       newErrors.postalCode = '郵便番号は7桁の数字で入力してください';
-    if (!formData.email.trim()) newErrors.email = 'メールアドレスを入力してください';
+    if (!formData.email.trim()) {
+      newErrors.email = 'メールアドレスを入力してください';
+    } else if (!formData.email.includes('@')) {
+      newErrors.email = 'メールアドレスに「@」を含めてください';
+    } else if (!isValidEmail(formData.email.trim())) {
+      newErrors.email = '有効なメールアドレスを入力してください';
+    }
     if (!formData.password) newErrors.password = 'パスワードを入力してください';
     else if (formData.password.length < 8)
       newErrors.password = 'パスワードは8文字以上必要です';
