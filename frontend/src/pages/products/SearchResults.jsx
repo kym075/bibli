@@ -4,24 +4,6 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/search_results.css';
 
-const HeartIcon = ({ filled }) => (
-  <svg
-    className="favorite-icon"
-    viewBox="0 0 24 24"
-    width="18"
-    height="18"
-    aria-hidden="true"
-    focusable="false"
-    fill={filled ? 'currentColor' : 'none'}
-    stroke="currentColor"
-    strokeWidth="1.6"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M12 20s-7-4.6-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.4-7 10-7 10Z" />
-  </svg>
-);
-
 function SearchResults() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
@@ -29,7 +11,6 @@ function SearchResults() {
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [favorites, setFavorites] = useState(new Set());
 
   // フィルター・ソートの状態
   const [filters, setFilters] = useState({
@@ -86,49 +67,19 @@ function SearchResults() {
     fetchProducts();
   }, [filters, currentPage]);
 
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) return '';
+    if (imageUrl.startsWith('http') || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
+      return imageUrl;
+    }
+    const trimmed = imageUrl.replace(/^\/+/, '');
+    return `http://localhost:5000/${trimmed}`;
+  };
+
   // フィルター変更ハンドラ
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setCurrentPage(1); // ページを1に戻す
-  };
-
-  // お気に入りトグル
-  const toggleFavorite = (productId) => {
-    setFavorites(prev => {
-      const newFavorites = new Set(prev);
-      if (newFavorites.has(productId)) {
-        newFavorites.delete(productId);
-      } else {
-        newFavorites.add(productId);
-      }
-      return newFavorites;
-    });
-  };
-
-  // 商品状態のラベル変換
-  const getConditionLabel = (condition) => {
-    const labels = {
-      'excellent': '非常に良い',
-      'good': '良好',
-      'fair': '普通'
-    };
-    return labels[condition] || condition;
-  };
-
-  // 相対時間表示
-  const getRelativeTime = (dateString) => {
-    if (!dateString) return '';
-    const now = new Date();
-    const date = new Date(dateString);
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 60) return `${diffMins}分前`;
-    if (diffHours < 24) return `${diffHours}時間前`;
-    if (diffDays < 7) return `${diffDays}日前`;
-    return `${Math.floor(diffDays / 7)}週間前`;
   };
 
   // ページネーション処理
@@ -265,31 +216,19 @@ function SearchResults() {
         ) : (
           <>
             {/* 商品グリッド */}
-            <div className="products-grid" id="productsGrid">
+            <div className="book-grid" id="productsGrid">
               {products.map((product) => (
                 <Link to={`/product-detail?id=${product.id}`} key={product.id}>
-                  <div className="product-card fade-in">
-                    <div className="product-image" style={{ backgroundImage: product.image_url ? `url(${product.image_url})` : 'none' }}>
-                      <button
-                        className={`favorite-btn ${favorites.has(product.id) ? 'active' : ''}`}
-                        title={favorites.has(product.id) ? 'お気に入りから削除' : 'お気に入りに追加'}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          toggleFavorite(product.id);
-                        }}
-                      >
-                        <HeartIcon filled={favorites.has(product.id)} />
-                      </button>
+                  <div className="book-card">
+                    <div
+                      className="book-image"
+                      style={{ backgroundImage: product.image_url ? `url(${getImageUrl(product.image_url)})` : 'none' }}
+                    >
+                      {!product.image_url && 'NO IMAGE'}
                     </div>
-                    <div className="product-info">
-                      <h3 className="product-title">{product.title}</h3>
-                      <p className="product-price">¥{product.price?.toLocaleString()}</p>
-                      <div className="product-meta">
-                        {product.condition && (
-                          <span className="condition-badge">{getConditionLabel(product.condition)}</span>
-                        )}
-                        <span>{getRelativeTime(product.created_at)}</span>
-                      </div>
+                    <div className="book-info">
+                      <div className="book-title">{product.title}</div>
+                      <div className="book-price">¥{product.price?.toLocaleString()}</div>
                     </div>
                   </div>
                 </Link>

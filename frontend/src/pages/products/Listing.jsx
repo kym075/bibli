@@ -109,7 +109,9 @@ function Listing() {
       formPayload.append('shipping_days', formData.shippingDays);
 
       if (selectedImages.length > 0) {
-        formPayload.append('image', selectedImages[0].file);
+        selectedImages.forEach((image) => {
+          formPayload.append('images', image.file);
+        });
       }
 
       const response = await fetch('http://localhost:5000/api/products', {

@@ -74,6 +74,14 @@
     border: 2px solid var(--accent);
 }
 
+.thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+
 /* 右カラム: 商品情報 */
 .product-detail-content {
     flex: 1;
@@ -91,13 +99,47 @@
     box-shadow: var(--shadow);
 }
 
-.product-title {
-    font-size: 24px;
-    font-weight: 600;
+.product-detail-title {
+    flex: 1;
+
+    font-size: 40px;
+    font-weight: 700;
     color: var(--ink);
     margin-bottom: 16px;
-    line-height: 1.4;
+    line-height: 1.25;
 }
+
+.product-detail-page .product-detail-title {
+    flex: 1;
+
+    font-size: 40px;
+}
+
+
+.product-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.report-link {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    background: var(--surface);
+    white-space: nowrap;
+    align-self: flex-start;
+}
+
+.report-link:hover {
+    background: var(--surface-muted);
+    color: var(--ink);
+}
+
 
 .product-meta {
     display: flex;
@@ -135,10 +177,6 @@
     gap: 8px;
 }
 
-.price::before {
-    content: '¥';
-    font-size: 20px;
-}
 
 /* アクションボタン */
 .action-buttons {
@@ -233,6 +271,49 @@
 
 .cancel-message.is-success {
     color: var(--accent);
+}
+
+
+.cancel-section {
+    flex-direction: column;
+}
+
+.cancel-confirm {
+    width: 100%;
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.cancel-confirm-text {
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.cancel-confirm-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+
+.cancel-confirm-actions .btn-large {
+    flex: 1;
+    min-width: 160px;
+    white-space: nowrap;
+}
+
+
+@media (max-width: 768px) {
+    .product-title-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .cancel-confirm-actions {
+        flex-direction: column;
+    }
 }
 
 /* 出品者情報 */
@@ -414,6 +495,11 @@
 
 /* レスポンシブ */
 @media (max-width: 768px) {
+    .product-title-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
     .main-content {
         margin-top: 60px;
         padding: 0;
@@ -434,7 +520,9 @@
         flex: 1;
     }
 
-    .product-title {
+    .product-detail-title {
+    flex: 1;
+
         font-size: 20px;
     }
 

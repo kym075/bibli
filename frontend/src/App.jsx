@@ -1,8 +1,20 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 
 // CSS imports - グローバルスタイル
 import './css/reset.css';
 import './css/common.css';
+
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
 
 // Pages
 import Home from './pages/Home';
@@ -40,6 +52,7 @@ import Privacy from './pages/info/Privacy';
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         {/* Home */}
         <Route path="/" element={<Home />} />
