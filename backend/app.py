@@ -1,6 +1,6 @@
 # app.py
 from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -20,7 +20,7 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 # ---------------------------
 # CORS（完全対応版）
 # ---------------------------
-CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"]}}, supports_credentials=True)
  
 # ---------------------------
 # 設定
@@ -136,6 +136,18 @@ class ProductView(db.Model):
     viewed_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     product = db.relationship('Product')
+
+
+class ProductImage(db.Model):
+    __tablename__ = "product_images"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    image_url = db.Column(db.String(255), nullable=False)
+    sort_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    product = db.relationship('Product', backref=db.backref('images', cascade='all, delete-orphan'))
 
 
 class ForumThread(db.Model):
@@ -542,6 +554,17 @@ def get_product_detail(product_id):
             db.session.rollback()
 
 
+        # 画像一覧を取得（複数対応）
+        images = (
+            ProductImage.query
+            .filter_by(product_id=product.id)
+            .order_by(ProductImage.sort_order.asc(), ProductImage.id.asc())
+            .all()
+        )
+        image_urls = [img.image_url for img in images if img.image_url]
+        if not image_urls and product.image_url:
+            image_urls = [product.image_url]
+
         # 出品者情報を取得
         seller = User.query.filter_by(id=product.seller_id).first()
 
@@ -556,6 +579,7 @@ def get_product_detail(product_id):
             "image_url": product.image_url,
             "status": product.status,
             "created_at": product.created_at.isoformat() if product.created_at else None,
+            "image_urls": image_urls,
             "seller": {
                 "id": seller.id if seller else None,
                 "user_id": seller.user_id if seller else None,
@@ -577,17 +601,30 @@ def get_product_detail(product_id):
 @app.route('/api/products', methods=['POST'])
 def create_product():
     try:
+        image_urls = []
         image_url = ''
         if request.content_type and request.content_type.startswith('multipart/form-data'):
             data = request.form.to_dict()
-            image_file = request.files.get('image')
-            if image_file and image_file.filename:
-                image_url = _save_product_image(image_file)
-                if image_url is None:
-                    return jsonify({"error": "画像形式が不正です"}), 400
+            image_files = request.files.getlist('images')
+            if not image_files:
+                single_image = request.files.get('image')
+                if single_image and single_image.filename:
+                    image_files = [single_image]
+            for image_file in image_files:
+                if image_file and image_file.filename:
+                    uploaded_url = _save_product_image(image_file)
+                    if uploaded_url is None:
+                        return jsonify({"error": "画像形式が不正です"}), 400
+                    if uploaded_url:
+                        image_urls.append(uploaded_url)
         else:
             data = request.get_json() or {}
             image_url = data.get('image_url', '') or ''
+            raw_urls = data.get('image_urls') or data.get('images')
+            if isinstance(raw_urls, list):
+                image_urls = [u for u in raw_urls if u]
+
+        primary_image_url = image_urls[0] if image_urls else image_url
 
         # 必須フィールドのバリデーション
         title = (data.get('title') or '').strip()
@@ -620,11 +657,21 @@ def create_product():
             sale_type=data.get('sale_type', 'fixed'),
             seller_id=seller_id,
             category=data.get('category', ''),
-            image_url=image_url,
+            image_url=primary_image_url,
             status=1
         )
 
         db.session.add(new_product)
+        db.session.flush()
+
+        if image_urls:
+            for index, url in enumerate(image_urls):
+                db.session.add(ProductImage(
+                    product_id=new_product.id,
+                    image_url=url,
+                    sort_order=index
+                ))
+
         db.session.commit()
 
         return jsonify({
@@ -1313,6 +1360,7 @@ def _upsert_purchase_from_session(session):
     return purchase, product
 
 
+@cross_origin(origins=['http://localhost:5173', 'http://127.0.0.1:5173'])
 @app.route('/api/stripe/create-checkout-session', methods=['POST'])
 def create_checkout_session():
     if not STRIPE_SECRET_KEY:
@@ -1332,8 +1380,8 @@ def create_checkout_session():
     if not product:
         return jsonify({"error": "商品が見つかりません"}), 404
 
-    if buyer_email and product.seller_id:
-        buyer = User.query.filter_by(email=buyer_email).first()
+    if customer_email and product.seller_id:
+        buyer = User.query.filter_by(email=customer_email).first()
         if buyer and buyer.id == product.seller_id:
             return jsonify({"error": "自分の商品は購入できません"}), 400
 

@@ -17,9 +17,11 @@ function ProductDetail() {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [isOwnProduct, setIsOwnProduct] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');
   const [cancelMessage, setCancelMessage] = useState('');
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
 
@@ -51,6 +53,8 @@ function ProductDetail() {
 
   useEffect(() => {
     setImageError(false);
+    setSelectedImageIndex(0);
+    setShowCancelConfirm(false);
   }, [productId]);
 
   useEffect(() => {
@@ -193,7 +197,7 @@ function ProductDetail() {
     }
   };
 
-  const handleCancelListing = async () => {
+  const handleCancelRequest = () => {
     if (!currentUser?.email) {
       navigate('/login');
       return;
@@ -201,7 +205,22 @@ function ProductDetail() {
     if (!product?.id || isCancelling) {
       return;
     }
-    if (!window.confirm('出品を取り消しますか？')) {
+    if (productStatus !== 1) {
+      return;
+    }
+    setShowCancelConfirm(true);
+  };
+
+  const handleCancelDismiss = () => {
+    setShowCancelConfirm(false);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!currentUser?.email) {
+      navigate('/login');
+      return;
+    }
+    if (!product?.id || isCancelling) {
       return;
     }
 
@@ -221,6 +240,7 @@ function ProductDetail() {
       if (response.ok) {
         setCancelMessage('出品を取り消しました');
         setProduct(prev => ({ ...prev, status: 0 }));
+        setShowCancelConfirm(false);
       } else {
         setCancelError(data.error || '出品の取り消しに失敗しました');
       }
@@ -257,7 +277,12 @@ function ProductDetail() {
     );
   }
 
-  const imageUrl = imageError ? '' : getImageUrl(product.image_url);
+  const imageUrls = Array.isArray(product.image_urls) && product.image_urls.length
+    ? product.image_urls
+    : (product.image_url ? [product.image_url] : []);
+  const safeIndex = selectedImageIndex < imageUrls.length ? selectedImageIndex : 0;
+  const mainImageUrl = imageUrls[safeIndex] || '';
+  const imageUrl = imageError ? '' : getImageUrl(mainImageUrl);
   const productStatus = product.status ?? 1;
 
   return (
@@ -278,50 +303,81 @@ function ProductDetail() {
                 </div>
               )}
             </div>
+            {imageUrls.length > 1 && (
+              <div className="thumbnail-list">
+                {imageUrls.map((url, index) => (
+                  <button
+                    type="button"
+                    className={`thumbnail ${index === safeIndex ? 'active' : ''}`}
+                    key={`${url}-${index}`}
+                    onClick={() => {
+                      setSelectedImageIndex(index);
+                      setImageError(false);
+                    }}
+                  >
+                    <img src={getImageUrl(url)} alt={`thumbnail-${index + 1}`} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* 右カラム: 商品情報・購入エリア */}
           <div className="product-detail-content">
             <div className="product-info">
-              <h1 className="product-title">{product.title}</h1>
+              <div className="product-title-row">
 
-              <div className="product-meta">
-                <span>カテゴリ: {product.category || '未設定'}</span>
-                <span>販売形式: {getSaleTypeLabel(product.sale_type)}</span>
+                <h1 className="product-detail-title">{product.title}</h1>
+
+                <Link to="/contact" className="report-link">通報</Link>
+
               </div>
 
-              <div className="condition-badge">
-                {getConditionLabel(product.condition)}
-              </div>
+              <div className="price">¥{product.price?.toLocaleString()}</div>
 
-              <div className="price">\{product.price?.toLocaleString()}</div>
-
-              <div className={`action-buttons ${isOwnProduct ? '' : 'is-row'}`}>
-                {isOwnProduct ? (
-                  <button className="btn-large btn-purchase" style={{width: '100%'}} disabled>
-                    自分の商品は購入できません
+              {!isOwnProduct && (
+                <div className="action-buttons">
+                  <button className="btn-large btn-purchase" onClick={handlePurchaseClick}>
+                    今すぐ購入
                   </button>
-                ) : (
-                  <>
-                    <button className="btn-large btn-purchase" onClick={handlePurchaseClick}>
-                      今すぐ購入
-                    </button>
-                    <button className="btn-large btn-outline">
-                      お気に入り
-                    </button>
-                  </>
-                )}
-              </div>
+                </div>
+              )}
 
               {isOwnProduct && (
-                <div className="secondary-actions">
-                  <button
-                    className="btn-large btn-outline btn-cancel"
-                    onClick={handleCancelListing}
-                    disabled={isCancelling || productStatus !== 1}
-                  >
-                    {productStatus !== 1 ? '出品取り消し済み' : (isCancelling ? '取り消し中...' : '出品を取り消す')}
-                  </button>
+                <div className="secondary-actions cancel-section">
+                  {productStatus !== 1 ? (
+                    <button className="btn-large btn-outline btn-cancel" disabled>
+                      出品取り消し済み
+                    </button>
+                  ) : showCancelConfirm ? (
+                    <div className="cancel-confirm">
+                      <div className="cancel-confirm-text">出品を取り消しますか？</div>
+                      <div className="cancel-confirm-actions">
+                        <button
+                          className="btn-large btn-cancel"
+                          onClick={handleCancelConfirm}
+                          disabled={isCancelling}
+                        >
+                          {isCancelling ? '取り消し中...' : '削除する'}
+                        </button>
+                        <button
+                          className="btn-large btn-outline"
+                          onClick={handleCancelDismiss}
+                          disabled={isCancelling}
+                        >
+                          キャンセル
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      className="btn-large btn-outline btn-cancel"
+                      onClick={handleCancelRequest}
+                      disabled={isCancelling}
+                    >
+                      出品を取り消す
+                    </button>
+                  )}
                 </div>
               )}
               {(cancelError || cancelMessage) && (
@@ -359,8 +415,6 @@ function ProductDetail() {
 
               <div className="communication-actions">
                 <button className="btn btn-primary btn-small">チャットで質問</button>
-                <button className="btn btn-outline btn-small">シェア</button>
-                <button className="btn btn-outline btn-small">通報</button>
               </div>
             </div>
 

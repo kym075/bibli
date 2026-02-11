@@ -4,6 +4,15 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import '../css/index.css';
 
+const getImageUrl = (imageUrl) => {
+  if (!imageUrl) return '';
+  if (imageUrl.startsWith('http') || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
+    return imageUrl;
+  }
+  const trimmed = imageUrl.replace(/^\/+/, '');
+  return `http://localhost:5000/${trimmed}`;
+};
+
 function Home() {
   const [products, setProducts] = useState([]);
 
@@ -76,10 +85,15 @@ function Home() {
               products.slice(0, 4).map(product => (
                 <Link key={product.id} to={`/product-detail?id=${product.id}`}>
                   <div className="book-card">
-                    <div className="book-image"></div>
+                    <div
+                      className="book-image"
+                      style={{ backgroundImage: product.image_url ? `url(${getImageUrl(product.image_url)})` : 'none' }}
+                    >
+                      {!product.image_url && 'NO IMAGE'}
+                    </div>
                     <div className="book-info">
                       <div className="book-title">{product.title}</div>
-                      <div className="book-price">¥{product.price}</div>
+                      <div className="book-price">¥{product.price?.toLocaleString()}</div>
                     </div>
                   </div>
                 </Link>
@@ -98,10 +112,15 @@ function Home() {
               products.slice(0, 4).map(product => (
                 <Link key={product.id} to={`/product-detail?id=${product.id}`}>
                   <div className="book-card">
-                    <div className="book-image"></div>
+                    <div
+                      className="book-image"
+                      style={{ backgroundImage: product.image_url ? `url(${getImageUrl(product.image_url)})` : 'none' }}
+                    >
+                      {!product.image_url && 'NO IMAGE'}
+                    </div>
                     <div className="book-info">
                       <div className="book-title">{product.title}</div>
-                      <div className="book-price">¥{product.price}</div>
+                      <div className="book-price">¥{product.price?.toLocaleString()}</div>
                     </div>
                   </div>
                 </Link>
