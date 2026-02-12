@@ -547,3 +547,11 @@
         padding-bottom: 4px;
     }
 }
+
+
+.btn-favorite.is-active {
+    border-color: var(--accent-warm);
+    color: var(--accent-warm);
+    background: rgba(180, 107, 61, 0.12);
+}
+

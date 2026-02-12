@@ -20,6 +20,10 @@ function ProfilePage() {
   const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
+  const [favoriteProducts, setFavoriteProducts] = useState([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
+  const [purchaseHistory, setPurchaseHistory] = useState([]);
+  const [purchasesLoading, setPurchasesLoading] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
@@ -71,6 +75,38 @@ function ProfilePage() {
           if (productsResponse.ok) {
             const productsData = await productsResponse.json();
             setUserProducts(productsData.products || []);
+          }
+
+          setFavoritesLoading(true);
+          try {
+            const favoritesResponse = await fetch(`http://localhost:5000/api/profile/${data.user_id}/favorites`);
+            if (favoritesResponse.ok) {
+              const favoritesData = await favoritesResponse.json();
+              setFavoriteProducts(favoritesData.favorites || []);
+            } else {
+              setFavoriteProducts([]);
+            }
+          } catch (err) {
+            console.error('Favorites fetch error:', err);
+            setFavoriteProducts([]);
+          } finally {
+            setFavoritesLoading(false);
+          }
+
+          setPurchasesLoading(true);
+          try {
+            const purchasesResponse = await fetch(`http://localhost:5000/api/profile/${data.user_id}/purchases`);
+            if (purchasesResponse.ok) {
+              const purchasesData = await purchasesResponse.json();
+              setPurchaseHistory(purchasesData.purchases || []);
+            } else {
+              setPurchaseHistory([]);
+            }
+          } catch (err) {
+            console.error('Purchases fetch error:', err);
+            setPurchaseHistory([]);
+          } finally {
+            setPurchasesLoading(false);
           }
         } else {
           setError('ユーザーが見つかりません');
@@ -196,6 +232,16 @@ function ProfilePage() {
     return match ? match[1] : address.substring(0, 10);
   };
 
+
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) return '';
+    if (imageUrl.startsWith('http') || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
+      return imageUrl;
+    }
+    const trimmed = imageUrl.replace(/^\/+/, '');
+    return `http://localhost:5000/${trimmed}`;
+  };
+
   // タブ切り替え
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -251,7 +297,7 @@ function ProfilePage() {
               </p>
               <div className="profile-stats">
                 <div className="stat-item">
-                  <span className="stat-number">0</span>
+                  <span className="stat-number">{userProducts.length}</span>
                   <span className="stat-label">出品数</span>
                 </div>
                 <div className="stat-item">
@@ -309,13 +355,13 @@ function ProfilePage() {
               className={`tab-btn ${activeTab === 'products' ? 'active' : ''}`}
               onClick={() => handleTabChange('products')}
             >
-              出品商品 (0)
+              出品商品 ({userProducts.length})
             </button>
             <button
               className={`tab-btn ${activeTab === 'purchases' ? 'active' : ''}`}
               onClick={() => handleTabChange('purchases')}
             >
-              購入履歴 (0)
+              購入履歴 ({purchaseHistory.length})
             </button>
             <button
               className={`tab-btn ${activeTab === 'reviews' ? 'active' : ''}`}
@@ -382,7 +428,7 @@ function ProfilePage() {
                       <Link to={`/product-detail?id=${product.id}`} key={product.id} className="product-card">
                         <div className="product-image">
                           {product.image_url ? (
-                            <img src={product.image_url} alt={product.title} />
+                            <img src={getImageUrl(product.image_url)} alt={product.title} />
                           ) : (
                             <div className="no-image">NO</div>
                           )}
@@ -400,11 +446,38 @@ function ProfilePage() {
 
             {/* === PURCHASE HISTORY SUBSECTION === */}
             <div className={`tab-panel ${activeTab === 'purchases' ? 'active' : ''}`} id="purchases-panel">
-              <div className="empty-state">
-                <div className="empty-icon">H</div>
-                <div className="empty-message">購入履歴がありません</div>
-                <div className="empty-description">商品を購入すると、ここに表示されます</div>
-              </div>
+              {purchasesLoading ? (
+                <div className="empty-state">
+                  <div className="empty-message">読み込み中...</div>
+                </div>
+              ) : purchaseHistory.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">H</div>
+                  <div className="empty-message">購入履歴がありません</div>
+                  <div className="empty-description">商品を購入すると、ここに表示されます</div>
+                </div>
+              ) : (
+                <div className="purchase-list">
+                  {purchaseHistory.map((purchase) => (
+                    <div className="purchase-item" key={purchase.purchase_id}>
+                      <div className="purchase-image">
+                        {purchase.image_url ? (
+                          <img src={getImageUrl(purchase.image_url)} alt={purchase.title} />
+                        ) : (
+                          <div className="no-image">NO</div>
+                        )}
+                      </div>
+                      <div className="purchase-info">
+                        <div className="purchase-title">{purchase.title}</div>
+                        <div className="purchase-details">
+                          <span className="purchase-price">¥{(purchase.amount || 0).toLocaleString()}</span>
+                          <span className="purchase-date">{formatDate(purchase.created_at)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* === REVIEWS SUBSECTION === */}
@@ -418,11 +491,35 @@ function ProfilePage() {
 
             {/* === FAVORITES SUBSECTION === */}
             <div className={`tab-panel ${activeTab === 'favorites' ? 'active' : ''}`} id="favorites-panel">
-              <div className="empty-state">
-                <div className="empty-icon">F</div>
-                <div className="empty-message">お気に入りの本</div>
-                <div className="empty-description">このユーザーのお気に入り本は公開されていません</div>
-              </div>
+              {favoritesLoading ? (
+                <div className="empty-state">
+                  <div className="empty-message">読み込み中...</div>
+                </div>
+              ) : favoriteProducts.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">F</div>
+                  <div className="empty-message">お気に入りの本はありません</div>
+                  <div className="empty-description">お気に入りに追加した商品がここに表示されます</div>
+                </div>
+              ) : (
+                <div className="products-grid">
+                  {favoriteProducts.map((product) => (
+                    <Link to={`/product-detail?id=${product.id}`} key={product.id} className="product-card">
+                      <div className="product-image">
+                        {product.image_url ? (
+                          <img src={getImageUrl(product.image_url)} alt={product.title} />
+                        ) : (
+                          <div className="no-image">NO</div>
+                        )}
+                      </div>
+                      <div className="product-info">
+                        <h3 className="product-title">{product.title}</h3>
+                        <p className="product-price">¥{product.price.toLocaleString()}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -434,3 +531,6 @@ function ProfilePage() {
 }
 
 export default ProfilePage;
+
+
+

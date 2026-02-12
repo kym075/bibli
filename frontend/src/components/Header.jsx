@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { auth } from "../css/firebase"; // firebase.js のパスに合わせて調整
+import { auth } from '../css/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 function Header() {
@@ -9,7 +9,6 @@ function Header() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Firebase のログイン状態を監視
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
@@ -17,14 +16,13 @@ function Header() {
     return () => unsubscribe();
   }, []);
 
-  // ハンバーガーメニュー動作
   useEffect(() => {
     const hamburgerMenu = document.getElementById('hamburger-menu');
     const hamburgerDropdown = document.getElementById('hamburger-dropdown');
 
     const toggleDropdown = () => {
-      hamburgerDropdown.classList.toggle('show');
-      hamburgerMenu.classList.toggle('active');
+      hamburgerDropdown?.classList.toggle('show');
+      hamburgerMenu?.classList.toggle('active');
     };
 
     const closeDropdown = (e) => {
@@ -50,7 +48,6 @@ function Header() {
     await signOut(auth);
   };
 
-  // 検索処理
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchKeyword.trim()) {
@@ -58,7 +55,6 @@ function Header() {
     }
   };
 
-  // Enterキーで検索
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       handleSearch(e);
@@ -83,34 +79,26 @@ function Header() {
 
         <div className="header-right">
           <div className="header-buttons">
-            {/* 出品ボタン（ログイン者だけ押せるなどの処理は任意） */}
-            <Link to="/products/listing" className="btn btn-primary">出品</Link>
-
-            {/* ▼ログイン状態で表示切り替え */}
-            {!user ? (
-              <>
-                {/* 未ログイン */}
-                <Link to="/login" className="btn btn-secondary">ログイン/登録</Link>
-              </>
-            ) : (
-              <>
-                {/* ログイン中 */}
-                <button onClick={handleLogout} className="btn btn-secondary">
-                  ログアウト
-                </button>
-              </>
+            {user && (
+              <Link to="/products/listing" className="btn btn-primary">出品</Link>
             )}
 
-            <button className="hamburger-menu" id="hamburger-menu">
+            {!user ? (
+              <Link to="/login" className="btn btn-secondary">ログイン/登録</Link>
+            ) : (
+              <Link to="/profile" className="user-icon-link" aria-label="プロフィール">
+                <span className="user-circle-icon">U</span>
+              </Link>
+            )}
+
+            <button className="hamburger-menu" id="hamburger-menu" type="button" aria-label="メニュー">
               <span></span><span></span><span></span>
             </button>
           </div>
 
           <div className="hamburger-dropdown" id="hamburger-dropdown">
-
             {user ? (
               <>
-                {/* ▼ログイン中のメニュー */}
                 <Link to="/profile" className="dropdown-item">
                   <span className="dropdown-icon">P</span>
                   <span className="dropdown-text">プロフィール</span>
@@ -127,10 +115,13 @@ function Header() {
                   <span className="dropdown-icon">S</span>
                   <span className="dropdown-text">設定</span>
                 </Link>
+                <button type="button" className="dropdown-item dropdown-item-button" onClick={handleLogout}>
+                  <span className="dropdown-icon">O</span>
+                  <span className="dropdown-text">ログアウト</span>
+                </button>
               </>
             ) : (
               <>
-                {/* ▼未ログインの時は最低限 */}
                 <Link to="/login" className="dropdown-item">
                   <span className="dropdown-icon">L</span>
                   <span className="dropdown-text">ログイン</span>
@@ -141,7 +132,6 @@ function Header() {
                 </Link>
               </>
             )}
-
           </div>
         </div>
       </div>

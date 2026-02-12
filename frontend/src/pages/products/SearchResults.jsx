@@ -5,24 +5,30 @@ import Footer from '../../components/Footer';
 import '../../css/search_results.css';
 
 function SearchResults() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // フィルター・ソートの状態
   const [filters, setFilters] = useState({
     keyword: searchParams.get('q') || '',
     sort: searchParams.get('sort') || 'newest',
     minPrice: searchParams.get('min_price') || '',
     maxPrice: searchParams.get('max_price') || '',
-    condition: searchParams.get('condition') || '',
-    saleType: searchParams.get('sale_type') || ''
+    condition: searchParams.get('condition') || ''
   });
 
-  // API から商品を取得
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) return '';
+    if (imageUrl.startsWith('http') || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
+      return imageUrl;
+    }
+    const trimmed = imageUrl.replace(/^\/+/, '');
+    return `http://localhost:5000/${trimmed}`;
+  };
+
   const fetchProducts = async () => {
     setLoading(true);
     try {
@@ -32,7 +38,6 @@ function SearchResults() {
       if (filters.minPrice) params.append('min_price', filters.minPrice);
       if (filters.maxPrice) params.append('max_price', filters.maxPrice);
       if (filters.condition) params.append('condition', filters.condition);
-      if (filters.saleType) params.append('sale_type', filters.saleType);
       params.append('page', currentPage);
       params.append('limit', 20);
 
@@ -56,33 +61,20 @@ function SearchResults() {
     }
   };
 
-  // URLパラメータの変更を監視
   useEffect(() => {
     const keyword = searchParams.get('q') || '';
     setFilters(prev => ({ ...prev, keyword }));
   }, [searchParams]);
 
-  // フィルター変更時に商品を再取得
   useEffect(() => {
     fetchProducts();
   }, [filters, currentPage]);
 
-  const getImageUrl = (imageUrl) => {
-    if (!imageUrl) return '';
-    if (imageUrl.startsWith('http') || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
-      return imageUrl;
-    }
-    const trimmed = imageUrl.replace(/^\/+/, '');
-    return `http://localhost:5000/${trimmed}`;
-  };
-
-  // フィルター変更ハンドラ
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
-    setCurrentPage(1); // ページを1に戻す
+    setCurrentPage(1);
   };
 
-  // ページネーション処理
   const goToPage = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
@@ -90,7 +82,6 @@ function SearchResults() {
     }
   };
 
-  // ページネーション番号の生成
   const getPaginationNumbers = () => {
     const pages = [];
     const maxVisible = 5;
@@ -112,9 +103,7 @@ function SearchResults() {
     <>
       <Header />
 
-      {/* メインコンテンツ */}
       <main className="main-content">
-        {/* 検索結果ヘッダー */}
         <div className="search-header">
           <h1 className="search-results-title">検索結果</h1>
           <p className="search-info">
@@ -127,7 +116,6 @@ function SearchResults() {
           </p>
         </div>
 
-        {/* 絞り込み・ソートエリア */}
         <div className="filter-sort-area">
           <div className="controls-row">
             <div className="control-group">
@@ -185,26 +173,9 @@ function SearchResults() {
                 </select>
               </div>
             </div>
-
-            <div className="control-group">
-              <span className="control-label">販売形式</span>
-              <div className="select-wrapper">
-                <select
-                  className="custom-select"
-                  value={filters.saleType}
-                  onChange={(e) => handleFilterChange('saleType', e.target.value)}
-                >
-                  <option value="">すべて</option>
-                  <option value="fixed">固定価格</option>
-                  <option value="auction">オークション</option>
-                  <option value="negotiable">価格交渉可</option>
-                </select>
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* ローディング表示 */}
         {loading ? (
           <div className="loading-message">
             <p>読み込み中...</p>
@@ -215,27 +186,28 @@ function SearchResults() {
           </div>
         ) : (
           <>
-            {/* 商品グリッド */}
             <div className="book-grid" id="productsGrid">
-              {products.map((product) => (
-                <Link to={`/product-detail?id=${product.id}`} key={product.id}>
-                  <div className="book-card">
-                    <div
-                      className="book-image"
-                      style={{ backgroundImage: product.image_url ? `url(${getImageUrl(product.image_url)})` : 'none' }}
-                    >
-                      {!product.image_url && 'NO IMAGE'}
+              {products.map((product) => {
+                const imageSource = product.image_url || (Array.isArray(product.image_urls) ? product.image_urls[0] : '');
+                return (
+                  <Link to={`/product-detail?id=${product.id}`} key={product.id}>
+                    <div className="book-card">
+                      <div
+                        className="book-image"
+                        style={{ backgroundImage: imageSource ? `url(${getImageUrl(imageSource)})` : 'none' }}
+                      >
+                        {!imageSource && 'NO IMAGE'}
+                      </div>
+                      <div className="book-info">
+                        <div className="book-title">{product.title}</div>
+                        <div className="book-price">¥{product.price?.toLocaleString()}</div>
+                      </div>
                     </div>
-                    <div className="book-info">
-                      <div className="book-title">{product.title}</div>
-                      <div className="book-price">¥{product.price?.toLocaleString()}</div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
 
-            {/* ページネーション */}
             {totalPages > 1 && (
               <div className="pagination">
                 <button

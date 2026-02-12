@@ -210,7 +210,9 @@ function UserSettings() {
               value={formData.bio}
               onChange={handleChange}
               placeholder="自己紹介を入力"
+              maxLength={120}
             ></textarea>
+            <div className="help-text">{formData.bio.length}/120文字</div>
           </div>
           <div className="form-group">
             <label htmlFor="address">住所:</label>
@@ -280,3 +282,5 @@ function UserSettings() {
 }
 
 export default UserSettings;
+
+

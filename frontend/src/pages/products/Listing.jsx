@@ -102,7 +102,6 @@ function Listing() {
       formPayload.append('description', formData.description);
       formPayload.append('price', parseInt(formData.price, 10));
       formPayload.append('condition', formData.condition);
-      formPayload.append('sale_type', 'fixed');
       formPayload.append('seller_id', userData.id);
       formPayload.append('category', formData.category);
       formPayload.append('shipping_origin', formData.shippingOrigin);
@@ -547,3 +546,4 @@ function Listing() {
 }
 
 export default Listing;
+

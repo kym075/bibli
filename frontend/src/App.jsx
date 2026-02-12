@@ -42,6 +42,7 @@ import ForumDetail from './pages/community/ForumDetail';
 import ForumPost from './pages/community/ForumPost';
 import News from './pages/community/News';
 import NewsDetail from './pages/community/NewsDetail';
+import NewsCreate from './pages/community/NewsCreate';
 
 // Info pages
 import Contact from './pages/info/Contact';
@@ -74,6 +75,7 @@ function App() {
         <Route path="/products/listing-complete" element={<ListingComplete />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/purchase-complete" element={<PurchaseComplete />} />
+        <Route path="/products/purchase-complete" element={<PurchaseComplete />} />
 
         {/* Community */}
         <Route path="/forum" element={<Forum />} />
@@ -81,6 +83,7 @@ function App() {
         <Route path="/forum-detail" element={<ForumDetail />} />
         <Route path="/forum-post" element={<ForumPost />} />
         <Route path="/news" element={<News />} />
+        <Route path="/news-create" element={<NewsCreate />} />
         <Route path="/news-detail" element={<NewsDetail />} />
 
         {/* Info */}
@@ -94,3 +97,8 @@ function App() {
 }
 
 export default App;
+
+
+
+
+
