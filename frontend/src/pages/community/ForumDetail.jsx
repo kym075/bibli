@@ -449,9 +449,9 @@ function ForumDetail() {
               <button className="action-btn">
                 <ShareIcon /><span>シェア</span>
               </button>
-              <button className="action-btn">
+              <Link to="/contact" className="action-btn">
                 <FlagIcon /><span>報告</span>
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -505,3 +505,6 @@ function ForumDetail() {
 }
 
 export default ForumDetail;
+
+
+

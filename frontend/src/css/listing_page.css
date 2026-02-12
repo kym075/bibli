@@ -96,7 +96,7 @@
 
 .form-textarea {
     min-height: 120px;
-    resize: vertical;
+    resize: none;
     font-family: inherit;
 }
 
@@ -412,3 +412,4 @@
     margin-bottom: 1rem;
     display: none;
 }
+

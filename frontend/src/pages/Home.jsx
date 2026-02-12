@@ -129,18 +129,7 @@ function Home() {
               <p>Loading products...</p>
             )}
           </div>
-        </section>
-
-        {/* 特集・掲示板への導線 */}
-        <section className="section">
-          <h2 className="section-title">特集・コミュニティ</h2>
-          <div className="special-links">
-            <Link to="/forum" className="special-link">本好きが集う掲示板へ</Link>
-            <a href="#" className="special-link">絶版・希少本特集</a>
-            <a href="#" className="special-link">今月のおすすめ</a>
-          </div>
-        </section>
-      </main>
+        </section></main>
 
       <Footer />
     </>
@@ -148,3 +137,6 @@ function Home() {
 }
 
 export default Home;
+
+
+

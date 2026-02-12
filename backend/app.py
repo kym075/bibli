@@ -66,6 +66,42 @@ def _save_product_image(file_storage):
     file_path = os.path.join(upload_dir, unique_name)
     file_storage.save(file_path)
     return f"uploads/products/{unique_name}"
+
+def _build_primary_image_map(product_ids):
+    if not product_ids:
+        return {}
+
+    image_map = {}
+    rows = (
+        ProductImage.query
+        .filter(ProductImage.product_id.in_(product_ids))
+        .order_by(ProductImage.product_id.asc(), ProductImage.sort_order.asc(), ProductImage.id.asc())
+        .all()
+    )
+    for row in rows:
+        if row.product_id not in image_map and row.image_url:
+            image_map[row.product_id] = row.image_url
+    return image_map
+
+
+def _serialize_product_card(product, image_map=None):
+    primary_image = product.image_url or ''
+    if not primary_image and image_map is not None:
+        primary_image = image_map.get(product.id, '')
+
+    return {
+        "id": product.id,
+        "title": product.title,
+        "description": product.description,
+        "price": product.price,
+        "condition": product.condition,
+        "category": product.category,
+        "image_url": primary_image,
+        "created_at": product.created_at.isoformat() if product.created_at else None,
+        "seller_id": product.seller_id,
+        "status": product.status
+    }
+
  
 # ============================
 # モデル定義
@@ -84,7 +120,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     password = db.Column(db.String(255))
     profile_image = db.Column(db.String(255))
-    bio = db.Column(db.String(1000))
+    bio = db.Column(db.String(120))
     address = db.Column(db.String(255))
     phone_number = db.Column(db.String(20))
     birth_date = db.Column(db.String(20))
@@ -102,7 +138,7 @@ class Product(db.Model):
     description = db.Column(db.Text)
     price = db.Column(db.Integer, nullable=False)
     condition = db.Column(db.String(50))  # 'excellent', 'good', 'fair'
-    sale_type = db.Column(db.String(50))  # 'fixed', 'auction', 'negotiable'
+    sale_type = db.Column(db.String(50))  # 固定価格販売のみ
     seller_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     category = db.Column(db.String(100))
     image_url = db.Column(db.String(255))
@@ -148,6 +184,33 @@ class ProductImage(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     product = db.relationship('Product', backref=db.backref('images', cascade='all, delete-orphan'))
+
+
+
+
+class Favorite(db.Model):
+    __tablename__ = "favorites"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'product_id', name='uq_favorites_user_product'),
+    )
+
+
+class NewsPost(db.Model):
+    __tablename__ = "news_posts"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    title = db.Column(db.String(255), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    category = db.Column(db.String(30), default='general')
+    author_email = db.Column(db.String(120))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class ForumThread(db.Model):
@@ -223,6 +286,10 @@ def register():
     if User.query.filter_by(email=data['email']).first():
         return jsonify({"error": "email は既に使われています"}), 409
 
+    bio = (data.get('bio') or '').strip()
+    if len(bio) > 120:
+        return jsonify({"error": "自己紹介は120文字以内で入力してください"}), 400
+
     hashed_pw = generate_password_hash(data['password'], method='pbkdf2:sha256')
 
     # user_idを自動生成（email のローカル部分を使用）
@@ -239,7 +306,7 @@ def register():
         password_hash=hashed_pw,
         password=hashed_pw,
         profile_image=data.get('profile_image'),
-        bio=data.get('bio', ''),
+        bio=bio,
         address=data['address'],
         birth_date=data.get('birth_date'),
         status=1,
@@ -391,7 +458,10 @@ def update_profile(email):
         user.profile_image = data['profile_image']
 
     if 'bio' in data:
-        user.bio = data['bio']
+        bio = (data.get('bio') or '').strip()
+        if len(bio) > 120:
+            return jsonify({"error": "自己紹介は120文字以内で入力してください"}), 400
+        user.bio = bio
 
     if 'address' in data:
         user.address = data['address']
@@ -441,21 +511,17 @@ def update_profile(email):
 @app.route('/api/products', methods=['GET'])
 def get_products():
     try:
-        # クエリパラメータを取得
         keyword = request.args.get('q', '').strip()
         min_price = request.args.get('min_price', type=int)
         max_price = request.args.get('max_price', type=int)
         condition = request.args.get('condition', '').strip()
-        sale_type = request.args.get('sale_type', '').strip()
         seller_id = request.args.get('seller_id', type=int)
         sort = request.args.get('sort', 'newest')
         page = request.args.get('page', 1, type=int)
         limit = request.args.get('limit', 20, type=int)
 
-        # 基本クエリ
         query = Product.query.filter(Product.status == 1)
 
-        # キーワード検索（タイトル、説明、カテゴリを検索）
         if keyword:
             search_pattern = f"%{keyword}%"
             query = query.filter(
@@ -466,25 +532,17 @@ def get_products():
                 )
             )
 
-        # 価格フィルター
         if min_price is not None:
             query = query.filter(Product.price >= min_price)
         if max_price is not None:
             query = query.filter(Product.price <= max_price)
 
-        # 商品状態フィルター
         if condition:
             query = query.filter(Product.condition == condition)
 
-        # 販売形式フィルター
-        if sale_type:
-            query = query.filter(Product.sale_type == sale_type)
-
-        # 出品者フィルター
         if seller_id:
             query = query.filter(Product.seller_id == seller_id)
 
-        # ソート
         if sort == 'price_asc':
             query = query.order_by(Product.price.asc())
         elif sort == 'price_desc':
@@ -498,34 +556,22 @@ def get_products():
                     Product.created_at.desc()
                 )
             )
-        else:  # newest (デフォルト)
+        else:
             query = query.order_by(Product.created_at.desc())
 
-        # 総件数を取得
         total = query.count()
-
-        # ページネーション
         offset = (page - 1) * limit
         products = query.offset(offset).limit(limit).all()
 
-        # レスポンスを構築
+        image_map = _build_primary_image_map([p.id for p in products])
+
         result = {
             "total": total,
             "page": page,
             "limit": limit,
             "total_pages": (total + limit - 1) // limit,
             "products": [
-                {
-                    "id": p.id,
-                    "title": p.title,
-                    "description": p.description,
-                    "price": p.price,
-                    "condition": p.condition,
-                    "sale_type": p.sale_type,
-                    "category": p.category,
-                    "image_url": p.image_url,
-                    "created_at": p.created_at.isoformat() if p.created_at else None
-                }
+                _serialize_product_card(p, image_map)
                 for p in products
             ]
         }
@@ -534,6 +580,7 @@ def get_products():
     except Exception as e:
         print(f"Products API error: {e}")
         return jsonify({"error": str(e), "products": [], "total": 0}), 200
+
 
 
 # ============================
@@ -574,9 +621,8 @@ def get_product_detail(product_id):
             "description": product.description,
             "price": product.price,
             "condition": product.condition,
-            "sale_type": product.sale_type,
             "category": product.category,
-            "image_url": product.image_url,
+            "image_url": product.image_url or (image_urls[0] if image_urls else ""),
             "status": product.status,
             "created_at": product.created_at.isoformat() if product.created_at else None,
             "image_urls": image_urls,
@@ -654,7 +700,7 @@ def create_product():
             description=data.get('description', ''),
             price=price,
             condition=data.get('condition', 'good'),
-            sale_type=data.get('sale_type', 'fixed'),
+            sale_type='fixed',
             seller_id=seller_id,
             category=data.get('category', ''),
             image_url=primary_image_url,
@@ -706,7 +752,6 @@ def seed_products():
                 "description": "村上春樹の代表作。綺麗な状態です。",
                 "price": 800,
                 "condition": "excellent",
-                "sale_type": "fixed",
                 "category": "小説",
                 "seller_id": 1,
                 "image_url": None
@@ -716,7 +761,6 @@ def seed_products():
                 "description": "推理小説の名作。少し使用感がありますが読むには問題ありません。",
                 "price": 950,
                 "condition": "good",
-                "sale_type": "fixed",
                 "category": "小説",
                 "seller_id": 1,
                 "image_url": None
@@ -726,7 +770,6 @@ def seed_products():
                 "description": "プログラミング学習に最適な一冊。",
                 "price": 2800,
                 "condition": "excellent",
-                "sale_type": "fixed",
                 "category": "専門書",
                 "seller_id": 1,
                 "image_url": None
@@ -736,7 +779,6 @@ def seed_products():
                 "description": "人気漫画の全巻セット。",
                 "price": 15000,
                 "condition": "good",
-                "sale_type": "negotiable",
                 "category": "漫画",
                 "seller_id": 1,
                 "image_url": None
@@ -746,7 +788,6 @@ def seed_products():
                 "description": "日本文学の古典。状態良好です。",
                 "price": 1200,
                 "condition": "excellent",
-                "sale_type": "fixed",
                 "category": "小説",
                 "seller_id": 1,
                 "image_url": None
@@ -756,7 +797,6 @@ def seed_products():
                 "description": "プログラミング初心者向けの入門書。",
                 "price": 2200,
                 "condition": "good",
-                "sale_type": "fixed",
                 "category": "専門書",
                 "seller_id": 1,
                 "image_url": None
@@ -766,7 +806,6 @@ def seed_products():
                 "description": "ファンタジー小説の名作。",
                 "price": 5800,
                 "condition": "good",
-                "sale_type": "fixed",
                 "category": "小説",
                 "seller_id": 1,
                 "image_url": None
@@ -776,7 +815,6 @@ def seed_products():
                 "description": "自己啓発・ビジネス書のセット。",
                 "price": 3200,
                 "condition": "fair",
-                "sale_type": "fixed",
                 "category": "ビジネス書",
                 "seller_id": 1,
                 "image_url": None
@@ -861,6 +899,257 @@ def cancel_product(product_id):
         return jsonify({"error": "取り消しに失敗しました", "detail": str(e)}), 500
 
     return jsonify({"message": "出品を取り消しました"}), 200
+
+
+
+
+# ============================
+# お気に入り API
+# ============================
+@app.route('/api/favorites', methods=['GET'])
+def get_favorites():
+    email = (request.args.get('email') or '').strip()
+    if not email:
+        return jsonify({"error": "email が必要です"}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({"favorites": []}), 200
+
+    favorites = Favorite.query.filter_by(user_id=user.id).order_by(Favorite.created_at.desc()).all()
+    product_ids = [f.product_id for f in favorites]
+    if not product_ids:
+        return jsonify({"favorites": []}), 200
+
+    products = Product.query.filter(Product.id.in_(product_ids), Product.status == 1).all()
+    product_map = {p.id: p for p in products}
+    image_map = _build_primary_image_map([p.id for p in products])
+
+    cards = []
+    for favorite in favorites:
+        product = product_map.get(favorite.product_id)
+        if product:
+            cards.append(_serialize_product_card(product, image_map))
+
+    return jsonify({"favorites": cards}), 200
+
+
+@app.route('/api/favorites/status', methods=['GET'])
+def get_favorite_status():
+    email = (request.args.get('email') or '').strip()
+    product_id = request.args.get('product_id', type=int)
+
+    if not email or not product_id:
+        return jsonify({"error": "email と product_id が必要です"}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({"is_favorite": False}), 200
+
+    is_favorite = Favorite.query.filter_by(user_id=user.id, product_id=product_id).first() is not None
+    return jsonify({"is_favorite": is_favorite}), 200
+
+
+@app.route('/api/favorites', methods=['POST'])
+def add_favorite():
+    data = request.get_json() or {}
+    email = (data.get('email') or '').strip()
+    product_id = data.get('product_id')
+
+    if not email or not product_id:
+        return jsonify({"error": "email と product_id が必要です"}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({"error": "ユーザーが見つかりません"}), 404
+
+    product = Product.query.filter_by(id=product_id, status=1).first()
+    if not product:
+        return jsonify({"error": "商品が見つかりません"}), 404
+
+    existing = Favorite.query.filter_by(user_id=user.id, product_id=product.id).first()
+    if existing:
+        return jsonify({"message": "既にお気に入り済みです"}), 200
+
+    favorite = Favorite(user_id=user.id, product_id=product.id)
+    try:
+        db.session.add(favorite)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "お気に入り登録に失敗しました", "detail": str(e)}), 500
+
+    return jsonify({"message": "お気に入りに追加しました"}), 201
+
+
+@app.route('/api/favorites', methods=['DELETE'])
+def remove_favorite():
+    data = request.get_json(silent=True) or {}
+    email = (data.get('email') or request.args.get('email') or '').strip()
+    product_id = data.get('product_id') or request.args.get('product_id', type=int)
+
+    if not email or not product_id:
+        return jsonify({"error": "email と product_id が必要です"}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({"message": "お気に入りに登録されていません"}), 200
+
+    favorite = Favorite.query.filter_by(user_id=user.id, product_id=product_id).first()
+    if not favorite:
+        return jsonify({"message": "お気に入りに登録されていません"}), 200
+
+    try:
+        db.session.delete(favorite)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "お気に入り解除に失敗しました", "detail": str(e)}), 500
+
+    return jsonify({"message": "お気に入りを解除しました"}), 200
+
+
+@app.route('/api/profile/<user_id>/favorites', methods=['GET'])
+def get_profile_favorites(user_id):
+    user = User.query.filter_by(user_id=user_id).first()
+    if not user:
+        return jsonify({"favorites": []}), 200
+
+    favorites = Favorite.query.filter_by(user_id=user.id).order_by(Favorite.created_at.desc()).all()
+    product_ids = [f.product_id for f in favorites]
+    if not product_ids:
+        return jsonify({"favorites": []}), 200
+
+    products = Product.query.filter(Product.id.in_(product_ids), Product.status == 1).all()
+    product_map = {p.id: p for p in products}
+    image_map = _build_primary_image_map([p.id for p in products])
+
+    result = []
+    for favorite in favorites:
+        product = product_map.get(favorite.product_id)
+        if product:
+            result.append(_serialize_product_card(product, image_map))
+
+    return jsonify({"favorites": result}), 200
+
+
+@app.route('/api/profile/<user_id>/purchases', methods=['GET'])
+def get_profile_purchases(user_id):
+    user = User.query.filter_by(user_id=user_id).first()
+    if not user or not user.email:
+        return jsonify({"purchases": []}), 200
+
+    purchases = (
+        Purchase.query
+        .filter_by(buyer_email=user.email)
+        .order_by(Purchase.created_at.desc())
+        .all()
+    )
+    if not purchases:
+        return jsonify({"purchases": []}), 200
+
+    product_ids = [p.product_id for p in purchases]
+    products = Product.query.filter(Product.id.in_(product_ids)).all()
+    product_map = {p.id: p for p in products}
+    image_map = _build_primary_image_map([p.id for p in products])
+
+    result = []
+    for purchase in purchases:
+        product = product_map.get(purchase.product_id)
+        image_url = ""
+        title = "商品情報が見つかりません"
+        category = ""
+        condition = ""
+
+        if product:
+            image_url = product.image_url or image_map.get(product.id, "")
+            title = product.title
+            category = product.category or ""
+            condition = product.condition or ""
+
+        result.append({
+            "purchase_id": purchase.id,
+            "product_id": purchase.product_id,
+            "title": title,
+            "image_url": image_url,
+            "category": category,
+            "condition": condition,
+            "amount": purchase.amount,
+            "currency": purchase.currency,
+            "status": purchase.status,
+            "created_at": purchase.created_at.isoformat() if purchase.created_at else None
+        })
+
+    return jsonify({"purchases": result}), 200
+
+
+# ============================
+# お知らせ API
+# ============================
+@app.route('/api/news', methods=['GET'])
+def get_news_posts():
+    posts = NewsPost.query.order_by(NewsPost.created_at.desc()).all()
+    return jsonify({
+        "news": [
+            {
+                "id": p.id,
+                "title": p.title,
+                "content": p.content,
+                "category": p.category,
+                "author_email": p.author_email,
+                "created_at": p.created_at.isoformat() if p.created_at else None
+            }
+            for p in posts
+        ]
+    }), 200
+
+
+@app.route('/api/news/<int:news_id>', methods=['GET'])
+def get_news_post(news_id):
+    post = NewsPost.query.get(news_id)
+    if not post:
+        return jsonify({"error": "お知らせが見つかりません"}), 404
+
+    return jsonify({
+        "id": post.id,
+        "title": post.title,
+        "content": post.content,
+        "category": post.category,
+        "author_email": post.author_email,
+        "created_at": post.created_at.isoformat() if post.created_at else None
+    }), 200
+
+
+@app.route('/api/news', methods=['POST'])
+def create_news_post():
+    data = request.get_json() or {}
+    title = (data.get('title') or '').strip()
+    content_text = (data.get('content') or '').strip()
+    category = (data.get('category') or 'general').strip()
+    author_email = (data.get('author_email') or '').strip() or None
+
+    if not title:
+        return jsonify({"error": "タイトルは必須です"}), 400
+    if not content_text:
+        return jsonify({"error": "本文は必須です"}), 400
+    if category not in ('important', 'update', 'general'):
+        category = 'general'
+
+    post = NewsPost(
+        title=title,
+        content=content_text,
+        category=category,
+        author_email=author_email
+    )
+
+    try:
+        db.session.add(post)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "お知らせ作成に失敗しました", "detail": str(e)}), 500
+
+    return jsonify({"message": "お知らせを作成しました", "id": post.id}), 201
 
 
 @app.route('/uploads/<path:filename>')
@@ -1404,7 +1693,7 @@ def create_checkout_session():
                 },
                 'quantity': 1
             }],
-            success_url=f"{origin}/products/purchase-complete?session_id={{CHECKOUT_SESSION_ID}}",
+            success_url=f"{origin}/purchase-complete?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{origin}/checkout?product_id={product.id}",
             customer_email=customer_email,
             metadata={
@@ -1480,3 +1769,7 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(host='0.0.0.0', port=5000, debug=True)
+
+
+
+

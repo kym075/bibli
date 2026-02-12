@@ -171,7 +171,7 @@
     font-size: 1rem;
     font-family: inherit;
     background: var(--surface-muted);
-    resize: vertical;
+    resize: none;
     transition: all 0.3s ease;
     line-height: 1.6;
 }
@@ -498,3 +498,4 @@
         gap: 0.5rem;
     }
 }
+

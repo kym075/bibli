@@ -24,6 +24,8 @@ function ProductDetail() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
 
   useEffect(() => {
     if (!productId) {
@@ -119,6 +121,32 @@ function ProductDetail() {
     fetchFollowStatus();
   }, [currentUser, product]);
 
+
+  useEffect(() => {
+    const fetchFavoriteStatus = async () => {
+      if (!currentUser?.email || !product?.id || isOwnProduct) {
+        setIsFavorite(false);
+        return;
+      }
+
+      try {
+        const params = new URLSearchParams({
+          email: currentUser.email,
+          product_id: String(product.id)
+        });
+        const response = await fetch(`http://localhost:5000/api/favorites/status?${params}`);
+        const data = await response.json();
+        if (response.ok) {
+          setIsFavorite(Boolean(data.is_favorite));
+        }
+      } catch (err) {
+        console.error('Favorite status error:', err);
+      }
+    };
+
+    fetchFavoriteStatus();
+  }, [currentUser, product, isOwnProduct]);
+
   // 商品状態のラベル変換
   const getConditionLabel = (condition) => {
     const labels = {
@@ -127,16 +155,6 @@ function ProductDetail() {
       'fair': '普通'
     };
     return labels[condition] || condition;
-  };
-
-  // 販売形式のラベル変換
-  const getSaleTypeLabel = (saleType) => {
-    const labels = {
-      'fixed': '固定価格',
-      'auction': 'オークション',
-      'negotiable': '価格交渉可'
-    };
-    return labels[saleType] || saleType;
   };
 
   const getImageUrl = (imageUrl) => {
@@ -157,6 +175,52 @@ function ProductDetail() {
       return;
     }
     navigate(`/checkout?product_id=${product.id}`);
+  };
+
+
+  const handleFavoriteToggle = async () => {
+    if (!product?.id) return;
+    if (!currentUser?.email) {
+      navigate('/login');
+      return;
+    }
+
+    setIsFavoriteLoading(true);
+    try {
+      if (isFavorite) {
+        const response = await fetch('http://localhost:5000/api/favorites', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: currentUser.email,
+            product_id: product.id
+          })
+        });
+        if (response.ok) {
+          setIsFavorite(false);
+        }
+      } else {
+        const response = await fetch('http://localhost:5000/api/favorites', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: currentUser.email,
+            product_id: product.id
+          })
+        });
+        if (response.ok) {
+          setIsFavorite(true);
+        }
+      }
+    } catch (err) {
+      console.error('Favorite toggle error:', err);
+    } finally {
+      setIsFavoriteLoading(false);
+    }
   };
 
   const handleFollowToggle = async () => {
@@ -336,9 +400,16 @@ function ProductDetail() {
               <div className="price">¥{product.price?.toLocaleString()}</div>
 
               {!isOwnProduct && (
-                <div className="action-buttons">
+                <div className="action-buttons is-row">
                   <button className="btn-large btn-purchase" onClick={handlePurchaseClick}>
                     今すぐ購入
+                  </button>
+                  <button
+                    className={`btn-large btn-outline btn-favorite ${isFavorite ? 'is-active' : ''}`}
+                    onClick={handleFavoriteToggle}
+                    disabled={isFavoriteLoading}
+                  >
+                    {isFavoriteLoading ? '更新中...' : (isFavorite ? 'お気に入り済み' : 'お気に入り')}
                   </button>
                 </div>
               )}
@@ -438,10 +509,6 @@ function ProductDetail() {
                     <div className="spec-value">{getConditionLabel(product.condition)}</div>
                   </div>
                   <div className="spec-item">
-                    <div className="spec-label">販売形式</div>
-                    <div className="spec-value">{getSaleTypeLabel(product.sale_type)}</div>
-                  </div>
-                  <div className="spec-item">
                     <div className="spec-label">配送料</div>
                     <div className="spec-value">購入者負担</div>
                   </div>
@@ -473,3 +540,4 @@ function ProductDetail() {
 }
 
 export default ProductDetail;
+

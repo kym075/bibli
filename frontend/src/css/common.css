@@ -65,6 +65,10 @@ input, button, textarea, select {
   font: inherit;
 }
 
+textarea {
+  resize: none;
+}
+
 /* ヘッダー */
 .header {
     background: rgba(255, 250, 242, 0.9);
@@ -180,6 +184,33 @@ input, button, textarea, select {
     background: var(--accent);
     color: white;
     transform: translateY(-2px);
+}
+
+
+.user-icon-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.user-circle-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    background: var(--surface);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.user-circle-icon:hover {
+    background: var(--accent);
+    color: white;
 }
 
 /* メインコンテンツ */

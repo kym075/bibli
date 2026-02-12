@@ -1,0 +1,76 @@
+.news-create-page {
+  max-width: 900px;
+}
+
+.news-create-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.8rem;
+}
+
+.news-create-card h1 {
+  margin-bottom: 0.4rem;
+  color: var(--ink);
+}
+
+.news-create-desc {
+  color: var(--muted);
+  margin-bottom: 1rem;
+}
+
+.news-create-error {
+  margin-bottom: 1rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--accent-warm);
+  background: rgba(180, 107, 61, 0.12);
+  border-radius: 10px;
+}
+
+.news-create-form {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.news-create-form input,
+.news-create-form select,
+.news-create-form textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 0.75rem;
+}
+
+.news-create-form input:focus,
+.news-create-form select:focus,
+.news-create-form textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(47, 93, 80, 0.15);
+}
+
+.news-create-form textarea {
+  min-height: 180px;
+}
+
+.news-create-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .news-create-card {
+    padding: 1.2rem;
+  }
+
+  .news-create-actions {
+    flex-direction: column;
+  }
+
+  .news-create-actions .btn {
+    width: 100%;
+  }
+}
