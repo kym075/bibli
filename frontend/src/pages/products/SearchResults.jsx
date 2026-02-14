@@ -190,7 +190,7 @@ function SearchResults() {
               {products.map((product) => {
                 const imageSource = product.image_url || (Array.isArray(product.image_urls) ? product.image_urls[0] : '');
                 return (
-                  <Link to={`/product-detail?id=${product.id}`} key={product.id}>
+                  <Link to={`/product-detail?id=${product.id}`} key={product.id} className="book-card-link">
                     <div className="book-card">
                       <div
                         className="book-image"
@@ -259,3 +259,4 @@ function SearchResults() {
 }
 
 export default SearchResults;
+

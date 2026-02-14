@@ -415,7 +415,7 @@ function ProfilePage() {
                   <div className="empty-description">商品を出品すると、ここに表示されます</div>
                 </div>
               ) : (
-                <div className="products-grid">
+                <div className="book-grid">
                   {userProducts
                     .filter(product => {
                       if (productFilter === 'all') return true;
@@ -424,22 +424,25 @@ function ProfilePage() {
                       if (productFilter === 'sold') return product.status === 3;
                       return true;
                     })
-                    .map(product => (
-                      <Link to={`/product-detail?id=${product.id}`} key={product.id} className="product-card">
-                        <div className="product-image">
-                          {product.image_url ? (
-                            <img src={getImageUrl(product.image_url)} alt={product.title} />
-                          ) : (
-                            <div className="no-image">NO</div>
-                          )}
-                        </div>
-                        <div className="product-info">
-                          <h3 className="product-title">{product.title}</h3>
-                          <p className="product-price">¥{product.price.toLocaleString()}</p>
-                          <p className="product-condition">{product.condition === 'excellent' ? '美品' : product.condition === 'good' ? '良好' : '可'}</p>
-                        </div>
-                      </Link>
-                    ))}
+                    .map(product => {
+                      const imageSource = product.image_url || (Array.isArray(product.image_urls) ? product.image_urls[0] : '');
+                      return (
+                        <Link to={`/product-detail?id=${product.id}`} key={product.id} className="book-card-link">
+                          <div className="book-card">
+                            <div
+                              className="book-image"
+                              style={{ backgroundImage: imageSource ? `url(${getImageUrl(imageSource)})` : 'none' }}
+                            >
+                              {!imageSource && 'NO IMAGE'}
+                            </div>
+                            <div className="book-info">
+                              <div className="book-title">{product.title}</div>
+                              <div className="book-price">¥{product.price.toLocaleString()}</div>
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })}
                 </div>
               )}
             </div>
@@ -457,25 +460,37 @@ function ProfilePage() {
                   <div className="empty-description">商品を購入すると、ここに表示されます</div>
                 </div>
               ) : (
-                <div className="purchase-list">
-                  {purchaseHistory.map((purchase) => (
-                    <div className="purchase-item" key={purchase.purchase_id}>
-                      <div className="purchase-image">
-                        {purchase.image_url ? (
-                          <img src={getImageUrl(purchase.image_url)} alt={purchase.title} />
-                        ) : (
-                          <div className="no-image">NO</div>
-                        )}
-                      </div>
-                      <div className="purchase-info">
-                        <div className="purchase-title">{purchase.title}</div>
-                        <div className="purchase-details">
-                          <span className="purchase-price">¥{(purchase.amount || 0).toLocaleString()}</span>
-                          <span className="purchase-date">{formatDate(purchase.created_at)}</span>
+                <div className="book-grid">
+                  {purchaseHistory.map((purchase) => {
+                    const imageSource = purchase.image_url || (Array.isArray(purchase.image_urls) ? purchase.image_urls[0] : '');
+                    const cardLink = purchase.product_id ? `/product-detail?id=${purchase.product_id}` : '#';
+
+                    return (
+                      <Link
+                        to={cardLink}
+                        className="book-card-link"
+                        key={purchase.purchase_id}
+                        onClick={(event) => {
+                          if (!purchase.product_id) {
+                            event.preventDefault();
+                          }
+                        }}
+                      >
+                        <div className="book-card">
+                          <div
+                            className="book-image"
+                            style={{ backgroundImage: imageSource ? `url(${getImageUrl(imageSource)})` : 'none' }}
+                          >
+                            {!imageSource && 'NO IMAGE'}
+                          </div>
+                          <div className="book-info">
+                            <div className="book-title">{purchase.title}</div>
+                            <div className="book-price">¥{(purchase.amount || 0).toLocaleString()}</div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  ))}
+                      </Link>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -502,22 +517,26 @@ function ProfilePage() {
                   <div className="empty-description">お気に入りに追加した商品がここに表示されます</div>
                 </div>
               ) : (
-                <div className="products-grid">
-                  {favoriteProducts.map((product) => (
-                    <Link to={`/product-detail?id=${product.id}`} key={product.id} className="product-card">
-                      <div className="product-image">
-                        {product.image_url ? (
-                          <img src={getImageUrl(product.image_url)} alt={product.title} />
-                        ) : (
-                          <div className="no-image">NO</div>
-                        )}
-                      </div>
-                      <div className="product-info">
-                        <h3 className="product-title">{product.title}</h3>
-                        <p className="product-price">¥{product.price.toLocaleString()}</p>
-                      </div>
-                    </Link>
-                  ))}
+                <div className="book-grid">
+                  {favoriteProducts.map((product) => {
+                    const imageSource = product.image_url || (Array.isArray(product.image_urls) ? product.image_urls[0] : '');
+                    return (
+                      <Link to={`/product-detail?id=${product.id}`} key={product.id} className="book-card-link">
+                        <div className="book-card">
+                          <div
+                            className="book-image"
+                            style={{ backgroundImage: imageSource ? `url(${getImageUrl(imageSource)})` : 'none' }}
+                          >
+                            {!imageSource && 'NO IMAGE'}
+                          </div>
+                          <div className="book-info">
+                            <div className="book-title">{product.title}</div>
+                            <div className="book-price">¥{product.price.toLocaleString()}</div>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -531,6 +550,4 @@ function ProfilePage() {
 }
 
 export default ProfilePage;
-
-
 

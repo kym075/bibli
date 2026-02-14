@@ -220,6 +220,12 @@ textarea {
     padding: 2rem;
 }
 
+
+.book-card-link {
+    display: block;
+    color: inherit;
+}
+
 /* ページ内メッセージ */
 .page-message {
     display: none;
@@ -348,6 +354,14 @@ textarea {
     transition: all 0.3s ease;
     border-bottom: 1px solid var(--border);
     gap: 15px;
+}
+
+.dropdown-item-button {
+    width: 100%;
+    border: none;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
 }
 
 .dropdown-item:last-child {
@@ -500,3 +514,4 @@ textarea {
     font-weight: 600;
     white-space: nowrap;
 }
+

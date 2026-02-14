@@ -629,7 +629,7 @@ def get_products():
 @app.route('/api/products/<int:product_id>', methods=['GET'])
 def get_product_detail(product_id):
     try:
-        product = Product.query.filter_by(id=product_id, status=1).first()
+        product = Product.query.filter_by(id=product_id).first()
 
         if not product:
             return jsonify({"error": "商品が見つかりません"}), 404
@@ -1854,9 +1854,4 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(host='0.0.0.0', port=5000, debug=True)
-
-
-
-
-
 
