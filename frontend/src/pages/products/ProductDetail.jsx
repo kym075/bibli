@@ -171,7 +171,7 @@ function ProductDetail() {
       navigate('/login');
       return;
     }
-    if (isOwnProduct) {
+    if (isOwnProduct || product?.status !== 1) {
       return;
     }
     navigate(`/checkout?product_id=${product.id}`);
@@ -401,8 +401,8 @@ function ProductDetail() {
 
               {!isOwnProduct && (
                 <div className="action-buttons is-row">
-                  <button className="btn-large btn-purchase" onClick={handlePurchaseClick}>
-                    今すぐ購入
+                  <button className="btn-large btn-purchase" onClick={handlePurchaseClick} disabled={productStatus !== 1}>
+                    {productStatus === 1 ? '今すぐ購入' : '売り切れ'}
                   </button>
                   <button
                     className={`btn-large btn-outline btn-favorite ${isFavorite ? 'is-active' : ''}`}

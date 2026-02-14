@@ -150,18 +150,6 @@ function PurchaseComplete() {
                 購入履歴を確認する
               </Link>
             </div>
-
-            <div className="additional-actions">
-              <a href="#" className="additional-btn" id="contactBtn">
-                出品者にメッセージ
-              </a>
-              <a href="#" className="additional-btn" id="supportBtn">
-                サポートに問い合わせ
-              </a>
-              <a href="#" className="additional-btn" id="shareBtn">
-                購入をシェア
-              </a>
-            </div>
           </div>
         </div>
       </main>
@@ -171,3 +159,4 @@ function PurchaseComplete() {
 }
 
 export default PurchaseComplete;
+
