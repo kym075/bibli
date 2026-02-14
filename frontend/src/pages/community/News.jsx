@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import { auth } from '../../css/firebase';
 import '../../css/news_page.css';
 
 const CATEGORY_LABELS = {
@@ -16,10 +18,34 @@ const CATEGORY_CLASS = {
   general: 'category-general'
 };
 
+const NOTIFICATION_ICON = {
+  listing: '出',
+  purchase: '買',
+  sold: '売',
+  general: '通'
+};
+
+function formatRelativeTime(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const diffSec = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (diffSec < 60) return 'たった今';
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}分前`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}時間前`;
+  if (diffSec < 2592000) return `${Math.floor(diffSec / 86400)}日前`;
+  return date.toLocaleDateString('ja-JP');
+}
+
 function News() {
   const [activeTab, setActiveTab] = useState('news');
   const [newsList, setNewsList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentEmail, setCurrentEmail] = useState('');
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -43,6 +69,70 @@ function News() {
     fetchNews();
   }, []);
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentEmail(user?.email || '');
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!currentEmail) {
+        setNotifications([]);
+        setUnreadCount(0);
+        return;
+      }
+
+      setNotificationsLoading(true);
+      try {
+        const response = await fetch(`http://localhost:5000/api/notifications?email=${encodeURIComponent(currentEmail)}`);
+        const data = await response.json();
+        if (response.ok) {
+          setNotifications(data.notifications || []);
+          setUnreadCount(data.unread_count || 0);
+        } else {
+          setNotifications([]);
+          setUnreadCount(0);
+        }
+      } catch (err) {
+        console.error('Notification fetch error:', err);
+        setNotifications([]);
+        setUnreadCount(0);
+      } finally {
+        setNotificationsLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, [currentEmail]);
+
+  useEffect(() => {
+    const markAllRead = async () => {
+      if (activeTab !== 'notifications' || !currentEmail || unreadCount === 0) {
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:5000/api/notifications/read-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: currentEmail })
+        });
+
+        if (response.ok) {
+          setNotifications((prev) => prev.map((item) => ({ ...item, is_read: true })));
+          setUnreadCount(0);
+        }
+      } catch (err) {
+        console.error('Notification read-all error:', err);
+      }
+    };
+
+    markAllRead();
+  }, [activeTab, currentEmail, unreadCount]);
+
   const formatDate = (value) => {
     if (!value) return '';
     const date = new Date(value);
@@ -57,9 +147,6 @@ function News() {
         <div className="page-title">
           <h1>お知らせ</h1>
           <p>重要な情報やアップデート情報をお届けします</p>
-          <div style={{ marginTop: '0.8rem' }}>
-            <Link to="/news-create" className="btn btn-primary">お知らせ作成</Link>
-          </div>
         </div>
 
         <div className="tabs-container">
@@ -77,7 +164,14 @@ function News() {
               onClick={() => setActiveTab('notifications')}
             >
               あなたへの通知
-              <span id="unreadCount" style={{ background: 'var(--accent-warm)', color: 'white', borderRadius: '50%', padding: '0.2rem 0.5rem', fontSize: '0.8rem', marginLeft: '0.5rem' }}>3</span>
+              {unreadCount > 0 && (
+                <span
+                  id="unreadCount"
+                  style={{ background: 'var(--accent-warm)', color: 'white', borderRadius: '50%', padding: '0.2rem 0.5rem', fontSize: '0.8rem', marginLeft: '0.5rem' }}
+                >
+                  {unreadCount}
+                </span>
+              )}
             </button>
           </div>
 
@@ -122,48 +216,42 @@ function News() {
             </div>
 
             <div className={`tab-panel ${activeTab === 'notifications' ? 'active' : ''}`} id="notifications-panel">
-              <div className="news-list">
-                <div className="notification-item unread">
-                  <div className="unread-indicator"></div>
-                  <div className="notification-header">
-                    <div className="notification-icon">S</div>
-                    <div className="notification-content">
-                      <div className="notification-title">商品が売れました！</div>
-                      <div className="notification-message">
-                        出品していた商品が購入されました。購入者とのやり取りを開始してください。
-                      </div>
-                      <div className="notification-time">2時間前</div>
-                    </div>
-                  </div>
+              {!currentEmail ? (
+                <div className="empty-state">
+                  <div className="empty-icon">!</div>
+                  <div className="empty-message">ログインすると通知を確認できます</div>
                 </div>
-
-                <div className="notification-item unread">
-                  <div className="unread-indicator"></div>
-                  <div className="notification-header">
-                    <div className="notification-icon">M</div>
-                    <div className="notification-content">
-                      <div className="notification-title">新しいメッセージ</div>
-                      <div className="notification-message">
-                        商品に関する質問メッセージが届いています。
-                      </div>
-                      <div className="notification-time">5時間前</div>
-                    </div>
-                  </div>
+              ) : notificationsLoading ? (
+                <div className="empty-state">
+                  <div className="empty-message">読み込み中...</div>
                 </div>
-
-                <div className="notification-item">
-                  <div className="notification-header">
-                    <div className="notification-icon">P</div>
-                    <div className="notification-content">
-                      <div className="notification-title">出品完了</div>
-                      <div className="notification-message">
-                        商品の出品が完了しました。審査後に公開されます。
-                      </div>
-                      <div className="notification-time">2日前</div>
-                    </div>
-                  </div>
+              ) : notifications.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">N</div>
+                  <div className="empty-message">通知はまだありません</div>
                 </div>
-              </div>
+              ) : (
+                <div className="news-list">
+                  {notifications.map((item) => (
+                    <div className={`notification-item ${item.is_read ? '' : 'unread'}`} key={item.id}>
+                      {!item.is_read && <div className="unread-indicator"></div>}
+                      <div className="notification-header">
+                        <div className="notification-icon">{NOTIFICATION_ICON[item.notification_type] || '通'}</div>
+                        <div className="notification-content">
+                          <div className="notification-title">{item.title}</div>
+                          <div className="notification-message">{item.message}</div>
+                          <div className="notification-time">{formatRelativeTime(item.created_at)}</div>
+                        </div>
+                      </div>
+                      {item.related_product_id && (
+                        <div className="news-actions">
+                          <Link to={`/product-detail?id=${item.related_product_id}`} className="read-more">商品を見る →</Link>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

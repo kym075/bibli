@@ -213,6 +213,20 @@ class NewsPost(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class Notification(db.Model):
+    __tablename__ = "notifications"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_email = db.Column(db.String(120), nullable=False, index=True)
+    notification_type = db.Column(db.String(30), nullable=False, default='general')
+    title = db.Column(db.String(255), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    related_product_id = db.Column(db.Integer, db.ForeignKey('products.id'))
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    product = db.relationship('Product')
+
 class ForumThread(db.Model):
     __tablename__ = "forum_threads"
 
@@ -251,6 +265,32 @@ class ForumFollow(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
  
  
+def _create_notification(user_email, notification_type, title, message, related_product_id=None):
+    email = (user_email or '').strip().lower()
+    if not email:
+        return
+
+    db.session.add(Notification(
+        user_email=email,
+        notification_type=notification_type or 'general',
+        title=title or '通知',
+        message=message or '',
+        related_product_id=related_product_id
+    ))
+
+
+def _serialize_notification(notification):
+    return {
+        "id": notification.id,
+        "user_email": notification.user_email,
+        "notification_type": notification.notification_type,
+        "title": notification.title,
+        "message": notification.message,
+        "related_product_id": notification.related_product_id,
+        "is_read": bool(notification.is_read),
+        "created_at": notification.created_at.isoformat() if notification.created_at else None
+    }
+
 # ============================
 # ヘルスチェック
 # ============================
@@ -718,6 +758,15 @@ def create_product():
                     sort_order=index
                 ))
 
+        seller = User.query.get(seller_id)
+        if seller and seller.email:
+            _create_notification(
+                user_email=seller.email,
+                notification_type='listing',
+                title='出品が完了しました',
+                message=f"「{new_product.title}」を出品しました。",
+                related_product_id=new_product.id
+            )
         db.session.commit()
 
         return jsonify({
@@ -1083,74 +1132,89 @@ def get_profile_purchases(user_id):
     return jsonify({"purchases": result}), 200
 
 
+@app.route('/api/notifications', methods=['GET'])
+def get_notifications():
+    email = (request.args.get('email') or '').strip().lower()
+    if not email:
+        return jsonify({"notifications": [], "unread_count": 0}), 200
+
+    notifications = (
+        Notification.query
+        .filter_by(user_email=email)
+        .order_by(Notification.created_at.desc(), Notification.id.desc())
+        .all()
+    )
+    unread_count = sum(1 for item in notifications if not item.is_read)
+
+    return jsonify({
+        "notifications": [_serialize_notification(item) for item in notifications],
+        "unread_count": unread_count
+    }), 200
+
+
+@app.route('/api/notifications/read-all', methods=['POST'])
+def mark_notifications_read_all():
+    data = request.get_json() or {}
+    email = (data.get('email') or '').strip().lower()
+    if not email:
+        return jsonify({"error": "emailが必要です"}), 400
+
+    try:
+        updated_count = (
+            Notification.query
+            .filter_by(user_email=email, is_read=False)
+            .update({Notification.is_read: True}, synchronize_session=False)
+        )
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "通知の更新に失敗しました", "detail": str(e)}), 500
+
+    return jsonify({"message": "既読に更新しました", "updated": updated_count}), 200
+
+
 # ============================
-# お知らせ API
+# お知らせ API（ダミーデータ固定）
 # ============================
+DUMMY_NEWS_POSTS = [
+    {
+        "id": 1,
+        "title": "システムメンテナンスのお知らせ",
+        "content": "2026年2月20日 02:00〜04:00 にシステムメンテナンスを実施します。作業中は一時的にサービスへアクセスしにくくなる場合があります。",
+        "category": "important",
+        "author_email": "Bibli運営",
+        "created_at": "2026-02-13T09:00:00"
+    },
+    {
+        "id": 2,
+        "title": "掲示板機能アップデート",
+        "content": "掲示板の表示速度改善と不具合修正を行いました。引き続き、安定性向上のため改善を進めます。",
+        "category": "update",
+        "author_email": "Bibli運営",
+        "created_at": "2026-02-10T18:30:00"
+    },
+    {
+        "id": 3,
+        "title": "ご利用ガイドの更新",
+        "content": "初めて利用する方向けに、出品から購入までの流れをガイドページに追記しました。",
+        "category": "general",
+        "author_email": "Bibli運営",
+        "created_at": "2026-02-08T12:00:00"
+    }
+]
+
+
 @app.route('/api/news', methods=['GET'])
 def get_news_posts():
-    posts = NewsPost.query.order_by(NewsPost.created_at.desc()).all()
-    return jsonify({
-        "news": [
-            {
-                "id": p.id,
-                "title": p.title,
-                "content": p.content,
-                "category": p.category,
-                "author_email": p.author_email,
-                "created_at": p.created_at.isoformat() if p.created_at else None
-            }
-            for p in posts
-        ]
-    }), 200
+    return jsonify({"news": DUMMY_NEWS_POSTS}), 200
 
 
 @app.route('/api/news/<int:news_id>', methods=['GET'])
 def get_news_post(news_id):
-    post = NewsPost.query.get(news_id)
+    post = next((item for item in DUMMY_NEWS_POSTS if item["id"] == news_id), None)
     if not post:
         return jsonify({"error": "お知らせが見つかりません"}), 404
-
-    return jsonify({
-        "id": post.id,
-        "title": post.title,
-        "content": post.content,
-        "category": post.category,
-        "author_email": post.author_email,
-        "created_at": post.created_at.isoformat() if post.created_at else None
-    }), 200
-
-
-@app.route('/api/news', methods=['POST'])
-def create_news_post():
-    data = request.get_json() or {}
-    title = (data.get('title') or '').strip()
-    content_text = (data.get('content') or '').strip()
-    category = (data.get('category') or 'general').strip()
-    author_email = (data.get('author_email') or '').strip() or None
-
-    if not title:
-        return jsonify({"error": "タイトルは必須です"}), 400
-    if not content_text:
-        return jsonify({"error": "本文は必須です"}), 400
-    if category not in ('important', 'update', 'general'):
-        category = 'general'
-
-    post = NewsPost(
-        title=title,
-        content=content_text,
-        category=category,
-        author_email=author_email
-    )
-
-    try:
-        db.session.add(post)
-        db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": "お知らせ作成に失敗しました", "detail": str(e)}), 500
-
-    return jsonify({"message": "お知らせを作成しました", "id": post.id}), 201
-
+    return jsonify(post), 200
 
 @app.route('/uploads/<path:filename>')
 def serve_upload(filename):
@@ -1640,6 +1704,27 @@ def _upsert_purchase_from_session(session):
     if product.status == 1:
         product.status = 0
 
+    buyer_email = (session.get('customer_email') or '').strip().lower()
+    seller = User.query.get(product.seller_id) if product.seller_id else None
+    seller_email = (seller.email or '').strip().lower() if seller and seller.email else ''
+
+    if buyer_email:
+        _create_notification(
+            user_email=buyer_email,
+            notification_type='purchase',
+            title='購入が完了しました',
+            message=f"「{product.title}」の購入が完了しました。",
+            related_product_id=product.id
+        )
+
+    if seller_email and seller_email != buyer_email:
+        _create_notification(
+            user_email=seller_email,
+            notification_type='sold',
+            title='商品が購入されました',
+            message=f"「{product.title}」が購入されました。",
+            related_product_id=product.id
+        )
     try:
         db.session.commit()
     except Exception:
@@ -1769,6 +1854,8 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(host='0.0.0.0', port=5000, debug=True)
+
+
 
 
 
