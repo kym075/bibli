@@ -1,5 +1,5 @@
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { auth } from '../../css/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import Header from '../../components/Header';
@@ -10,22 +10,39 @@ function ProductDetail() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const productId = searchParams.get('id');
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const [currentUser, setCurrentUser] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [isOwnProduct, setIsOwnProduct] = useState(false);
+
   const [imageError, setImageError] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');
   const [cancelMessage, setCancelMessage] = useState('');
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
+
   const [isFavorite, setIsFavorite] = useState(false);
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
+
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatParticipants, setChatParticipants] = useState([]);
+  const [selectedChatEmail, setSelectedChatEmail] = useState('');
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [isChatSending, setIsChatSending] = useState(false);
+  const [chatError, setChatError] = useState('');
+  const [chatScope, setChatScope] = useState('open');
+  const chatThreadRef = useRef(null);
 
   useEffect(() => {
     if (!productId) {
@@ -34,19 +51,18 @@ function ProductDetail() {
       return;
     }
 
-    // 商品詳細を取得
     fetch(`http://localhost:5000/api/products/${productId}`)
-      .then(response => {
+      .then((response) => {
         if (!response.ok) {
           throw new Error('商品が見つかりません');
         }
         return response.json();
       })
-      .then(data => {
+      .then((data) => {
         setProduct(data);
         setLoading(false);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('Product detail fetch error:', err);
         setError(err.message);
         setLoading(false);
@@ -57,6 +73,13 @@ function ProductDetail() {
     setImageError(false);
     setSelectedImageIndex(0);
     setShowCancelConfirm(false);
+
+    setIsChatOpen(false);
+    setChatMessages([]);
+    setChatParticipants([]);
+    setSelectedChatEmail('');
+    setChatInput('');
+    setChatError('');
   }, [productId]);
 
   useEffect(() => {
@@ -86,7 +109,6 @@ function ProductDetail() {
       setIsOwnProduct(false);
       return;
     }
-
     setIsOwnProduct(product.seller.id === currentUserId);
   }, [product, currentUserId]);
 
@@ -121,7 +143,6 @@ function ProductDetail() {
     fetchFollowStatus();
   }, [currentUser, product]);
 
-
   useEffect(() => {
     const fetchFavoriteStatus = async () => {
       if (!currentUser?.email || !product?.id || isOwnProduct) {
@@ -147,12 +168,20 @@ function ProductDetail() {
     fetchFavoriteStatus();
   }, [currentUser, product, isOwnProduct]);
 
-  // 商品状態のラベル変換
+  useEffect(() => {
+    if (!isChatOpen || !chatThreadRef.current) {
+      return;
+    }
+    chatThreadRef.current.scrollTop = chatThreadRef.current.scrollHeight;
+  }, [chatMessages, isChatOpen]);
+
   const getConditionLabel = (condition) => {
     const labels = {
-      'excellent': '非常に良い',
-      'good': '良好',
-      'fair': '普通'
+      excellent: '非常に良い',
+      good: '良い',
+      fair: '普通',
+      slightly_bad: '少し悪い',
+      bad: '悪い'
     };
     return labels[condition] || condition;
   };
@@ -166,6 +195,140 @@ function ProductDetail() {
     return `http://localhost:5000/${trimmed}`;
   };
 
+  const formatChatTime = (iso) => {
+    if (!iso) return '';
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const loadChatMessages = async (counterpartEmail = '') => {
+    if (!currentUser?.email || !product?.id) {
+      return;
+    }
+
+    setChatLoading(true);
+    setChatError('');
+
+    try {
+      const params = new URLSearchParams({ email: currentUser.email });
+      if (isOwnProduct) {
+        const target = counterpartEmail || selectedChatEmail;
+        if (target) {
+          params.append('with_user', target);
+        }
+      }
+
+      const response = await fetch(`http://localhost:5000/api/products/${product.id}/chat/messages?${params.toString()}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'チャットの読み込みに失敗しました');
+      }
+
+      setChatParticipants(Array.isArray(data.participants) ? data.participants : []);
+      setChatMessages(Array.isArray(data.messages) ? data.messages : []);
+      setChatScope(data.chat_scope || 'open');
+
+      if (isOwnProduct) {
+        const resolved = data.selected_counterpart_email || '';
+        if (resolved && resolved !== selectedChatEmail) {
+          setSelectedChatEmail(resolved);
+        }
+      }
+    } catch (err) {
+      console.error('Chat fetch error:', err);
+      setChatError(err.message || 'チャットの読み込みに失敗しました');
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const handleChatFabClick = async () => {
+    if (!currentUser?.email) {
+      navigate('/login', { state: { message: 'チャットを利用するにはログインが必要です' } });
+      return;
+    }
+
+    const nextOpen = !isChatOpen;
+    setIsChatOpen(nextOpen);
+
+    if (nextOpen) {
+      await loadChatMessages();
+    }
+  };
+
+  const handleParticipantSelect = async (email) => {
+    if (!email || isChatSending) {
+      return;
+    }
+    setSelectedChatEmail(email);
+    await loadChatMessages(email);
+  };
+
+  const handleChatSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!currentUser?.email) {
+      navigate('/login', { state: { message: 'チャットを利用するにはログインが必要です' } });
+      return;
+    }
+
+    const trimmed = chatInput.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    const receiverEmail = isOwnProduct ? selectedChatEmail : product?.seller?.email;
+    if (!receiverEmail) {
+      setChatError(isOwnProduct ? '購入希望者を選択してください' : '出品者情報が見つかりません');
+      return;
+    }
+
+    setIsChatSending(true);
+    setChatError('');
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/products/${product.id}/chat/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender_email: currentUser.email,
+          receiver_email: receiverEmail,
+          message: trimmed
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'メッセージ送信に失敗しました');
+      }
+
+      setChatInput('');
+      await loadChatMessages(receiverEmail);
+    } catch (err) {
+      console.error('Chat send error:', err);
+      setChatError(err.message || 'メッセージ送信に失敗しました');
+    } finally {
+      setIsChatSending(false);
+    }
+  };
+
+
+  useEffect(() => {
+    if (!isChatOpen || !currentUser?.email || !product?.id) {
+      return;
+    }
+
+    const chatPollingTarget = isOwnProduct ? selectedChatEmail : '';
+    const timer = setInterval(() => {
+      loadChatMessages(chatPollingTarget);
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [isChatOpen, currentUser, product, isOwnProduct, selectedChatEmail]);
   const handlePurchaseClick = () => {
     if (!currentUser) {
       navigate('/login');
@@ -176,7 +339,6 @@ function ProductDetail() {
     }
     navigate(`/checkout?product_id=${product.id}`);
   };
-
 
   const handleFavoriteToggle = async () => {
     if (!product?.id) return;
@@ -249,7 +411,7 @@ function ProductDetail() {
         })
       });
       if (response.ok) {
-        setIsFollowing(prev => !prev);
+        setIsFollowing((prev) => !prev);
       } else {
         const data = await response.json();
         console.error('Follow error:', data.error || data.message);
@@ -269,7 +431,7 @@ function ProductDetail() {
     if (!product?.id || isCancelling) {
       return;
     }
-    if (productStatus !== 1) {
+    if (product?.status !== 1) {
       return;
     }
     setShowCancelConfirm(true);
@@ -303,7 +465,7 @@ function ProductDetail() {
       const data = await response.json();
       if (response.ok) {
         setCancelMessage('出品を取り消しました');
-        setProduct(prev => ({ ...prev, status: 0 }));
+        setProduct((prev) => ({ ...prev, status: 0 }));
         setShowCancelConfirm(false);
       } else {
         setCancelError(data.error || '出品の取り消しに失敗しました');
@@ -348,15 +510,17 @@ function ProductDetail() {
   const mainImageUrl = imageUrls[safeIndex] || '';
   const imageUrl = imageError ? '' : getImageUrl(mainImageUrl);
   const productStatus = product.status ?? 1;
+  const selectedChatParticipant = chatParticipants.find((item) => item.email === selectedChatEmail) || null;
+  const chatInputPlaceholder = isOwnProduct
+    ? (selectedChatEmail ? '購入希望者に返信...' : '購入希望者を選択してください')
+    : '出品者へメッセージを送る';
 
   return (
     <>
       <Header />
 
-      {/* メインコンテンツ */}
       <main className="main-content product-detail-page">
         <div className="product-detail-layout">
-          {/* 左カラム: 商品画像エリア */}
           <div className="product-images">
             <div className="main-image" id="mainImage">
               {imageUrl ? (
@@ -386,15 +550,11 @@ function ProductDetail() {
             )}
           </div>
 
-          {/* 右カラム: 商品情報・購入エリア */}
           <div className="product-detail-content">
             <div className="product-info">
               <div className="product-title-row">
-
                 <h1 className="product-detail-title">{product.title}</h1>
-
                 <Link to="/contact" className="report-link">通報</Link>
-
               </div>
 
               <div className="price">¥{product.price?.toLocaleString()}</div>
@@ -424,33 +584,22 @@ function ProductDetail() {
                     <div className="cancel-confirm">
                       <div className="cancel-confirm-text">出品を取り消しますか？</div>
                       <div className="cancel-confirm-actions">
-                        <button
-                          className="btn-large btn-cancel"
-                          onClick={handleCancelConfirm}
-                          disabled={isCancelling}
-                        >
+                        <button className="btn-large btn-cancel" onClick={handleCancelConfirm} disabled={isCancelling}>
                           {isCancelling ? '取り消し中...' : '削除する'}
                         </button>
-                        <button
-                          className="btn-large btn-outline"
-                          onClick={handleCancelDismiss}
-                          disabled={isCancelling}
-                        >
+                        <button className="btn-large btn-outline" onClick={handleCancelDismiss} disabled={isCancelling}>
                           キャンセル
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <button
-                      className="btn-large btn-outline btn-cancel"
-                      onClick={handleCancelRequest}
-                      disabled={isCancelling}
-                    >
+                    <button className="btn-large btn-outline btn-cancel" onClick={handleCancelRequest} disabled={isCancelling}>
                       出品を取り消す
                     </button>
                   )}
                 </div>
               )}
+
               {(cancelError || cancelMessage) && (
                 <div className={`cancel-message ${cancelError ? 'is-error' : 'is-success'}`}>
                   {cancelError || cancelMessage}
@@ -469,9 +618,7 @@ function ProductDetail() {
                     </div>
                     <div className="seller-details">
                       <h4>{product.seller.user_name}</h4>
-                      <div className="rating">
-                        <span>(5.0)</span>
-                      </div>
+                      <div className="rating"><span>(5.0)</span></div>
                     </div>
                   </Link>
                   <button
@@ -483,10 +630,6 @@ function ProductDetail() {
                   </button>
                 </div>
               )}
-
-              <div className="communication-actions">
-                <button className="btn btn-primary btn-small">チャットで質問</button>
-              </div>
             </div>
 
             <div className="product-description">
@@ -507,6 +650,14 @@ function ProductDetail() {
                   <div className="spec-item">
                     <div className="spec-label">商品の状態</div>
                     <div className="spec-value">{getConditionLabel(product.condition)}</div>
+                  </div>
+                  <div className="spec-item">
+                    <div className="spec-label">タグ</div>
+                    <div className="spec-value">
+                      {Array.isArray(product.tags) && product.tags.length
+                        ? product.tags.map((tag) => `#${tag}`).join(' / ')
+                        : 'なし'}
+                    </div>
                   </div>
                   <div className="spec-item">
                     <div className="spec-label">配送料</div>
@@ -534,10 +685,114 @@ function ProductDetail() {
         </div>
       </main>
 
+      <button
+        type="button"
+        className={`chat-fab ${isChatOpen ? 'is-open' : ''}`}
+        onClick={handleChatFabClick}
+        aria-label="商品チャットを開く"
+      >
+        <span aria-hidden="true">✉</span>
+      </button>
+
+      {isChatOpen && (
+        <section className="chat-widget" aria-label="商品チャット">
+          <div className="chat-widget-header">
+            <div>
+              <h3>商品チャット</h3>
+              <p>{isOwnProduct ? '出品者モード' : '購入希望者モード'}</p>
+            </div>
+            <button
+              type="button"
+              className="chat-widget-close"
+              onClick={() => setIsChatOpen(false)}
+              aria-label="チャットを閉じる"
+            >
+              ×
+            </button>
+          </div>
+
+          {isOwnProduct && (
+            <div className="chat-participant-list">
+              {chatParticipants.length === 0 ? (
+                <div className="chat-empty-line">まだ問い合わせはありません</div>
+              ) : (
+                chatParticipants.map((participant) => (
+                  <button
+                    type="button"
+                    key={participant.email}
+                    className={`chat-participant-item ${selectedChatEmail === participant.email ? 'is-active' : ''}`}
+                    onClick={() => handleParticipantSelect(participant.email)}
+                    disabled={isChatSending}
+                  >
+                    <span className="chat-participant-name">{participant.user_name || participant.email}</span>
+                    <span className="chat-participant-role">{participant.is_purchased ? '購入者' : '購入希望者'}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+
+          <div className="chat-thread" ref={chatThreadRef}>
+            {chatLoading ? (
+              <div className="chat-empty-line">読み込み中...</div>
+            ) : chatMessages.length === 0 ? (
+              <div className="chat-empty-line">
+                {isOwnProduct ? '購入希望者からのメッセージを待っています' : '気になる点を出品者に質問できます'}
+              </div>
+            ) : (
+              chatMessages.map((item) => (
+                <div key={item.id} className={`chat-bubble-row ${item.is_own ? 'is-own' : ''}`}>
+                  <div className={`chat-bubble ${item.is_own ? 'is-own' : ''}`}>
+                    <div className="chat-bubble-meta">
+                      <span className={`chat-role-badge ${item.sender_role === 'seller' ? 'seller' : 'buyer'}`}>
+                        {item.sender_role === 'seller' ? '出品者' : (chatScope === 'sold' ? '購入者' : '購入希望者')}
+                      </span>
+                      <span className="chat-sender-name">{item.sender_name || item.sender_email}</span>
+                      <span className="chat-time">{formatChatTime(item.created_at)}</span>
+                    </div>
+                    <div className="chat-text">{item.message}</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {chatError && <div className="chat-inline-error">{chatError}</div>}
+
+          {isOwnProduct && selectedChatParticipant && (
+            <div className="chat-current-target">
+              返信先: {selectedChatParticipant.user_name || selectedChatParticipant.email}
+            </div>
+          )}
+
+          <form className="chat-input-row" onSubmit={handleChatSubmit}>
+            <input
+              type="text"
+              className="chat-input"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder={chatInputPlaceholder}
+              maxLength={1000}
+              disabled={chatLoading || isChatSending || (isOwnProduct && !selectedChatEmail)}
+            />
+            <button
+              type="submit"
+              className="chat-send-btn"
+              disabled={chatLoading || isChatSending || !chatInput.trim() || (isOwnProduct && !selectedChatEmail)}
+            >
+              {isChatSending ? '送信中' : '送信'}
+            </button>
+          </form>
+        </section>
+      )}
+
       <Footer />
     </>
   );
 }
 
 export default ProductDetail;
+
+
+
 

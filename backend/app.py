@@ -8,6 +8,7 @@ import jwt
 from datetime import datetime, timedelta
 import secrets
 from decimal import Decimal
+import json
 import os
 import stripe
 from dotenv import load_dotenv
@@ -66,6 +67,53 @@ def _save_product_image(file_storage):
     file_path = os.path.join(upload_dir, unique_name)
     file_storage.save(file_path)
     return f"uploads/products/{unique_name}"
+
+
+def _normalize_tags(raw_tags):
+    if raw_tags is None:
+        return []
+
+    values = []
+    if isinstance(raw_tags, list):
+        values = raw_tags
+    elif isinstance(raw_tags, str):
+        text = raw_tags.strip()
+        if not text:
+            return []
+        if text.startswith('['):
+            try:
+                parsed = json.loads(text)
+                if isinstance(parsed, list):
+                    values = parsed
+                else:
+                    values = [text]
+            except Exception:
+                values = text.split(',')
+        elif ',' in text:
+            values = text.split(',')
+        else:
+            values = [text]
+
+    tags = []
+    seen = set()
+    for value in values:
+        tag = str(value or '').strip()
+        if not tag:
+            continue
+        if tag.startswith('#'):
+            tag = tag[1:].strip()
+        if not tag:
+            continue
+        tag = tag[:30]
+        key = tag.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        tags.append(tag)
+        if len(tags) >= 10:
+            break
+
+    return tags
 
 def _build_primary_image_map(product_ids):
     if not product_ids:
@@ -188,6 +236,33 @@ class ProductImage(db.Model):
 
 
 
+
+
+class ProductTag(db.Model):
+    __tablename__ = "product_tags"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False, index=True)
+    tag = db.Column(db.String(50), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('product_id', 'tag', name='uq_product_tags_product_tag'),
+    )
+
+
+class ProductChatMessage(db.Model):
+    __tablename__ = "product_chat_messages"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False, index=True)
+    sender_email = db.Column(db.String(120), nullable=False, index=True)
+    receiver_email = db.Column(db.String(120), nullable=False, index=True)
+    message = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    product = db.relationship('Product')
 class Favorite(db.Model):
     __tablename__ = "favorites"
 
@@ -291,6 +366,40 @@ def _serialize_notification(notification):
         "created_at": notification.created_at.isoformat() if notification.created_at else None
     }
 
+
+def _normalize_email(value):
+    return (value or '').strip().lower()
+
+
+def _find_user_by_email(email):
+    normalized = _normalize_email(email)
+    if not normalized:
+        return None
+    return User.query.filter(db.func.lower(User.email) == normalized).first()
+
+
+def _display_name_from_email(email, user=None):
+    if user:
+        return user.user_name or user.name or (email.split('@')[0] if email else 'ユーザー')
+    return (email.split('@')[0] if email else 'ユーザー')
+
+
+def _serialize_chat_message(chat_message, seller_email, current_email):
+    sender_email = _normalize_email(chat_message.sender_email)
+    sender_user = _find_user_by_email(sender_email)
+    sender_role = 'seller' if sender_email == _normalize_email(seller_email) else 'buyer'
+
+    return {
+        "id": chat_message.id,
+        "product_id": chat_message.product_id,
+        "sender_email": sender_email,
+        "receiver_email": _normalize_email(chat_message.receiver_email),
+        "sender_name": _display_name_from_email(sender_email, sender_user),
+        "sender_role": sender_role,
+        "message": chat_message.message,
+        "created_at": chat_message.created_at.isoformat() if chat_message.created_at else None,
+        "is_own": sender_email == _normalize_email(current_email)
+    }
 # ============================
 # ヘルスチェック
 # ============================
@@ -563,14 +672,23 @@ def get_products():
         query = Product.query.filter(Product.status == 1)
 
         if keyword:
-            search_pattern = f"%{keyword}%"
-            query = query.filter(
-                db.or_(
-                    Product.title.like(search_pattern),
-                    Product.description.like(search_pattern),
-                    Product.category.like(search_pattern)
+            if keyword.startswith('#'):
+                tag_keyword = keyword[1:].strip()
+                if tag_keyword:
+                    tag_pattern = f"%{tag_keyword.lower()}%"
+                    tagged_ids = db.session.query(ProductTag.product_id).filter(db.func.lower(ProductTag.tag).like(tag_pattern))
+                    query = query.filter(Product.id.in_(tagged_ids))
+                else:
+                    query = query.filter(Product.id == -1)
+            else:
+                search_pattern = f"%{keyword}%"
+                query = query.filter(
+                    db.or_(
+                        Product.title.like(search_pattern),
+                        Product.description.like(search_pattern),
+                        Product.category.like(search_pattern)
+                    )
                 )
-            )
 
         if min_price is not None:
             query = query.filter(Product.price >= min_price)
@@ -640,8 +758,6 @@ def get_product_detail(product_id):
         except Exception:
             db.session.rollback()
 
-
-        # 画像一覧を取得（複数対応）
         images = (
             ProductImage.query
             .filter_by(product_id=product.id)
@@ -652,7 +768,15 @@ def get_product_detail(product_id):
         if not image_urls and product.image_url:
             image_urls = [product.image_url]
 
-        # 出品者情報を取得
+        tags = [
+            row.tag for row in (
+                ProductTag.query
+                .filter_by(product_id=product.id)
+                .order_by(ProductTag.id.asc())
+                .all()
+            )
+        ]
+
         seller = User.query.filter_by(id=product.seller_id).first()
 
         result = {
@@ -666,6 +790,7 @@ def get_product_detail(product_id):
             "status": product.status,
             "created_at": product.created_at.isoformat() if product.created_at else None,
             "image_urls": image_urls,
+            "tags": tags,
             "seller": {
                 "id": seller.id if seller else None,
                 "user_id": seller.user_id if seller else None,
@@ -711,8 +836,8 @@ def create_product():
                 image_urls = [u for u in raw_urls if u]
 
         primary_image_url = image_urls[0] if image_urls else image_url
+        parsed_tags = _normalize_tags(data.get('tags'))
 
-        # 必須フィールドのバリデーション
         title = (data.get('title') or '').strip()
         price_raw = data.get('price')
         seller_raw = data.get('seller_id')
@@ -734,7 +859,6 @@ def create_product():
         except (TypeError, ValueError):
             return jsonify({"error": "seller_idは数値で入力してください"}), 400
 
-        # 新しい商品を作成
         new_product = Product(
             title=title,
             description=data.get('description', ''),
@@ -758,8 +882,18 @@ def create_product():
                     sort_order=index
                 ))
 
+        if parsed_tags:
+            for tag in parsed_tags:
+                db.session.add(ProductTag(
+                    product_id=new_product.id,
+                    tag=tag
+                ))
+
         seller = User.query.get(seller_id)
         if seller and seller.email:
+            seller_email = _normalize_email(seller.email)
+            seller_name = seller.user_name or seller.name or (seller_email.split('@')[0] if seller_email else '出品者')
+
             _create_notification(
                 user_email=seller.email,
                 notification_type='listing',
@@ -767,6 +901,27 @@ def create_product():
                 message=f"「{new_product.title}」を出品しました。",
                 related_product_id=new_product.id
             )
+
+            follower_rows = (
+                ForumFollow.query
+                .filter(db.func.lower(ForumFollow.followee_email) == seller_email)
+                .all()
+            )
+            notified_followers = set()
+            for row in follower_rows:
+                follower_email = _normalize_email(row.follower_email)
+                if not follower_email or follower_email == seller_email or follower_email in notified_followers:
+                    continue
+                notified_followers.add(follower_email)
+
+                _create_notification(
+                    user_email=follower_email,
+                    notification_type='follow_listing',
+                    title='フォロー中ユーザーが出品しました',
+                    message=f"{seller_name}さんが「{new_product.title}」を出品しました。",
+                    related_product_id=new_product.id
+                )
+
         db.session.commit()
 
         return jsonify({
@@ -950,6 +1105,272 @@ def cancel_product(product_id):
     return jsonify({"message": "出品を取り消しました"}), 200
 
 
+
+
+
+# ============================
+# 商品チャット API
+# ============================
+@app.route('/api/products/<int:product_id>/chat/messages', methods=['GET'])
+def get_product_chat_messages(product_id):
+    current_email = _normalize_email(request.args.get('email'))
+    requested_counterpart = _normalize_email(request.args.get('with_user'))
+
+    if not current_email:
+        return jsonify({"error": "email が必要です"}), 400
+
+    current_user = _find_user_by_email(current_email)
+    if not current_user:
+        return jsonify({"error": "ユーザーが見つかりません"}), 404
+
+    product = Product.query.get(product_id)
+    if not product:
+        return jsonify({"error": "商品が見つかりません"}), 404
+
+    seller = User.query.get(product.seller_id)
+    if not seller or not seller.email:
+        return jsonify({"error": "出品者情報が見つかりません"}), 404
+
+    seller_email = _normalize_email(seller.email)
+    is_seller = current_email == seller_email
+
+    purchase_rows = (
+        Purchase.query
+        .filter_by(product_id=product.id)
+        .order_by(Purchase.created_at.desc(), Purchase.id.desc())
+        .all()
+    )
+    purchase_buyer_emails = []
+    seen_buyer = set()
+    for purchase in purchase_rows:
+        buyer_email = _normalize_email(purchase.buyer_email)
+        if buyer_email and buyer_email not in seen_buyer:
+            seen_buyer.add(buyer_email)
+            purchase_buyer_emails.append(buyer_email)
+
+    purchase_buyer_set = set(purchase_buyer_emails)
+    is_sold = bool(purchase_buyer_set)
+    is_purchase_buyer = current_email in purchase_buyer_set
+
+    if is_sold and not is_seller and not is_purchase_buyer:
+        return jsonify({"error": "購入後チャットは購入者と出品者のみ利用できます"}), 403
+
+    base_query = ProductChatMessage.query.filter_by(product_id=product.id)
+    participants = []
+    selected_counterpart = ''
+
+    if is_seller:
+        related_rows = (
+            base_query
+            .filter(
+                db.or_(
+                    db.func.lower(ProductChatMessage.sender_email) == seller_email,
+                    db.func.lower(ProductChatMessage.receiver_email) == seller_email
+                )
+            )
+            .order_by(ProductChatMessage.created_at.desc(), ProductChatMessage.id.desc())
+            .all()
+        )
+
+        latest_by_user = {}
+        for row in related_rows:
+            sender_email = _normalize_email(row.sender_email)
+            receiver_email = _normalize_email(row.receiver_email)
+            counterpart = receiver_email if sender_email == seller_email else sender_email
+            if not counterpart or counterpart == seller_email:
+                continue
+            if counterpart not in latest_by_user:
+                latest_by_user[counterpart] = row.created_at or datetime.utcnow()
+
+        for purchase in purchase_rows:
+            buyer_email = _normalize_email(purchase.buyer_email)
+            if not buyer_email or buyer_email == seller_email:
+                continue
+            if buyer_email not in latest_by_user:
+                latest_by_user[buyer_email] = purchase.created_at or datetime.utcnow()
+
+        ordered_counterparts = sorted(
+            latest_by_user.keys(),
+            key=lambda email: latest_by_user[email],
+            reverse=True
+        )
+
+        for email in ordered_counterparts:
+            participant_user = _find_user_by_email(email)
+            participants.append({
+                "email": email,
+                "user_name": _display_name_from_email(email, participant_user),
+                "role": "buyer",
+                "is_purchased": email in purchase_buyer_set,
+                "last_message_at": latest_by_user[email].isoformat() if latest_by_user[email] else None
+            })
+
+        if ordered_counterparts:
+            selected_counterpart = requested_counterpart if requested_counterpart in ordered_counterparts else ordered_counterparts[0]
+    else:
+        participants.append({
+            "email": seller_email,
+            "user_name": _display_name_from_email(seller_email, seller),
+            "role": "seller",
+            "is_purchased": is_purchase_buyer,
+            "last_message_at": None
+        })
+        selected_counterpart = seller_email
+
+    messages = []
+    has_updates = False
+
+    if selected_counterpart:
+        chat_rows = (
+            base_query
+            .filter(
+                db.or_(
+                    db.and_(
+                        db.func.lower(ProductChatMessage.sender_email) == current_email,
+                        db.func.lower(ProductChatMessage.receiver_email) == selected_counterpart
+                    ),
+                    db.and_(
+                        db.func.lower(ProductChatMessage.sender_email) == selected_counterpart,
+                        db.func.lower(ProductChatMessage.receiver_email) == current_email
+                    )
+                )
+            )
+            .order_by(ProductChatMessage.created_at.asc(), ProductChatMessage.id.asc())
+            .all()
+        )
+
+        for row in chat_rows:
+            if _normalize_email(row.receiver_email) == current_email and not row.is_read:
+                row.is_read = True
+                has_updates = True
+            messages.append(_serialize_chat_message(row, seller_email, current_email))
+
+    if has_updates:
+        db.session.commit()
+
+    return jsonify({
+        "product_id": product.id,
+        "seller_email": seller_email,
+        "current_email": current_email,
+        "current_role": "seller" if is_seller else "buyer",
+        "chat_scope": "sold" if is_sold else "open",
+        "selected_counterpart_email": selected_counterpart,
+        "participants": participants,
+        "messages": messages
+    }), 200
+
+
+@app.route('/api/products/<int:product_id>/chat/messages', methods=['POST'])
+def post_product_chat_message(product_id):
+    data = request.get_json() or {}
+
+    sender_email = _normalize_email(data.get('sender_email'))
+    receiver_email = _normalize_email(data.get('receiver_email'))
+    message = (data.get('message') or '').strip()
+
+    if not sender_email:
+        return jsonify({"error": "sender_email が必要です"}), 400
+    if not message:
+        return jsonify({"error": "メッセージを入力してください"}), 400
+    if len(message) > 1000:
+        return jsonify({"error": "メッセージは1000文字以内で入力してください"}), 400
+
+    sender_user = _find_user_by_email(sender_email)
+    if not sender_user:
+        return jsonify({"error": "送信者が見つかりません"}), 404
+
+    product = Product.query.get(product_id)
+    if not product:
+        return jsonify({"error": "商品が見つかりません"}), 404
+
+    seller = User.query.get(product.seller_id)
+    if not seller or not seller.email:
+        return jsonify({"error": "出品者情報が見つかりません"}), 404
+
+    seller_email = _normalize_email(seller.email)
+    is_sender_seller = sender_email == seller_email
+
+    purchase_rows = Purchase.query.filter_by(product_id=product.id).all()
+    purchase_buyer_set = {
+        _normalize_email(purchase.buyer_email)
+        for purchase in purchase_rows
+        if _normalize_email(purchase.buyer_email)
+    }
+    is_sold = bool(purchase_buyer_set)
+
+    if is_sold and not is_sender_seller and sender_email not in purchase_buyer_set:
+        return jsonify({"error": "購入後チャットは購入者と出品者のみ利用できます"}), 403
+
+    if is_sender_seller:
+        if not receiver_email:
+            if len(purchase_buyer_set) == 1:
+                receiver_email = next(iter(purchase_buyer_set))
+            else:
+                return jsonify({"error": "receiver_email が必要です"}), 400
+
+        if receiver_email == seller_email:
+            return jsonify({"error": "出品者自身には送信できません"}), 400
+
+        receiver_user = _find_user_by_email(receiver_email)
+        if not receiver_user:
+            return jsonify({"error": "送信先ユーザーが見つかりません"}), 404
+
+        if is_sold:
+            if receiver_email not in purchase_buyer_set:
+                return jsonify({"error": "購入者にのみ送信できます"}), 403
+        else:
+            existing_thread = (
+                ProductChatMessage.query
+                .filter_by(product_id=product.id)
+                .filter(
+                    db.or_(
+                        db.and_(
+                            db.func.lower(ProductChatMessage.sender_email) == seller_email,
+                            db.func.lower(ProductChatMessage.receiver_email) == receiver_email
+                        ),
+                        db.and_(
+                            db.func.lower(ProductChatMessage.sender_email) == receiver_email,
+                            db.func.lower(ProductChatMessage.receiver_email) == seller_email
+                        )
+                    )
+                )
+                .first()
+            )
+
+            if not existing_thread:
+                return jsonify({"error": "購入希望者からの問い合わせがありません"}), 400
+    else:
+        receiver_email = seller_email
+
+    new_message = ProductChatMessage(
+        product_id=product.id,
+        sender_email=sender_email,
+        receiver_email=receiver_email,
+        message=message,
+        is_read=False
+    )
+
+    try:
+        db.session.add(new_message)
+
+        if receiver_email != sender_email:
+            sender_name = _display_name_from_email(sender_email, sender_user)
+            _create_notification(
+                user_email=receiver_email,
+                notification_type='chat',
+                title='取引チャットに新着メッセージ',
+                message=f"「{product.title}」で{sender_name}さんからメッセージが届きました。",
+                related_product_id=product.id
+            )
+
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "メッセージ送信に失敗しました", "detail": str(e)}), 500
+
+    return jsonify({
+        "message": _serialize_chat_message(new_message, seller_email, sender_email)
+    }), 201
 
 
 # ============================
@@ -1854,4 +2275,10 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(host='0.0.0.0', port=5000, debug=True)
+
+
+
+
+
+
 

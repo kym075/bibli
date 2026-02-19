@@ -306,13 +306,19 @@
     background: var(--accent);
     color: white;
     border: none;
-    padding: 1.5rem 4rem;
+    width: min(240px, 100%);
+    min-height: 56px;
+    padding: 0.9rem 1.2rem;
     border-radius: 12px;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 }
 
 .submit-btn:hover {
@@ -365,7 +371,9 @@
     }
 
     .submit-btn {
-        padding: 1.2rem 3rem;
+        width: min(220px, 100%);
+        min-height: 52px;
+        padding: 0.85rem 1rem;
         font-size: 1.1rem;
     }
 

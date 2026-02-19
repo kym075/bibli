@@ -4,3 +4,4 @@ Flask-SQLAlchemy
 pymysql
 python-dotenv
 stripe
+pytest==8.2.2
