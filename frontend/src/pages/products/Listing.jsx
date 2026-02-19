@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { auth } from '../../css/firebase';
 import Header from '../../components/Header';
@@ -23,6 +23,8 @@ function Listing() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  const [tagInput, setTagInput] = useState('');
+  const [tags, setTags] = useState([]);
 
   useEffect(() => {
     const interrupted = sessionStorage.getItem('listing_upload_interrupted');
@@ -43,6 +45,39 @@ function Listing() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [selectedImages, isSubmitting]);
 
+  const normalizeTag = (rawTag) => {
+    const trimmed = String(rawTag || '').trim();
+    if (!trimmed) return '';
+    return trimmed.replace(/^#+/, '').trim().slice(0, 30);
+  };
+
+  const addTag = (rawTag) => {
+    const normalized = normalizeTag(rawTag);
+    if (!normalized) {
+      return;
+    }
+    if (tags.length >= 10) {
+      setFormError('タグは最大10個まで追加できます。');
+      return;
+    }
+    if (tags.some((tag) => tag.toLowerCase() === normalized.toLowerCase())) {
+      return;
+    }
+    setTags((prev) => [...prev, normalized]);
+    setTagInput('');
+    if (formError) setFormError('');
+  };
+
+  const removeTag = (indexToRemove) => {
+    setTags((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleTagKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addTag(tagInput);
+    }
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) {
@@ -106,6 +141,7 @@ function Listing() {
       formPayload.append('category', formData.category);
       formPayload.append('shipping_origin', formData.shippingOrigin);
       formPayload.append('shipping_days', formData.shippingDays);
+      formPayload.append('tags', JSON.stringify(tags));
 
       if (selectedImages.length > 0) {
         selectedImages.forEach((image) => {
@@ -359,6 +395,8 @@ function Listing() {
                   <option value="excellent">非常に良い</option>
                   <option value="good">良い</option>
                   <option value="fair">普通</option>
+                  <option value="slightly_bad">少し悪い</option>
+                  <option value="bad">悪い</option>
                 </select>
                 
               </div>
@@ -395,10 +433,35 @@ function Listing() {
 
               {/* タグ付け */}
               <div className="form-group">
-                <label htmlFor="tags" className="form-label">タグ付け</label>
-                <input type="text" id="tagInput" className="form-input" placeholder="例: ミステリー, 感動, サイン本 (Enterキーで追加)" />
-                <div className="help-text">商品を見つけやすくするためのタグを追加できます。Enterキーで追加してください。</div>
-                <div className="tags-container" id="tagsContainer"></div>
+                <label htmlFor="tagInput" className="form-label">タグ付け</label>
+                <input
+                  type="text"
+                  id="tagInput"
+                  className="form-input"
+                  placeholder="例: #ミステリー（Enterキーで追加）"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={handleTagKeyDown}
+                  maxLength={40}
+                />
+                <div className="help-text">最大10個まで。検索時は「#タグ名」で絞り込めます。</div>
+                {!!tags.length && (
+                  <div className="tags-container" id="tagsContainer">
+                    {tags.map((tag, index) => (
+                      <span key={`${tag}-${index}`} className="tag">
+                        #{tag}
+                        <button
+                          type="button"
+                          className="tag-remove"
+                          onClick={() => removeTag(index)}
+                          aria-label={`${tag}を削除`}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 

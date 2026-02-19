@@ -20,8 +20,10 @@ const CATEGORY_CLASS = {
 
 const NOTIFICATION_ICON = {
   listing: '出',
+  follow_listing: '新',
   purchase: '買',
   sold: '売',
+  chat: '話',
   general: '通'
 };
 
@@ -262,3 +264,5 @@ function News() {
 }
 
 export default News;
+
+

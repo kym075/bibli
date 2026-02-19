@@ -170,6 +170,8 @@ function SearchResults() {
                   <option value="excellent">非常に良い</option>
                   <option value="good">良い</option>
                   <option value="fair">普通</option>
+                  <option value="slightly_bad">少し悪い</option>
+                  <option value="bad">悪い</option>
                 </select>
               </div>
             </div>

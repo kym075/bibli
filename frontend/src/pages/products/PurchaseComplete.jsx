@@ -143,11 +143,14 @@ function PurchaseComplete() {
             </div>
 
             <div className="action-buttons">
-              <Link to="/" className="action-btn btn-primary" id="homeBtn">
-                トップページへ戻る
+              <Link to={`/product-detail?id=${product?.id}`} className="action-btn btn-primary" id="chatBtn">
+                出品者とやり取りする
               </Link>
               <Link to="/profile" className="action-btn btn-secondary" id="historyBtn">
                 購入履歴を確認する
+              </Link>
+              <Link to="/" className="action-btn btn-secondary" id="homeBtn">
+                トップページへ戻る
               </Link>
             </div>
           </div>
@@ -159,4 +162,6 @@ function PurchaseComplete() {
 }
 
 export default PurchaseComplete;
+
+
 
