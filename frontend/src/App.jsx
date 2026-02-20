@@ -36,6 +36,7 @@ import Listing from './pages/products/Listing';
 import ListingComplete from './pages/products/ListingComplete';
 import Checkout from './pages/products/Checkout';
 import PurchaseComplete from './pages/products/PurchaseComplete';
+import Transaction from './pages/products/Transaction';
 
 // Community pages
 import Forum from './pages/community/Forum';
@@ -77,6 +78,7 @@ function App() {
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/purchase-complete" element={<PurchaseComplete />} />
         <Route path="/products/purchase-complete" element={<PurchaseComplete />} />
+        <Route path="/transaction" element={<Transaction />} />
 
         {/* Community */}
         <Route path="/forum" element={<Forum />} />

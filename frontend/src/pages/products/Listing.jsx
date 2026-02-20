@@ -139,6 +139,7 @@ function Listing() {
       formPayload.append('condition', formData.condition);
       formPayload.append('seller_id', userData.id);
       formPayload.append('category', formData.category);
+      formPayload.append('shipping_method', formData.shipping);
       formPayload.append('shipping_origin', formData.shippingOrigin);
       formPayload.append('shipping_days', formData.shippingDays);
       formPayload.append('tags', JSON.stringify(tags));
@@ -392,11 +393,12 @@ function Listing() {
                   onChange={handleInputChange}
                 >
                   <option value="">状態を選択してください</option>
-                  <option value="excellent">非常に良い</option>
-                  <option value="good">良い</option>
-                  <option value="fair">普通</option>
-                  <option value="slightly_bad">少し悪い</option>
-                  <option value="bad">悪い</option>
+                  <option value="new_unused">新品、未使用</option>
+                  <option value="nearly_unused">未使用に近い</option>
+                  <option value="no_visible_damage">目立った傷や汚れなし</option>
+                  <option value="slight_damage">やや傷や汚れあり</option>
+                  <option value="damaged">傷や汚れあり</option>
+                  <option value="poor_condition">全体的に状態が悪い</option>
                 </select>
                 
               </div>

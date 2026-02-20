@@ -20,6 +20,23 @@ function Checkout() {
   const [authChecked, setAuthChecked] = useState(false);
   const [deliveryProfile, setDeliveryProfile] = useState(null);
 
+  const getConditionLabel = (condition) => {
+    const labels = {
+      new_unused: '新品、未使用',
+      nearly_unused: '未使用に近い',
+      no_visible_damage: '目立った傷や汚れなし',
+      slight_damage: 'やや傷や汚れあり',
+      damaged: '傷や汚れあり',
+      poor_condition: '全体的に状態が悪い',
+      excellent: '目立った傷や汚れなし',
+      good: 'やや傷や汚れあり',
+      fair: '傷や汚れあり',
+      slightly_bad: '全体的に状態が悪い',
+      bad: '全体的に状態が悪い'
+    };
+    return labels[condition] || condition || '未設定';
+  };
+
   useEffect(() => {
     const fetchProduct = async () => {
       if (!productId) {
@@ -229,7 +246,7 @@ function Checkout() {
               <div className="product-info">
                 <div className="product-title">{product.title}</div>
                 <div className="product-author">カテゴリ: {product.category || '未設定'}</div>
-                <div className="product-condition">状態: {product.condition || '未設定'}</div>
+                <div className="product-condition">状態: {getConditionLabel(product.condition)}</div>
               </div>
               <div className="product-price">¥{price.toLocaleString()}</div>
             </div>

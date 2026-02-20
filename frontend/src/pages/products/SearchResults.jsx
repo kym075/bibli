@@ -179,11 +179,12 @@ function SearchResults() {
                   onChange={(e) => handleFilterChange('condition', e.target.value)}
                 >
                   <option value="">すべて</option>
-                  <option value="excellent">非常に良い</option>
-                  <option value="good">良い</option>
-                  <option value="fair">普通</option>
-                  <option value="slightly_bad">少し悪い</option>
-                  <option value="bad">悪い</option>
+                  <option value="new_unused">新品、未使用</option>
+                  <option value="nearly_unused">未使用に近い</option>
+                  <option value="no_visible_damage">目立った傷や汚れなし</option>
+                  <option value="slight_damage">やや傷や汚れあり</option>
+                  <option value="damaged">傷や汚れあり</option>
+                  <option value="poor_condition">全体的に状態が悪い</option>
                 </select>
               </div>
             </div>
@@ -213,11 +214,9 @@ function SearchResults() {
                           'NO IMAGE'
                         )}
                         {product.status !== 1 && <span className="sold-badge">Sold out</span>}
+                        <span className="book-price-badge">¥{product.price?.toLocaleString()}</span>
                       </div>
-                      <div className="book-info">
-                        <div className="book-title">{product.title}</div>
-                        <div className="book-price">¥{product.price?.toLocaleString()}</div>
-                      </div>
+                      <div className="book-title">{product.title}</div>
                     </div>
                   </Link>
                 );
