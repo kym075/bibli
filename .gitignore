@@ -31,3 +31,9 @@ backend/venv/
 # Uploads
 uploads/
 backend/uploads/
+
+# Secrets
+/firebase.json
+/firebase.service-account*.json
+!/firebase.service-account.example.json
+backend/firebase.service-account*.json

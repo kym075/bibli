@@ -143,8 +143,8 @@ function PurchaseComplete() {
             </div>
 
             <div className="action-buttons">
-              <Link to={`/product-detail?id=${product?.id}`} className="action-btn btn-primary" id="chatBtn">
-                出品者とやり取りする
+              <Link to={`/transaction?product_id=${product?.id}`} className="action-btn btn-primary" id="chatBtn">
+                取引画面を開く
               </Link>
               <Link to="/profile" className="action-btn btn-secondary" id="historyBtn">
                 購入履歴を確認する
