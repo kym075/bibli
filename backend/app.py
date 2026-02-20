@@ -47,6 +47,36 @@ FORUM_CATEGORY_LABELS = {
     "review": "感想・レビュー"
 }
 
+SHIPPING_METHOD_LABELS = {
+    "yu-packet": "ゆうパケット",
+    "yu-packet-plus": "ゆうパケットプラス",
+    "takkyubin": "宅急便コンパクト",
+    "takkyubin-normal": "宅急便",
+    "letter-pack": "レターパック",
+    "other": "その他"
+}
+
+PRODUCT_CONDITION_LABELS = {
+    "new_unused": "新品、未使用",
+    "nearly_unused": "未使用に近い",
+    "no_visible_damage": "目立った傷や汚れなし",
+    "slight_damage": "やや傷や汚れあり",
+    "damaged": "傷や汚れあり",
+    "poor_condition": "全体的に状態が悪い",
+}
+
+LEGACY_PRODUCT_CONDITION_MAP = {
+    "excellent": "no_visible_damage",
+    "good": "slight_damage",
+    "fair": "damaged",
+    "slightly_bad": "poor_condition",
+    "bad": "poor_condition",
+}
+
+MODERN_TO_LEGACY_CONDITIONS = {}
+for legacy_key, modern_key in LEGACY_PRODUCT_CONDITION_MAP.items():
+    MODERN_TO_LEGACY_CONDITIONS.setdefault(modern_key, set()).add(legacy_key)
+
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 
 
@@ -205,6 +235,38 @@ def _extract_recommendation_tokens(text):
             break
     return unique_tokens
 
+
+def _shipping_method_label(value):
+    key = (value or "").strip()
+    return SHIPPING_METHOD_LABELS.get(key, key)
+
+
+def _normalize_product_condition(value):
+    raw = (value or '').strip()
+    if not raw:
+        return ''
+
+    key = raw.lower()
+    if key in PRODUCT_CONDITION_LABELS:
+        return key
+    if key in LEGACY_PRODUCT_CONDITION_MAP:
+        return LEGACY_PRODUCT_CONDITION_MAP[key]
+
+    for condition_key, condition_label in PRODUCT_CONDITION_LABELS.items():
+        if raw == condition_label:
+            return condition_key
+    return ''
+
+
+def _condition_filter_values(value):
+    normalized = _normalize_product_condition(value)
+    if not normalized:
+        return []
+
+    values = {normalized}
+    values.update(MODERN_TO_LEGACY_CONDITIONS.get(normalized, set()))
+    return list(values)
+
  
 # ============================
 # モデル定義
@@ -240,7 +302,7 @@ class Product(db.Model):
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text)
     price = db.Column(db.Integer, nullable=False)
-    condition = db.Column(db.String(50))  # 'excellent', 'good', 'fair'
+    condition = db.Column(db.String(50))
     sale_type = db.Column(db.String(50))  # 固定価格販売のみ
     seller_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     category = db.Column(db.String(100))
@@ -267,6 +329,25 @@ class Purchase(db.Model):
     product = db.relationship('Product')
 
 
+class PurchaseReview(db.Model):
+    __tablename__ = "purchase_reviews"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    purchase_id = db.Column(db.Integer, db.ForeignKey('purchases.id'), nullable=False, index=True)
+    reviewer_email = db.Column(db.String(120), nullable=False, index=True)
+    reviewee_email = db.Column(db.String(120), nullable=False, index=True)
+    rating = db.Column(db.Integer, nullable=False)
+    comment = db.Column(db.String(500))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    purchase = db.relationship('Purchase', backref=db.backref('reviews', cascade='all, delete-orphan'))
+
+    __table_args__ = (
+        db.UniqueConstraint('purchase_id', 'reviewer_email', name='uq_purchase_reviews_purchase_reviewer'),
+    )
+
+
 class ProductView(db.Model):
     __tablename__ = "product_views"
 
@@ -289,8 +370,19 @@ class ProductImage(db.Model):
     product = db.relationship('Product', backref=db.backref('images', cascade='all, delete-orphan'))
 
 
+class ProductShippingInfo(db.Model):
+    __tablename__ = "product_shipping_info"
 
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False, unique=True, index=True)
+    shipping_method = db.Column(db.String(50))
+    shipping_days = db.Column(db.String(50))
+    shipping_origin = db.Column(db.String(100))
+    shipping_fee_payer = db.Column(db.String(20), default='buyer')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    product = db.relationship('Product', backref=db.backref('shipping_info', uselist=False, cascade='all, delete-orphan'))
 
 
 class ProductTag(db.Model):
@@ -933,7 +1025,11 @@ def get_products():
             query = query.filter(Product.price <= max_price)
 
         if condition:
-            query = query.filter(Product.condition == condition)
+            condition_values = _condition_filter_values(condition)
+            if condition_values:
+                query = query.filter(Product.condition.in_(condition_values))
+            else:
+                query = query.filter(Product.id == -1)
 
         if sort == 'price_asc':
             query = query.order_by(Product.price.asc())
@@ -1012,6 +1108,7 @@ def get_product_detail(product_id):
         ]
 
         seller = User.query.filter_by(id=product.seller_id).first()
+        shipping_info = ProductShippingInfo.query.filter_by(product_id=product.id).first()
 
         result = {
             "id": product.id,
@@ -1025,6 +1122,11 @@ def get_product_detail(product_id):
             "created_at": product.created_at.isoformat() if product.created_at else None,
             "image_urls": image_urls,
             "tags": tags,
+            "shipping_method": shipping_info.shipping_method if shipping_info and shipping_info.shipping_method else "",
+            "shipping_method_label": _shipping_method_label(shipping_info.shipping_method) if shipping_info and shipping_info.shipping_method else "",
+            "shipping_days": shipping_info.shipping_days if shipping_info and shipping_info.shipping_days else "",
+            "shipping_origin": shipping_info.shipping_origin if shipping_info and shipping_info.shipping_origin else "",
+            "shipping_fee_payer": shipping_info.shipping_fee_payer if shipping_info and shipping_info.shipping_fee_payer else "buyer",
             "seller": {
                 "id": seller.id if seller else None,
                 "user_id": seller.user_id if seller else None,
@@ -1071,6 +1173,9 @@ def create_product():
 
         primary_image_url = image_urls[0] if image_urls else image_url
         parsed_tags = _normalize_tags(data.get('tags'))
+        shipping_method = (data.get('shipping_method') or data.get('shipping') or '').strip()[:50]
+        shipping_days = (data.get('shipping_days') or '').strip()[:50]
+        shipping_origin = (data.get('shipping_origin') or '').strip()[:100]
 
         title = (data.get('title') or '').strip()
         price_raw = data.get('price')
@@ -1093,11 +1198,15 @@ def create_product():
         except (TypeError, ValueError):
             return jsonify({"error": "seller_idは数値で入力してください"}), 400
 
+        normalized_condition = _normalize_product_condition(data.get('condition'))
+        if not normalized_condition:
+            normalized_condition = 'no_visible_damage'
+
         new_product = Product(
             title=title,
             description=data.get('description', ''),
             price=price,
-            condition=data.get('condition', 'good'),
+            condition=normalized_condition,
             sale_type='fixed',
             seller_id=seller_id,
             category=data.get('category', ''),
@@ -1107,6 +1216,15 @@ def create_product():
 
         db.session.add(new_product)
         db.session.flush()
+
+        if shipping_method or shipping_days or shipping_origin:
+            db.session.add(ProductShippingInfo(
+                product_id=new_product.id,
+                shipping_method=shipping_method or None,
+                shipping_days=shipping_days or None,
+                shipping_origin=shipping_origin or None,
+                shipping_fee_payer='buyer'
+            ))
 
         if image_urls:
             for index, url in enumerate(image_urls):
@@ -1191,7 +1309,7 @@ def seed_products():
                 "title": "村上春樹 ノルウェイの森",
                 "description": "村上春樹の代表作。綺麗な状態です。",
                 "price": 800,
-                "condition": "excellent",
+                "condition": "no_visible_damage",
                 "category": "小説",
                 "seller_id": 1,
                 "image_url": None
@@ -1200,7 +1318,7 @@ def seed_products():
                 "title": "東野圭吾 白夜行",
                 "description": "推理小説の名作。少し使用感がありますが読むには問題ありません。",
                 "price": 950,
-                "condition": "good",
+                "condition": "slight_damage",
                 "category": "小説",
                 "seller_id": 1,
                 "image_url": None
@@ -1209,7 +1327,7 @@ def seed_products():
                 "title": "JavaScript完全ガイド",
                 "description": "プログラミング学習に最適な一冊。",
                 "price": 2800,
-                "condition": "excellent",
+                "condition": "no_visible_damage",
                 "category": "専門書",
                 "seller_id": 1,
                 "image_url": None
@@ -1218,7 +1336,7 @@ def seed_products():
                 "title": "ワンピース 1-100巻セット",
                 "description": "人気漫画の全巻セット。",
                 "price": 15000,
-                "condition": "good",
+                "condition": "slight_damage",
                 "category": "漫画",
                 "seller_id": 1,
                 "image_url": None
@@ -1227,7 +1345,7 @@ def seed_products():
                 "title": "夏目漱石作品集",
                 "description": "日本文学の古典。状態良好です。",
                 "price": 1200,
-                "condition": "excellent",
+                "condition": "no_visible_damage",
                 "category": "小説",
                 "seller_id": 1,
                 "image_url": None
@@ -1236,7 +1354,7 @@ def seed_products():
                 "title": "Python入門書",
                 "description": "プログラミング初心者向けの入門書。",
                 "price": 2200,
-                "condition": "good",
+                "condition": "slight_damage",
                 "category": "専門書",
                 "seller_id": 1,
                 "image_url": None
@@ -1245,7 +1363,7 @@ def seed_products():
                 "title": "ハリー・ポッターシリーズ全巻",
                 "description": "ファンタジー小説の名作。",
                 "price": 5800,
-                "condition": "good",
+                "condition": "slight_damage",
                 "category": "小説",
                 "seller_id": 1,
                 "image_url": None
@@ -1254,7 +1372,7 @@ def seed_products():
                 "title": "ビジネス書セット 5冊",
                 "description": "自己啓発・ビジネス書のセット。",
                 "price": 3200,
-                "condition": "fair",
+                "condition": "damaged",
                 "category": "ビジネス書",
                 "seller_id": 1,
                 "image_url": None
@@ -1808,6 +1926,7 @@ def get_recommendations():
     limit = request.args.get('limit', 8, type=int) or 8
     limit = max(1, min(limit, 40))
 
+    # ホームおすすめ: 販売中のみを「いいね数」降順で返す
     base_query = Product.query.filter(Product.status == 1)
     blocked_seller_ids = set()
     if email:
@@ -1818,116 +1937,33 @@ def get_recommendations():
             if blocked_seller_ids:
                 base_query = base_query.filter(~Product.seller_id.in_(blocked_seller_ids))
 
-    # 未ログイン時は新着を返す
-    if not email:
-        products = base_query.order_by(Product.created_at.desc()).limit(limit).all()
-        image_map = _build_primary_image_map([p.id for p in products])
-        return jsonify({"recommendations": [_serialize_product_card(p, image_map) for p in products]}), 200
-
-    user = User.query.filter_by(email=email).first()
-    if not user:
-        products = base_query.order_by(Product.created_at.desc()).limit(limit).all()
-        image_map = _build_primary_image_map([p.id for p in products])
-        return jsonify({"recommendations": [_serialize_product_card(p, image_map) for p in products]}), 200
-
-    favorites = (
-        Favorite.query
-        .filter_by(user_id=user.id)
-        .order_by(Favorite.created_at.desc(), Favorite.id.desc())
-        .all()
-    )
-    favorite_product_ids = [row.product_id for row in favorites]
-
-    # お気に入りがない場合も新着を返す
-    if not favorite_product_ids:
-        products = (
-            base_query
-            .filter(Product.seller_id != user.id)
-            .order_by(Product.created_at.desc())
-            .limit(limit)
-            .all()
+    favorite_count_subquery = (
+        db.session.query(
+            Favorite.product_id.label('product_id'),
+            db.func.count(Favorite.id).label('favorite_count')
         )
-        image_map = _build_primary_image_map([p.id for p in products])
-        return jsonify({"recommendations": [_serialize_product_card(p, image_map) for p in products]}), 200
+        .group_by(Favorite.product_id)
+        .subquery()
+    )
 
-    favorite_products = Product.query.filter(Product.id.in_(favorite_product_ids)).all()
-    favorite_categories = {str(p.category).strip().lower() for p in favorite_products if p.category}
-
-    favorite_tags = {
-        str(tag_row.tag).strip().lower()
-        for tag_row in ProductTag.query.filter(ProductTag.product_id.in_(favorite_product_ids)).all()
-        if tag_row.tag
-    }
-
-    favorite_tokens = set()
-    for product in favorite_products:
-        favorite_tokens.update(_extract_recommendation_tokens(product.title))
-        favorite_tokens.update(_extract_recommendation_tokens(product.description))
-    favorite_tokens.update({token for token in favorite_tags if len(token) >= 2})
-
-    candidates = (
+    products = (
         base_query
-        .filter(~Product.id.in_(favorite_product_ids))
-        .filter(Product.seller_id != user.id)
-        .order_by(Product.created_at.desc())
-        .limit(300)
+        .outerjoin(
+            favorite_count_subquery,
+            favorite_count_subquery.c.product_id == Product.id
+        )
+        .order_by(
+            db.func.coalesce(favorite_count_subquery.c.favorite_count, 0).desc(),
+            Product.created_at.desc(),
+            Product.id.desc()
+        )
+        .limit(limit)
         .all()
     )
-    if not candidates:
-        return jsonify({"recommendations": []}), 200
 
-    candidate_ids = [p.id for p in candidates]
-    candidate_tag_rows = ProductTag.query.filter(ProductTag.product_id.in_(candidate_ids)).all()
-    candidate_tag_map = {}
-    for row in candidate_tag_rows:
-        candidate_tag_map.setdefault(row.product_id, set()).add(str(row.tag).strip().lower())
-
-    scored = []
-    for candidate in candidates:
-        score = 0
-
-        candidate_category = (candidate.category or '').strip().lower()
-        if candidate_category and candidate_category in favorite_categories:
-            score += 2
-
-        candidate_tags = candidate_tag_map.get(candidate.id, set())
-        tag_matches = len(candidate_tags.intersection(favorite_tags))
-        if tag_matches:
-            score += min(tag_matches, 3) * 4
-
-        text = " ".join([
-            str(candidate.title or '').lower(),
-            str(candidate.description or '').lower(),
-            str(candidate.category or '').lower()
-        ])
-        keyword_matches = 0
-        for token in favorite_tokens:
-            if len(token) < 2:
-                continue
-            if token in text:
-                keyword_matches += 1
-            if keyword_matches >= 4:
-                break
-        score += keyword_matches
-
-        scored.append((score, candidate.created_at or datetime.utcnow(), candidate))
-
-    scored.sort(key=lambda row: (row[0], row[1]), reverse=True)
-    selected_products = [row[2] for row in scored if row[0] > 0][:limit]
-
-    if len(selected_products) < limit:
-        selected_ids = {item.id for item in selected_products}
-        for candidate in candidates:
-            if candidate.id in selected_ids:
-                continue
-            selected_products.append(candidate)
-            selected_ids.add(candidate.id)
-            if len(selected_products) >= limit:
-                break
-
-    image_map = _build_primary_image_map([p.id for p in selected_products])
+    image_map = _build_primary_image_map([p.id for p in products])
     return jsonify({
-        "recommendations": [_serialize_product_card(product, image_map) for product in selected_products]
+        "recommendations": [_serialize_product_card(product, image_map) for product in products]
     }), 200
 
 
@@ -2796,6 +2832,77 @@ def _purchase_status_label(status):
     return PURCHASE_STATUS_LABELS.get(status or '', status or '不明')
 
 
+def _purchase_party_info(purchase):
+    seller_user = User.query.get(purchase.seller_id) if purchase and purchase.seller_id else None
+    seller_email = _normalize_email(seller_user.email) if seller_user and seller_user.email else ''
+    buyer_email = _normalize_email(purchase.buyer_email) if purchase else ''
+    buyer_user = _find_user_by_email(buyer_email) if buyer_email else None
+    return {
+        "seller_email": seller_email,
+        "buyer_email": buyer_email,
+        "seller_user": seller_user,
+        "buyer_user": buyer_user
+    }
+
+
+def _serialize_purchase_review(review, party_info):
+    reviewer_email = _normalize_email(review.reviewer_email)
+    reviewee_email = _normalize_email(review.reviewee_email)
+    reviewer_user = _find_user_by_email(reviewer_email)
+    reviewee_user = _find_user_by_email(reviewee_email)
+    reviewer_role = 'seller' if reviewer_email == party_info["seller_email"] else 'buyer'
+
+    return {
+        "id": review.id,
+        "rating": int(review.rating or 0),
+        "comment": review.comment or '',
+        "reviewer_email": reviewer_email,
+        "reviewee_email": reviewee_email,
+        "reviewer_name": _display_name_from_email(reviewer_email, reviewer_user),
+        "reviewee_name": _display_name_from_email(reviewee_email, reviewee_user),
+        "reviewer_role": reviewer_role,
+        "reviewer_role_label": '出品者' if reviewer_role == 'seller' else '購入者',
+        "created_at": review.created_at.isoformat() if review.created_at else None
+    }
+
+
+def _build_purchase_review_context(purchase, current_email=''):
+    actor_email = _normalize_email(current_email)
+    party_info = _purchase_party_info(purchase)
+    seller_email = party_info["seller_email"]
+    buyer_email = party_info["buyer_email"]
+
+    review_rows = (
+        PurchaseReview.query
+        .filter_by(purchase_id=purchase.id)
+        .order_by(PurchaseReview.created_at.asc(), PurchaseReview.id.asc())
+        .all()
+    )
+
+    reviews = [_serialize_purchase_review(row, party_info) for row in review_rows]
+    my_review = next((item for item in reviews if item["reviewer_email"] == actor_email), None)
+
+    has_seller_review = any(item["reviewer_email"] == seller_email for item in reviews if seller_email)
+    has_buyer_review = any(item["reviewer_email"] == buyer_email for item in reviews if buyer_email)
+
+    can_submit_review = (
+        actor_email in {seller_email, buyer_email}
+        and (purchase.status or '').strip().lower() == 'completed'
+        and my_review is None
+    )
+
+    return {
+        "reviews": reviews,
+        "my_review": my_review,
+        "can_submit_review": can_submit_review,
+        "summary": {
+            "has_seller_review": has_seller_review,
+            "has_buyer_review": has_buyer_review,
+            "is_mutual_review_completed": has_seller_review and has_buyer_review
+        }
+    }
+
+
 def _allowed_next_purchase_status(purchase, actor_email):
     actor = _normalize_email(actor_email)
     if not actor or not purchase:
@@ -2835,9 +2942,10 @@ def get_product_purchase_status(product_id):
     if not purchase:
         return jsonify({"purchase": None}), 200
 
-    seller_user = User.query.get(purchase.seller_id) if purchase.seller_id else None
-    seller_email = _normalize_email(seller_user.email) if seller_user and seller_user.email else ''
-    buyer_email = _normalize_email(purchase.buyer_email)
+    party_info = _purchase_party_info(purchase)
+    seller_email = party_info["seller_email"]
+    buyer_email = party_info["buyer_email"]
+    review_context = _build_purchase_review_context(purchase, email)
 
     role = 'viewer'
     if email and email == seller_email:
@@ -2860,7 +2968,11 @@ def get_product_purchase_status(product_id):
         "next_status_options": [
             {"value": status, "label": _purchase_status_label(status)}
             for status in next_status
-        ]
+        ],
+        "can_submit_review": bool(review_context["can_submit_review"]),
+        "my_review": review_context["my_review"],
+        "reviews": review_context["reviews"],
+        "review_summary": review_context["summary"]
     }), 200
 
 
@@ -2903,7 +3015,7 @@ def update_purchase_status(purchase_id):
             title = '取引ステータスが更新されました'
             message = f"「{product.title if product else '商品'}」の状態が「{_purchase_status_label(next_status)}」になりました。"
             if next_status == 'completed' and previous_status != 'completed':
-                message = f"{actor_name}さんが「{product.title if product else '商品'}」を受け取りました。"
+                message = f"{actor_name}さんが「{product.title if product else '商品'}」を受け取りました。お互いに評価できます。"
             _create_notification(
                 user_email=notify_target,
                 notification_type='purchase',
@@ -2926,6 +3038,96 @@ def update_purchase_status(purchase_id):
             "status_label": _purchase_status_label(purchase.status)
         }
     }), 200
+
+
+@app.route('/api/purchases/<int:purchase_id>/reviews', methods=['POST'])
+def submit_purchase_review(purchase_id):
+    data = request.get_json() or {}
+    reviewer_email = _normalize_email(data.get('reviewer_email'))
+    rating_raw = data.get('rating')
+    comment = (data.get('comment') or '').strip()
+    if len(comment) > 500:
+        comment = comment[:500]
+
+    if not reviewer_email:
+        return jsonify({"error": "reviewer_email が必要です"}), 400
+
+    try:
+        rating = int(rating_raw)
+    except (TypeError, ValueError):
+        return jsonify({"error": "rating は1〜5の数値で入力してください"}), 400
+
+    if rating < 1 or rating > 5:
+        return jsonify({"error": "rating は1〜5で入力してください"}), 400
+
+    purchase = Purchase.query.get(purchase_id)
+    if not purchase:
+        return jsonify({"error": "購入情報が見つかりません"}), 404
+
+    if (purchase.status or '').strip().lower() != 'completed':
+        return jsonify({"error": "受取完了後に評価できます"}), 400
+
+    party_info = _purchase_party_info(purchase)
+    seller_email = party_info["seller_email"]
+    buyer_email = party_info["buyer_email"]
+
+    if reviewer_email not in {seller_email, buyer_email}:
+        return jsonify({"error": "取引当事者のみ評価できます"}), 403
+
+    reviewee_email = buyer_email if reviewer_email == seller_email else seller_email
+    if not reviewee_email:
+        return jsonify({"error": "評価対象ユーザーが見つかりません"}), 400
+
+    existing = (
+        PurchaseReview.query
+        .filter(
+            PurchaseReview.purchase_id == purchase.id,
+            db.func.lower(PurchaseReview.reviewer_email) == reviewer_email
+        )
+        .first()
+    )
+    if existing:
+        return jsonify({"error": "この取引の評価は既に投稿済みです"}), 409
+
+    review = PurchaseReview(
+        purchase_id=purchase.id,
+        reviewer_email=reviewer_email,
+        reviewee_email=reviewee_email,
+        rating=rating,
+        comment=comment or None
+    )
+
+    reviewer_user = _find_user_by_email(reviewer_email)
+    reviewer_name = _display_name_from_email(reviewer_email, reviewer_user)
+
+    try:
+        db.session.add(review)
+
+        _create_notification(
+            user_email=reviewee_email,
+            notification_type='review',
+            title='取引評価を受け取りました',
+            message=f"{reviewer_name}さんから評価（★{rating}）を受け取りました。",
+            related_product_id=purchase.product_id,
+            actor_email=reviewer_email
+        )
+
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "評価の投稿に失敗しました", "detail": str(e)}), 500
+
+    review_context = _build_purchase_review_context(purchase, reviewer_email)
+    latest_review = next(
+        (item for item in reversed(review_context["reviews"]) if item["reviewer_email"] == reviewer_email),
+        None
+    )
+
+    return jsonify({
+        "message": "評価を投稿しました",
+        "review": latest_review,
+        "review_summary": review_context["summary"]
+    }), 201
 
 
 def _format_purchase_response(purchase, product):

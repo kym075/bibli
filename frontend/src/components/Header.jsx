@@ -2,18 +2,55 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { auth } from '../css/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import bibliLogo from '../assets/bibli-logo.png';
 
 function Header() {
   const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const navigate = useNavigate();
 
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) return '';
+    if (imageUrl.startsWith('http') || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
+      return imageUrl;
+    }
+    const trimmed = String(imageUrl).replace(/\\/g, '/').replace(/^\/+/, '');
+    return `http://localhost:5000/${trimmed}`;
+  };
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    let active = true;
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (!active) return;
       setUser(currentUser);
+
+      if (!currentUser?.email) {
+        setUserProfile(null);
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:5000/api/user/${encodeURIComponent(currentUser.email)}`);
+        if (!active) return;
+        if (response.ok) {
+          const data = await response.json();
+          setUserProfile(data);
+        } else {
+          setUserProfile(null);
+        }
+      } catch (err) {
+        console.error('Header user fetch error:', err);
+        if (active) {
+          setUserProfile(null);
+        }
+      }
     });
 
-    return () => unsubscribe();
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -61,13 +98,15 @@ function Header() {
     }
   };
 
+  const headerProfileImageUrl = getImageUrl(userProfile?.profile_image || '');
+  const headerUserName = (userProfile?.user_name || user?.displayName || user?.email || '').trim();
+
   return (
     <header className="header">
       <div className="header-content">
         <div className="header-left">
           <Link to="/" className="logo">
-            <span className="logo-mark" aria-hidden="true"></span>
-            <span className="logo-text">Bibli</span>
+            <img src={bibliLogo} alt="Bibli" className="logo-image" />
           </Link>
           <div className="search-bar">
             <input
@@ -90,7 +129,12 @@ function Header() {
               <Link to="/login" className="btn btn-secondary">ログイン/登録</Link>
             ) : (
               <Link to="/profile" className="user-icon-link" aria-label="プロフィール">
-                <span className="user-circle-icon">U</span>
+                <span className="user-circle-icon">
+                  {headerProfileImageUrl && (
+                    <img src={headerProfileImageUrl} alt="プロフィールアイコン" className="user-circle-image" />
+                  )}
+                </span>
+                <span className="header-user-name">{headerUserName || 'ユーザー'}</span>
               </Link>
             )}
 

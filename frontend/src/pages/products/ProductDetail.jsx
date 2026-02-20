@@ -29,6 +29,11 @@ function ProductDetail() {
 
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
+  const [sellerOtherProducts, setSellerOtherProducts] = useState([]);
+  const [sellerProductsLoading, setSellerProductsLoading] = useState(false);
+  const [genreRecommendProducts, setGenreRecommendProducts] = useState([]);
+  const [genreRecommendLoading, setGenreRecommendLoading] = useState(false);
+  const [showAllRecommendProducts, setShowAllRecommendProducts] = useState(false);
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
@@ -79,6 +84,7 @@ function ProductDetail() {
     setImageError(false);
     setSelectedImageIndex(0);
     setShowCancelConfirm(false);
+    setShowAllRecommendProducts(false);
 
     setIsChatOpen(false);
     setChatMessages([]);
@@ -153,7 +159,7 @@ function ProductDetail() {
 
   useEffect(() => {
     const fetchFavoriteStatus = async () => {
-      if (!currentUser?.email || !product?.id || isOwnProduct) {
+      if (!currentUser?.email || !product?.id || isOwnProduct || product?.status !== 1) {
         setIsFavorite(false);
         return;
       }
@@ -185,13 +191,51 @@ function ProductDetail() {
 
   const getConditionLabel = (condition) => {
     const labels = {
-      excellent: '非常に良い',
-      good: '良い',
-      fair: '普通',
-      slightly_bad: '少し悪い',
-      bad: '悪い'
+      new_unused: '新品、未使用',
+      nearly_unused: '未使用に近い',
+      no_visible_damage: '目立った傷や汚れなし',
+      slight_damage: 'やや傷や汚れあり',
+      damaged: '傷や汚れあり',
+      poor_condition: '全体的に状態が悪い',
+      excellent: '目立った傷や汚れなし',
+      good: 'やや傷や汚れあり',
+      fair: '傷や汚れあり',
+      slightly_bad: '全体的に状態が悪い',
+      bad: '全体的に状態が悪い'
     };
     return labels[condition] || condition;
+  };
+  const buildRelatedKeywords = (item) => {
+    if (!item) return [];
+
+    const keywords = [];
+    const seen = new Set();
+    const pushUnique = (value) => {
+      const text = String(value || '').trim();
+      if (!text) return;
+      const key = text.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      keywords.push(text);
+    };
+    const pickTokens = (text) => {
+      const parts = String(text || '').split(/[\s\\/・,，。!！?？「」『』()（）【】\[\]{}]+/);
+      return parts
+        .map((part) => part.trim())
+        .filter((part) => part.length >= 2 && part.length <= 20);
+    };
+
+    if (Array.isArray(item.tags)) {
+      item.tags.forEach((tag) => pushUnique(tag));
+    }
+    pushUnique(item.category);
+    pushUnique(getConditionLabel(item.condition));
+    pickTokens(item.title).forEach(pushUnique);
+    pickTokens(item.description).forEach(pushUnique);
+
+    ['古本', '読書', '本好き', 'おすすめ', '人気'].forEach(pushUnique);
+
+    return keywords.slice(0, 6);
   };
 
   const getImageUrl = (imageUrl) => {
@@ -265,18 +309,21 @@ function ProductDetail() {
     }
   };
 
-  const handleChatFabClick = async () => {
+  const openChatWidget = async () => {
     if (!currentUser?.email) {
       navigate('/login', { state: { message: 'チャットを利用するにはログインが必要です' } });
       return;
     }
+    setIsChatOpen(true);
+    await loadChatMessages('', { silent: false });
+  };
 
-    const nextOpen = !isChatOpen;
-    setIsChatOpen(nextOpen);
-
-    if (nextOpen) {
-      await loadChatMessages('', { silent: false });
+  const handleChatFabClick = async () => {
+    if (isChatOpen) {
+      setIsChatOpen(false);
+      return;
     }
+    await openChatWidget();
   };
 
   const handleParticipantSelect = async (email) => {
@@ -369,6 +416,7 @@ function ProductDetail() {
 
   const handleFavoriteToggle = async () => {
     if (!product?.id) return;
+    if (product?.status !== 1) return;
     if (!currentUser?.email) {
       navigate('/login');
       return;
@@ -534,6 +582,101 @@ function ProductDetail() {
     fetchPurchaseStatus();
   }, [product?.id, currentUser?.email]);
 
+  useEffect(() => {
+    const sellerId = product?.seller?.id;
+    if (!sellerId || !product?.id) {
+      setSellerOtherProducts([]);
+      return;
+    }
+
+    let active = true;
+    const fetchSellerProducts = async () => {
+      setSellerProductsLoading(true);
+      try {
+        const params = new URLSearchParams({
+          seller_id: String(sellerId),
+          include_sold: '1',
+          limit: '12'
+        });
+        if (currentUser?.email) {
+          params.set('viewer_email', currentUser.email);
+        }
+
+        const response = await fetch(`http://localhost:5000/api/products?${params.toString()}`);
+        const data = await response.json();
+        if (!active) return;
+
+        if (response.ok && Array.isArray(data.products)) {
+          setSellerOtherProducts(data.products.filter((item) => item.id !== product.id));
+        } else {
+          setSellerOtherProducts([]);
+        }
+      } catch (err) {
+        console.error('Seller products fetch error:', err);
+        if (active) {
+          setSellerOtherProducts([]);
+        }
+      } finally {
+        if (active) {
+          setSellerProductsLoading(false);
+        }
+      }
+    };
+
+    fetchSellerProducts();
+    return () => {
+      active = false;
+    };
+  }, [product?.seller?.id, product?.id, currentUser?.email]);
+
+  useEffect(() => {
+    const category = (product?.category || '').trim();
+    if (!category || !product?.id) {
+      setGenreRecommendProducts([]);
+      return;
+    }
+
+    let active = true;
+    const fetchGenreRecommendations = async () => {
+      setGenreRecommendLoading(true);
+      try {
+        const params = new URLSearchParams({
+          q: category,
+          include_sold: '1',
+          limit: '24'
+        });
+        if (currentUser?.email) {
+          params.set('viewer_email', currentUser.email);
+        }
+
+        const response = await fetch(`http://localhost:5000/api/products?${params.toString()}`);
+        const data = await response.json();
+        if (!active) return;
+
+        if (response.ok && Array.isArray(data.products)) {
+          const filtered = data.products.filter((item) => item.id !== product.id);
+          setGenreRecommendProducts(filtered);
+        } else {
+          setGenreRecommendProducts([]);
+        }
+      } catch (err) {
+        console.error('Genre recommendation fetch error:', err);
+        if (active) {
+          setGenreRecommendProducts([]);
+        }
+      } finally {
+        if (active) {
+          setGenreRecommendLoading(false);
+        }
+      }
+    };
+
+    fetchGenreRecommendations();
+    return () => {
+      active = false;
+    };
+  }, [product?.category, product?.id, currentUser?.email]);
+
   const handlePurchaseStatusUpdate = async (nextStatus) => {
     const purchaseId = purchaseStatusData?.purchase?.id;
     if (!purchaseId || !currentUser?.email || !nextStatus) {
@@ -607,6 +750,16 @@ function ProductDetail() {
   const nextStatusOptions = Array.isArray(purchaseStatusData?.next_status_options)
     ? purchaseStatusData.next_status_options
     : [];
+  const isPurchaseCompleted = (purchase?.status || '').toLowerCase() === 'completed';
+  const shippingMethodLabel = product.shipping_method_label || product.shipping_method || '未定';
+  const shippingDaysLabel = product.shipping_days || '未設定';
+  const relatedKeywords = buildRelatedKeywords(product);
+  const hasMoreSellerProducts = sellerOtherProducts.length > 8;
+  const hasMoreRecommendProducts = genreRecommendProducts.length > 8;
+  const visibleSellerProducts = sellerOtherProducts.slice(0, 8);
+  const visibleRecommendProducts = showAllRecommendProducts
+    ? genreRecommendProducts
+    : genreRecommendProducts.slice(0, 8);
 
   return (
     <>
@@ -615,89 +768,189 @@ function ProductDetail() {
       <main className="main-content product-detail-page">
         <div className="product-detail-layout">
           <div className="product-images">
-            <div className="main-image" id="mainImage">
-              {imageUrl ? (
-                <img src={imageUrl} alt={product.title} onError={() => setImageError(true)} />
-              ) : (
-                <div style={{ fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#999' }}>
-                  NO IMAGE
+            <div className="image-stage">
+              {imageUrls.length > 1 && (
+                <div className="thumbnail-list">
+                  {imageUrls.map((url, index) => (
+                    <button
+                      type="button"
+                      className={`thumbnail ${index === safeIndex ? 'active' : ''}`}
+                      key={`${url}-${index}`}
+                      onClick={() => {
+                        setSelectedImageIndex(index);
+                        setImageError(false);
+                      }}
+                    >
+                      <img src={getImageUrl(url)} alt={`thumbnail-${index + 1}`} />
+                    </button>
+                  ))}
                 </div>
               )}
-            </div>
-            {imageUrls.length > 1 && (
-              <div className="thumbnail-list">
-                {imageUrls.map((url, index) => (
-                  <button
-                    type="button"
-                    className={`thumbnail ${index === safeIndex ? 'active' : ''}`}
-                    key={`${url}-${index}`}
-                    onClick={() => {
-                      setSelectedImageIndex(index);
-                      setImageError(false);
-                    }}
-                  >
-                    <img src={getImageUrl(url)} alt={`thumbnail-${index + 1}`} />
-                  </button>
-                ))}
+              <div className="main-image" id="mainImage">
+                {imageUrl ? (
+                  <img src={imageUrl} alt={product.title} onError={() => setImageError(true)} />
+                ) : (
+                  <div style={{ fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#999' }}>
+                    NO IMAGE
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
 
           <div className="product-detail-content">
-            <div className="product-info">
-              <div className="product-title-row">
-                <h1 className="product-detail-title">{product.title}</h1>
-                <Link to="/contact" className="report-link">通報</Link>
+            <div className="product-detail-stream">
+              <div className="product-info">
+                <div className="product-title-row">
+                  <h1 className="product-detail-title">{product.title}</h1>
+                  <Link to="/contact" className="report-link">通報</Link>
+                </div>
+
+                <div className="price">¥{product.price?.toLocaleString()}</div>
+
+                {!isOwnProduct && (
+                  <div className="action-buttons">
+                    <div className="social-action-row">
+                      {productStatus === 1 && (
+                        <button
+                          className={`btn-large btn-outline btn-favorite ${isFavorite ? 'is-active' : ''}`}
+                          onClick={handleFavoriteToggle}
+                          disabled={isFavoriteLoading}
+                        >
+                          {isFavoriteLoading ? '更新中...' : (isFavorite ? 'いいね済み' : 'いいね！')}
+                        </button>
+                      )}
+                      <button className="btn-large btn-outline btn-comment" onClick={openChatWidget}>
+                        コメント
+                      </button>
+                    </div>
+                    <button className="btn-large btn-purchase purchase-primary" onClick={handlePurchaseClick} disabled={productStatus !== 1}>
+                      {productStatus === 1 ? '購入手続きへ' : '売り切れ'}
+                    </button>
+                  </div>
+                )}
+
+                {isOwnProduct && (
+                  <div className="secondary-actions cancel-section">
+                    {productStatus !== 1 ? (
+                      <button className="btn-large btn-outline btn-cancel" disabled>
+                        出品取り消し済み
+                      </button>
+                    ) : showCancelConfirm ? (
+                      <div className="cancel-confirm">
+                        <div className="cancel-confirm-text">出品を取り消しますか？</div>
+                        <div className="cancel-confirm-actions">
+                          <button className="btn-large btn-cancel" onClick={handleCancelConfirm} disabled={isCancelling}>
+                            {isCancelling ? '取り消し中...' : '削除する'}
+                          </button>
+                          <button className="btn-large btn-outline" onClick={handleCancelDismiss} disabled={isCancelling}>
+                            キャンセル
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button className="btn-large btn-outline btn-cancel" onClick={handleCancelRequest} disabled={isCancelling}>
+                        出品を取り消す
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {(cancelError || cancelMessage) && (
+                  <div className={`cancel-message ${cancelError ? 'is-error' : 'is-success'}`}>
+                    {cancelError || cancelMessage}
+                  </div>
+                )}
+
+                {purchase && (
+                  <div className="purchase-status-panel">
+                    <div className="purchase-status-head">
+                      <span>取引ステータス</span>
+                      <strong>{purchase.status_label || purchase.status}</strong>
+                    </div>
+                    {purchaseStatusLoading && <p className="purchase-status-note">更新中...</p>}
+                    {purchaseStatusError && <p className="purchase-status-error">{purchaseStatusError}</p>}
+                    {!purchaseStatusLoading && nextStatusOptions.length > 0 && (
+                      <div className="purchase-status-actions">
+                        {nextStatusOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            className="btn-small purchase-status-btn"
+                            onClick={() => handlePurchaseStatusUpdate(option.value)}
+                            disabled={purchaseStatusUpdating}
+                          >
+                            {purchaseStatusUpdating ? '更新中...' : option.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {purchaseRole !== 'viewer' && (
+                      <div className="purchase-status-actions">
+                        <Link to={`/transaction?product_id=${product.id}`} className="btn-small purchase-status-btn purchase-screen-link">
+                          取引画面を開く
+                        </Link>
+                      </div>
+                    )}
+                    {!purchaseStatusLoading && nextStatusOptions.length === 0 && (
+                      <p className="purchase-status-note">
+                        {purchaseRole === 'viewer'
+                          ? '取引当事者のみステータスを更新できます。'
+                          : '現在、更新可能なステータスはありません。'}
+                      </p>
+                    )}
+
+                    {isPurchaseCompleted && purchaseRole !== 'viewer' && (
+                      <div className="purchase-review-panel">
+                        <p className="purchase-status-note">取引評価は専用の取引画面で行えます。</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <div className="price">¥{product.price?.toLocaleString()}</div>
-
-              {!isOwnProduct && (
-                <div className="action-buttons is-row">
-                  <button className="btn-large btn-purchase" onClick={handlePurchaseClick} disabled={productStatus !== 1}>
-                    {productStatus === 1 ? '今すぐ購入' : '売り切れ'}
-                  </button>
-                  <button
-                    className={`btn-large btn-outline btn-favorite ${isFavorite ? 'is-active' : ''}`}
-                    onClick={handleFavoriteToggle}
-                    disabled={isFavoriteLoading}
-                  >
-                    {isFavoriteLoading ? '更新中...' : (isFavorite ? 'お気に入り済み' : 'お気に入り')}
-                  </button>
+              <div className="product-description">
+                <div className="description-section">
+                  <h3>商品の説明</h3>
+                  <div className="description-text">
+                    <p>{product.description || '商品の説明はありません。'}</p>
+                  </div>
                 </div>
-              )}
 
-              {isOwnProduct && (
-                <div className="secondary-actions cancel-section">
-                  {productStatus !== 1 ? (
-                    <button className="btn-large btn-outline btn-cancel" disabled>
-                      出品取り消し済み
-                    </button>
-                  ) : showCancelConfirm ? (
-                    <div className="cancel-confirm">
-                      <div className="cancel-confirm-text">出品を取り消しますか？</div>
-                      <div className="cancel-confirm-actions">
-                        <button className="btn-large btn-cancel" onClick={handleCancelConfirm} disabled={isCancelling}>
-                          {isCancelling ? '取り消し中...' : '削除する'}
-                        </button>
-                        <button className="btn-large btn-outline" onClick={handleCancelDismiss} disabled={isCancelling}>
-                          キャンセル
-                        </button>
+                <div className="description-section">
+                  <h3>商品の詳細</h3>
+                  <div className="specs">
+                    <div className="spec-item">
+                      <div className="spec-label">カテゴリ</div>
+                      <div className="spec-value">{product.category || '未設定'}</div>
+                    </div>
+                    <div className="spec-item">
+                      <div className="spec-label">商品の状態</div>
+                      <div className="spec-value">{getConditionLabel(product.condition)}</div>
+                    </div>
+                    <div className="spec-item">
+                      <div className="spec-label">タグ</div>
+                      <div className="spec-value">
+                        {Array.isArray(product.tags) && product.tags.length
+                          ? product.tags.map((tag) => `#${tag}`).join(' / ')
+                          : 'なし'}
                       </div>
                     </div>
-                  ) : (
-                    <button className="btn-large btn-outline btn-cancel" onClick={handleCancelRequest} disabled={isCancelling}>
-                      出品を取り消す
-                    </button>
-                  )}
+                    <div className="spec-item">
+                      <div className="spec-label">配送料</div>
+                      <div className="spec-value">購入者負担</div>
+                    </div>
+                    <div className="spec-item">
+                      <div className="spec-label">配送方法</div>
+                      <div className="spec-value">{shippingMethodLabel}</div>
+                    </div>
+                    <div className="spec-item">
+                      <div className="spec-label">発送日の目安</div>
+                      <div className="spec-value">{shippingDaysLabel}</div>
+                    </div>
+                  </div>
                 </div>
-              )}
-
-              {(cancelError || cancelMessage) && (
-                <div className={`cancel-message ${cancelError ? 'is-error' : 'is-success'}`}>
-                  {cancelError || cancelMessage}
-                </div>
-              )}
+              </div>
 
               {product.seller && (
                 <div className="seller-info">
@@ -723,91 +976,83 @@ function ProductDetail() {
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
 
-              {purchase && (
-                <div className="purchase-status-panel">
-                  <div className="purchase-status-head">
-                    <span>取引ステータス</span>
-                    <strong>{purchase.status_label || purchase.status}</strong>
-                  </div>
-                  {purchaseStatusLoading && <p className="purchase-status-note">更新中...</p>}
-                  {purchaseStatusError && <p className="purchase-status-error">{purchaseStatusError}</p>}
-                  {!purchaseStatusLoading && nextStatusOptions.length > 0 && (
-                    <div className="purchase-status-actions">
-                      {nextStatusOptions.map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          className="btn-small purchase-status-btn"
-                          onClick={() => handlePurchaseStatusUpdate(option.value)}
-                          disabled={purchaseStatusUpdating}
-                        >
-                          {purchaseStatusUpdating ? '更新中...' : option.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {!purchaseStatusLoading && nextStatusOptions.length === 0 && (
-                    <p className="purchase-status-note">
-                      {purchaseRole === 'viewer'
-                        ? '取引当事者のみステータスを更新できます。'
-                        : '現在、更新可能なステータスはありません。'}
-                    </p>
-                  )}
+        <div className="detail-lower-sections">
+          <div className="related-products">
+            <h3>関連する検索キーワード</h3>
+            <div className="keyword-list">
+              {relatedKeywords.map((keyword) => (
+                <Link key={keyword} to={`/search?q=${encodeURIComponent(keyword)}`} className="keyword-chip">
+                  #{keyword}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="related-products">
+            <div className="section-head">
+              <h3>この出品者の商品</h3>
+              {hasMoreSellerProducts && product?.seller?.user_id && (
+                <Link to={`/profile/${product.seller.user_id}`} className="section-more-link">
+                  もっと見る
+                </Link>
+              )}
+            </div>
+              {sellerProductsLoading ? (
+                <p>読み込み中...</p>
+              ) : sellerOtherProducts.length === 0 ? (
+                <p>この出品者の商品はまだありません。</p>
+              ) : (
+                <div className="seller-products-grid">
+                  {visibleSellerProducts.map((item) => (
+                    <Link key={item.id} to={`/product-detail?id=${item.id}`} className="seller-product-card">
+                      <div className="seller-product-image">
+                        {item.image_url ? <img src={getImageUrl(item.image_url)} alt={item.title} /> : 'NO IMAGE'}
+                        {item.status !== 1 && <span className="sold-badge">Sold out</span>}
+                        <span className="seller-product-price-badge">¥{item.price?.toLocaleString()}</span>
+                      </div>
+                      <div className="seller-product-title">{item.title}</div>
+                    </Link>
+                  ))}
                 </div>
               )}
             </div>
 
-            <div className="product-description">
-              <div className="description-section">
-                <h3>商品の説明</h3>
-                <div className="description-text">
-                  <p>{product.description || '商品の説明はありません。'}</p>
-                </div>
-              </div>
-
-              <div className="description-section">
-                <h3>商品の詳細</h3>
-                <div className="specs">
-                  <div className="spec-item">
-                    <div className="spec-label">カテゴリ</div>
-                    <div className="spec-value">{product.category || '未設定'}</div>
-                  </div>
-                  <div className="spec-item">
-                    <div className="spec-label">商品の状態</div>
-                    <div className="spec-value">{getConditionLabel(product.condition)}</div>
-                  </div>
-                  <div className="spec-item">
-                    <div className="spec-label">タグ</div>
-                    <div className="spec-value">
-                      {Array.isArray(product.tags) && product.tags.length
-                        ? product.tags.map((tag) => `#${tag}`).join(' / ')
-                        : 'なし'}
-                    </div>
-                  </div>
-                  <div className="spec-item">
-                    <div className="spec-label">配送料</div>
-                    <div className="spec-value">購入者負担</div>
-                  </div>
-                  <div className="spec-item">
-                    <div className="spec-label">配送方法</div>
-                    <div className="spec-value">未定</div>
-                  </div>
-                  <div className="spec-item">
-                    <div className="spec-label">発送日の目安</div>
-                    <div className="spec-value">1-2日で発送</div>
-                  </div>
-                </div>
-              </div>
+          <div className="related-products">
+            <div className="section-head">
+              <h3>この商品を見ている人におすすめ</h3>
+              {hasMoreRecommendProducts && (
+                <button
+                  type="button"
+                  className="section-more-link"
+                  onClick={() => setShowAllRecommendProducts((prev) => !prev)}
+                >
+                  {showAllRecommendProducts ? '閉じる' : 'もっと見る'}
+                </button>
+              )}
             </div>
-
-            <div className="related-products">
-              <h3>関連商品</h3>
-              <div className="related-grid">
-                <p>関連商品はまだありません。</p>
-              </div>
+              {genreRecommendLoading ? (
+                <p>読み込み中...</p>
+              ) : genreRecommendProducts.length === 0 ? (
+                <p>おすすめ商品はまだありません。</p>
+              ) : (
+                <div className="seller-products-grid">
+                  {visibleRecommendProducts.map((item) => (
+                    <Link key={item.id} to={`/product-detail?id=${item.id}`} className="seller-product-card">
+                      <div className="seller-product-image">
+                        {item.image_url ? <img src={getImageUrl(item.image_url)} alt={item.title} /> : 'NO IMAGE'}
+                        {item.status !== 1 && <span className="sold-badge">Sold out</span>}
+                        <span className="seller-product-price-badge">¥{item.price?.toLocaleString()}</span>
+                      </div>
+                      <div className="seller-product-title">{item.title}</div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
         </div>
       </main>
 

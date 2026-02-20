@@ -16,7 +16,6 @@ function ProfilePage() {
   const [activeTab, setActiveTab] = useState('products');
   const [productFilter, setProductFilter] = useState('all');
   const [userProducts, setUserProducts] = useState([]);
-  const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
@@ -27,6 +26,11 @@ function ProfilePage() {
   const [favoritesLoading, setFavoritesLoading] = useState(false);
   const [purchaseHistory, setPurchaseHistory] = useState([]);
   const [purchasesLoading, setPurchasesLoading] = useState(false);
+  const isOwnProfile = Boolean(
+    currentUser?.email &&
+    profile?.email &&
+    currentUser.email.toLowerCase() === profile.email.toLowerCase()
+  );
 
   useEffect(() => {
     if (!profile) return;
@@ -63,15 +67,11 @@ function ProfilePage() {
         if (response.ok) {
           const data = await response.json();
           setProfile(data);
-
-          // 自分のプロフィールかどうか判定
-          if (firebaseUser) {
-            const myUserResponse = await fetch(`http://localhost:5000/api/user/${firebaseUser.email}`);
-            if (myUserResponse.ok) {
-              const myUserData = await myUserResponse.json();
-              setIsOwnProfile(myUserData.user_id === userId);
-            }
-          }
+          const isSelfProfile = Boolean(
+            firebaseUser?.email &&
+            data?.email &&
+            firebaseUser.email.toLowerCase() === String(data.email).toLowerCase()
+          );
 
           // ユーザーの出品商品を取得
           const productsResponse = await fetch(`http://localhost:5000/api/products?seller_id=${data.id}&include_sold=1`);
@@ -80,36 +80,44 @@ function ProfilePage() {
             setUserProducts(productsData.products || []);
           }
 
-          setFavoritesLoading(true);
-          try {
-            const favoritesResponse = await fetch(`http://localhost:5000/api/profile/${data.user_id}/favorites`);
-            if (favoritesResponse.ok) {
-              const favoritesData = await favoritesResponse.json();
-              setFavoriteProducts(favoritesData.favorites || []);
-            } else {
+          if (isSelfProfile) {
+            setFavoritesLoading(true);
+            try {
+              const favoritesResponse = await fetch(`http://localhost:5000/api/profile/${data.user_id}/favorites`);
+              if (favoritesResponse.ok) {
+                const favoritesData = await favoritesResponse.json();
+                setFavoriteProducts(favoritesData.favorites || []);
+              } else {
+                setFavoriteProducts([]);
+              }
+            } catch (err) {
+              console.error('Favorites fetch error:', err);
               setFavoriteProducts([]);
+            } finally {
+              setFavoritesLoading(false);
             }
-          } catch (err) {
-            console.error('Favorites fetch error:', err);
-            setFavoriteProducts([]);
-          } finally {
-            setFavoritesLoading(false);
-          }
 
-          setPurchasesLoading(true);
-          try {
-            const purchasesResponse = await fetch(`http://localhost:5000/api/profile/${data.user_id}/purchases`);
-            if (purchasesResponse.ok) {
-              const purchasesData = await purchasesResponse.json();
-              setPurchaseHistory(purchasesData.purchases || []);
-            } else {
+            setPurchasesLoading(true);
+            try {
+              const purchasesResponse = await fetch(`http://localhost:5000/api/profile/${data.user_id}/purchases`);
+              if (purchasesResponse.ok) {
+                const purchasesData = await purchasesResponse.json();
+                setPurchaseHistory(purchasesData.purchases || []);
+              } else {
+                setPurchaseHistory([]);
+              }
+            } catch (err) {
+              console.error('Purchases fetch error:', err);
               setPurchaseHistory([]);
+            } finally {
+              setPurchasesLoading(false);
             }
-          } catch (err) {
-            console.error('Purchases fetch error:', err);
+          } else {
+            setFavoriteProducts([]);
             setPurchaseHistory([]);
-          } finally {
+            setFavoritesLoading(false);
             setPurchasesLoading(false);
+            setActiveTab('products');
           }
         } else {
           setError('ユーザーが見つかりません');
@@ -158,6 +166,12 @@ function ProfilePage() {
 
     fetchFollowStatus();
   }, [currentUser, profile]);
+
+  useEffect(() => {
+    if (!isOwnProfile && activeTab !== 'products') {
+      setActiveTab('products');
+    }
+  }, [isOwnProfile, activeTab]);
 
   const handleFollowToggle = async () => {
     const followerEmail = currentUser?.email;
@@ -276,21 +290,6 @@ function ProfilePage() {
     );
   }
 
-  // 登録日をフォーマット
-  const formatDate = (dateString) => {
-    if (!dateString) return '不明';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
-  };
-
-  // 住所から都道府県を抽出
-  const extractPrefecture = (address) => {
-    if (!address) return '未設定';
-    const match = address.match(/^(.{2,3}[都道府県])/);
-    return match ? match[1] : address.substring(0, 10);
-  };
-
-
   const getImageUrl = (imageUrl) => {
     if (!imageUrl) return '';
     if (imageUrl.startsWith('http') || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
@@ -405,33 +404,6 @@ function ProfilePage() {
           </div>
         </section>
 
-        {/* === USER DETAILS SUBSECTION === */}
-        <section className="user-details">
-          <div className="details-grid">
-            <div className="detail-item">
-              <div className="detail-icon">D</div>
-              <div className="detail-content">
-                <div className="detail-label">登録日</div>
-                <div className="detail-value">{formatDate(profile.created_at)}</div>
-              </div>
-            </div>
-            <div className="detail-item">
-              <div className="detail-icon">S</div>
-              <div className="detail-content">
-                <div className="detail-label">発送日数</div>
-                <div className="detail-value">1-2日で発送</div>
-              </div>
-            </div>
-            <div className="detail-item">
-              <div className="detail-icon">L</div>
-              <div className="detail-content">
-                <div className="detail-label">発送元</div>
-                <div className="detail-value">{extractPrefecture(profile.address)}</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* === TAB NAVIGATION SUBSECTION === */}
         <section className="tab-navigation">
           <div className="tab-buttons">
@@ -439,26 +411,24 @@ function ProfilePage() {
               className={`tab-btn ${activeTab === 'products' ? 'active' : ''}`}
               onClick={() => handleTabChange('products')}
             >
-              出品商品 ({userProducts.length})
+              出品 ({userProducts.length})
             </button>
-            <button
-              className={`tab-btn ${activeTab === 'purchases' ? 'active' : ''}`}
-              onClick={() => handleTabChange('purchases')}
-            >
-              購入履歴 ({purchaseHistory.length})
-            </button>
-            <button
-              className={`tab-btn ${activeTab === 'reviews' ? 'active' : ''}`}
-              onClick={() => handleTabChange('reviews')}
-            >
-              評価・レビュー (0)
-            </button>
-            <button
-              className={`tab-btn ${activeTab === 'favorites' ? 'active' : ''}`}
-              onClick={() => handleTabChange('favorites')}
-            >
-              お気に入り本
-            </button>
+            {isOwnProfile && (
+              <button
+                className={`tab-btn ${activeTab === 'purchases' ? 'active' : ''}`}
+                onClick={() => handleTabChange('purchases')}
+              >
+                購入 ({purchaseHistory.length})
+              </button>
+            )}
+            {isOwnProfile && (
+              <button
+                className={`tab-btn ${activeTab === 'favorites' ? 'active' : ''}`}
+                onClick={() => handleTabChange('favorites')}
+              >
+                いいね！ ({favoriteProducts.length})
+              </button>
+            )}
           </div>
 
           <div className="tab-content">
@@ -520,11 +490,9 @@ function ProfilePage() {
                                 'NO IMAGE'
                               )}
                               {product.status !== 1 && <span className="sold-badge">Sold out</span>}
+                              <span className="book-price-badge">¥{product.price.toLocaleString()}</span>
                             </div>
-                            <div className="book-info">
-                              <div className="book-title">{product.title}</div>
-                              <div className="book-price">¥{product.price.toLocaleString()}</div>
-                            </div>
+                            <div className="book-title">{product.title}</div>
                           </div>
                         </Link>
                       );
@@ -534,103 +502,94 @@ function ProfilePage() {
             </div>
 
             {/* === PURCHASE HISTORY SUBSECTION === */}
-            <div className={`tab-panel ${activeTab === 'purchases' ? 'active' : ''}`} id="purchases-panel">
-              {purchasesLoading ? (
-                <div className="empty-state">
-                  <div className="empty-message">読み込み中...</div>
-                </div>
-              ) : purchaseHistory.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-icon">H</div>
-                  <div className="empty-message">購入履歴がありません</div>
-                  <div className="empty-description">商品を購入すると、ここに表示されます</div>
-                </div>
-              ) : (
-                <div className="book-grid">
-                  {purchaseHistory.map((purchase) => {
-                    const imageSource = purchase.image_url || (Array.isArray(purchase.image_urls) ? purchase.image_urls[0] : '');
-                    const cardLink = purchase.product_id ? `/product-detail?id=${purchase.product_id}` : '#';
+            {isOwnProfile && (
+              <div className={`tab-panel ${activeTab === 'purchases' ? 'active' : ''}`} id="purchases-panel">
+                {purchasesLoading ? (
+                  <div className="empty-state">
+                    <div className="empty-message">読み込み中...</div>
+                  </div>
+                ) : purchaseHistory.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-icon">H</div>
+                    <div className="empty-message">購入履歴がありません</div>
+                    <div className="empty-description">商品を購入すると、ここに表示されます</div>
+                  </div>
+                ) : (
+                  <div className="book-grid">
+                    {purchaseHistory.map((purchase) => {
+                      const imageSource = purchase.image_url || (Array.isArray(purchase.image_urls) ? purchase.image_urls[0] : '');
+                      const cardLink = purchase.product_id ? `/product-detail?id=${purchase.product_id}` : '#';
 
-                    return (
-                      <Link
-                        to={cardLink}
-                        className="book-card-link"
-                        key={purchase.purchase_id}
-                        onClick={(event) => {
-                          if (!purchase.product_id) {
-                            event.preventDefault();
-                          }
-                        }}
-                      >
-                        <div className="book-card">
-                          <div className="book-image">
-                            {imageSource ? (
-                              <img src={getImageUrl(imageSource)} alt={purchase.title} />
-                            ) : (
-                              'NO IMAGE'
-                            )}
-                            <span className="sold-badge">Sold out</span>
-                          </div>
-                          <div className="book-info">
+                      return (
+                        <Link
+                          to={cardLink}
+                          className="book-card-link"
+                          key={purchase.purchase_id}
+                          onClick={(event) => {
+                            if (!purchase.product_id) {
+                              event.preventDefault();
+                            }
+                          }}
+                        >
+                          <div className="book-card">
+                            <div className="book-image">
+                              {imageSource ? (
+                                <img src={getImageUrl(imageSource)} alt={purchase.title} />
+                              ) : (
+                                'NO IMAGE'
+                              )}
+                              <span className="sold-badge">Sold out</span>
+                              <span className="book-price-badge">¥{(purchase.amount || 0).toLocaleString()}</span>
+                            </div>
                             <div className="book-title">{purchase.title}</div>
-                            <div className="book-price">¥{(purchase.amount || 0).toLocaleString()}</div>
                             <div className="book-status-text">{purchase.status_label || purchase.status || ''}</div>
                           </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* === REVIEWS SUBSECTION === */}
-            <div className={`tab-panel ${activeTab === 'reviews' ? 'active' : ''}`} id="reviews-panel">
-              <div className="empty-state">
-                <div className="empty-icon">R</div>
-                <div className="empty-message">評価・レビューがありません</div>
-                <div className="empty-description">取引が完了すると、評価が表示されます</div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
             {/* === FAVORITES SUBSECTION === */}
-            <div className={`tab-panel ${activeTab === 'favorites' ? 'active' : ''}`} id="favorites-panel">
-              {favoritesLoading ? (
-                <div className="empty-state">
-                  <div className="empty-message">読み込み中...</div>
-                </div>
-              ) : favoriteProducts.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-icon">F</div>
-                  <div className="empty-message">お気に入りの本はありません</div>
-                  <div className="empty-description">お気に入りに追加した商品がここに表示されます</div>
-                </div>
-              ) : (
-                <div className="book-grid">
-                  {favoriteProducts.map((product) => {
-                    const imageSource = product.image_url || (Array.isArray(product.image_urls) ? product.image_urls[0] : '');
-                    return (
-                      <Link to={`/product-detail?id=${product.id}`} key={product.id} className="book-card-link">
-                        <div className="book-card">
-                          <div className="book-image">
-                            {imageSource ? (
-                              <img src={getImageUrl(imageSource)} alt={product.title} />
-                            ) : (
-                              'NO IMAGE'
-                            )}
-                            {product.status !== 1 && <span className="sold-badge">Sold out</span>}
-                          </div>
-                          <div className="book-info">
+            {isOwnProfile && (
+              <div className={`tab-panel ${activeTab === 'favorites' ? 'active' : ''}`} id="favorites-panel">
+                {favoritesLoading ? (
+                  <div className="empty-state">
+                    <div className="empty-message">読み込み中...</div>
+                  </div>
+                ) : favoriteProducts.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-icon">F</div>
+                    <div className="empty-message">いいね！した商品はありません</div>
+                    <div className="empty-description">いいね！した商品がここに表示されます</div>
+                  </div>
+                ) : (
+                  <div className="book-grid">
+                    {favoriteProducts.map((product) => {
+                      const imageSource = product.image_url || (Array.isArray(product.image_urls) ? product.image_urls[0] : '');
+                      return (
+                        <Link to={`/product-detail?id=${product.id}`} key={product.id} className="book-card-link">
+                          <div className="book-card">
+                            <div className="book-image">
+                              {imageSource ? (
+                                <img src={getImageUrl(imageSource)} alt={product.title} />
+                              ) : (
+                                'NO IMAGE'
+                              )}
+                              {product.status !== 1 && <span className="sold-badge">Sold out</span>}
+                              <span className="book-price-badge">¥{product.price.toLocaleString()}</span>
+                            </div>
                             <div className="book-title">{product.title}</div>
-                            <div className="book-price">¥{product.price.toLocaleString()}</div>
                           </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </section>
       </main>
