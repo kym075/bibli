@@ -18,6 +18,7 @@ function Checkout() {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [isOwnProduct, setIsOwnProduct] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [deliveryProfile, setDeliveryProfile] = useState(null);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -54,18 +55,31 @@ function Checkout() {
       setAuthChecked(true);
       if (!user?.email) {
         setCurrentUserId(null);
+        setDeliveryProfile(null);
         navigate('/login');
         return;
       }
 
       try {
-        const response = await fetch(`http://localhost:5000/api/user/${user.email}`);
-        if (response.ok) {
-          const data = await response.json();
-          setCurrentUserId(data.id);
+        const [userResponse, profileResponse] = await Promise.all([
+          fetch(`http://localhost:5000/api/user/${user.email}`),
+          fetch(`http://localhost:5000/api/profile/${user.email}`)
+        ]);
+
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          setCurrentUserId(userData.id);
+        }
+
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          setDeliveryProfile(profileData);
+        } else {
+          setDeliveryProfile(null);
         }
       } catch (err) {
         console.error('User fetch error:', err);
+        setDeliveryProfile(null);
       }
     });
 
@@ -122,10 +136,25 @@ function Checkout() {
     }
   };
 
+  const normalizePath = (value) => String(value || '').replace(/\\/g, '/').replace(/^\/+/, '');
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) return '';
+    if (imageUrl.startsWith('http') || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
+      return imageUrl;
+    }
+    return `http://localhost:5000/${normalizePath(imageUrl)}`;
+  };
+
   const price = product?.price || 0;
   const shippingFee = 0;
   const serviceFee = 0;
   const totalPrice = price + shippingFee + serviceFee;
+  const productImage = product?.image_url || (Array.isArray(product?.image_urls) ? product.image_urls[0] : '');
+  const addressText = (deliveryProfile?.address || '').trim();
+  const postalMatch = addressText.match(/〒?\d{3}-?\d{4}/);
+  const postalCode = postalMatch ? (postalMatch[0].startsWith('〒') ? postalMatch[0] : `〒${postalMatch[0]}`) : '';
+  const recipientName = (deliveryProfile?.real_name || deliveryProfile?.user_name || '').trim();
+  const addressWithoutPostal = postalMatch ? addressText.replace(postalMatch[0], '').trim() : addressText;
 
   if (!authChecked || loading) {
     return (
@@ -190,7 +219,13 @@ function Checkout() {
 
           <div className="product-section">
             <div className="product-item">
-              <div className="product-image">BOOK</div>
+              <div className="product-image">
+                {productImage ? (
+                  <img src={getImageUrl(productImage)} alt={product.title} />
+                ) : (
+                  'NO IMAGE'
+                )}
+              </div>
               <div className="product-info">
                 <div className="product-title">{product.title}</div>
                 <div className="product-author">カテゴリ: {product.category || '未設定'}</div>
@@ -204,27 +239,12 @@ function Checkout() {
             <h3 className="section-title delivery-title">お届け先</h3>
             <div className="address-display">
               <div className="address-info">
-                <div className="postal-code">〒123-4567</div>
-                <div className="address-line">東京都渋谷区神南1-23-45</div>
-                <div className="address-line">Bibliマンション 101号室</div>
-                <div className="recipient-name">山田 太郎 様</div>
+                <div className="postal-code">{postalCode || '郵便番号未設定'}</div>
+                <div className="address-line">
+                  {addressWithoutPostal || addressText || '住所が未設定です。ユーザー設定で住所を登録してください。'}
+                </div>
+                {recipientName && <div className="recipient-name">{recipientName} 様</div>}
               </div>
-              <span className="change-btn">変更する</span>
-            </div>
-          </div>
-
-          <div className="info-section">
-            <h3 className="section-title payment-title">支払い方法</h3>
-            <div className="payment-display">
-              <div className="payment-icon">VISA</div>
-              <div className="payment-info">
-                <div className="payment-method">クレジットカード</div>
-                <div className="card-info">**** **** **** 1234</div>
-              </div>
-              <span className="change-btn">変更する</span>
-            </div>
-            <div className="security-info">
-              この決済はSSL暗号化通信により保護されています
             </div>
           </div>
 
@@ -251,6 +271,9 @@ function Checkout() {
           </div>
 
           <div className="purchase-section">
+            <div className="security-info">
+              この決済はStripeの安全な画面で行われます
+            </div>
             <button
               className="purchase-btn"
               id="purchaseBtn"

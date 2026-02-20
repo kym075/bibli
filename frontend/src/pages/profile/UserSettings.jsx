@@ -18,11 +18,23 @@ function UserSettings() {
     birth_date: '',
     real_name: '',
     name_kana: '',
+    profile_image: '',
     password: '',
     passwordConf: ''
   });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [imageUploadError, setImageUploadError] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) return '';
+    if (imageUrl.startsWith('http') || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
+      return imageUrl;
+    }
+    const trimmed = String(imageUrl).replace(/\\/g, '/').replace(/^\/+/, '');
+    return `http://localhost:5000/${trimmed}`;
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -41,6 +53,7 @@ function UserSettings() {
               birth_date: data.birth_date || '',
               real_name: data.real_name || '',
               name_kana: data.name_kana || '',
+              profile_image: data.profile_image || '',
               password: '',
               passwordConf: ''
             });
@@ -61,6 +74,49 @@ function UserSettings() {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleProfileImageChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.email) {
+      return;
+    }
+
+    setImageUploadError('');
+    if (!file.type.startsWith('image/')) {
+      setImageUploadError('画像ファイルを選択してください');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setImageUploadError('画像サイズは5MB以下にしてください');
+      return;
+    }
+
+    const payload = new FormData();
+    payload.append('image', file);
+
+    setIsUploadingImage(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/profile/${user.email}/image`, {
+        method: 'POST',
+        body: payload
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'プロフィール画像の更新に失敗しました');
+      }
+      setFormData((prev) => ({
+        ...prev,
+        profile_image: data.profile_image || ''
+      }));
+      setMessage('プロフィール画像を更新しました');
+    } catch (err) {
+      console.error('Profile image upload error:', err);
+      setImageUploadError(err.message || 'プロフィール画像の更新に失敗しました');
+    } finally {
+      setIsUploadingImage(false);
+      e.target.value = '';
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -84,10 +140,9 @@ function UserSettings() {
       user_name: formData.user_name,
       bio: formData.bio,
       address: formData.address,
-      phone_number: formData.phone_number,
-      birth_date: formData.birth_date,
       real_name: formData.real_name,
-      name_kana: formData.name_kana
+      name_kana: formData.name_kana,
+      profile_image: formData.profile_image
     };
 
     if (formData.password) {
@@ -162,6 +217,30 @@ function UserSettings() {
 
         <form className="user-settings-form" onSubmit={handleSubmit}>
           <div className="form-group">
+            <label>プロフィールアイコン:</label>
+            <div className="profile-image-setting-row">
+              <div className="profile-image-preview">
+                {formData.profile_image ? (
+                  <img src={getImageUrl(formData.profile_image)} alt="プロフィールアイコン" />
+                ) : (
+                  'USER'
+                )}
+              </div>
+              <label className="profile-image-upload-btn">
+                {isUploadingImage ? 'アップロード中...' : '画像を選択'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfileImageChange}
+                  disabled={isUploadingImage}
+                  hidden
+                />
+              </label>
+            </div>
+            {imageUploadError && <div className="inline-error-message">{imageUploadError}</div>}
+            <div className="help-text">JPG / PNG / GIF / WebP（5MB以下）</div>
+          </div>
+          <div className="form-group">
             <label htmlFor="email">メールアドレス (変更不可):</label>
             <input type="email" id="email" name="email" value={user.email} disabled style={{backgroundColor: '#f0f0f0'}} />
           </div>
@@ -227,25 +306,29 @@ function UserSettings() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="phone_number">電話番号:</label>
+            <label htmlFor="phone_number">電話番号 (変更不可):</label>
             <input
               type="tel"
               id="phone_number"
               name="phone_number"
               value={formData.phone_number}
-              onChange={handleChange}
+              readOnly
               placeholder="電話番号を入力"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              style={{backgroundColor: '#f0f0f0'}}
               required
             />
           </div>
           <div className="form-group">
-            <label htmlFor="birth_date">生年月日:</label>
+            <label htmlFor="birth_date">生年月日 (変更不可):</label>
             <input
               type="date"
               id="birth_date"
               name="birth_date"
               value={formData.birth_date}
-              onChange={handleChange}
+              readOnly
+              style={{backgroundColor: '#f0f0f0'}}
             />
           </div>
           <div className="form-group">

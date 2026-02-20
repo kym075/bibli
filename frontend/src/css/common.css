@@ -110,17 +110,32 @@ textarea {
     color: var(--ink);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.65rem;
 }
 
-.logo::after {
+.logo-mark {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px 8px 10px 8px;
+    background: linear-gradient(150deg, #f9df8f 0%, #f0c763 100%);
+    border: 1px solid rgba(43, 42, 39, 0.18);
+    box-shadow: 2px 3px 0 rgba(43, 42, 39, 0.14);
+    position: relative;
+    transform: rotate(-6deg);
+}
+
+.logo-mark::after {
     content: "";
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--accent);
-    display: inline-block;
-    margin-left: 0.4rem;
+    position: absolute;
+    right: -1px;
+    top: -1px;
+    border-width: 0 10px 10px 0;
+    border-style: solid;
+    border-color: transparent rgba(255, 255, 255, 0.75) transparent transparent;
+}
+
+.logo-text {
+    line-height: 1;
 }
 
 .search-bar {

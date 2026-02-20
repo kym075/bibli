@@ -20,6 +20,9 @@ function ProfilePage() {
   const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
+  const [isBlockedByMe, setIsBlockedByMe] = useState(false);
+  const [isBlockedMe, setIsBlockedMe] = useState(false);
+  const [isBlockLoading, setIsBlockLoading] = useState(false);
   const [favoriteProducts, setFavoriteProducts] = useState([]);
   const [favoritesLoading, setFavoritesLoading] = useState(false);
   const [purchaseHistory, setPurchaseHistory] = useState([]);
@@ -71,7 +74,7 @@ function ProfilePage() {
           }
 
           // ユーザーの出品商品を取得
-          const productsResponse = await fetch(`http://localhost:5000/api/products?seller_id=${data.id}`);
+          const productsResponse = await fetch(`http://localhost:5000/api/products?seller_id=${data.id}&include_sold=1`);
           if (productsResponse.ok) {
             const productsData = await productsResponse.json();
             setUserProducts(productsData.products || []);
@@ -127,6 +130,8 @@ function ProfilePage() {
 
     if (!followerEmail || !followeeEmail || followerEmail === followeeEmail) {
       setIsFollowing(false);
+      setIsBlockedByMe(false);
+      setIsBlockedMe(false);
       return;
     }
 
@@ -141,6 +146,8 @@ function ProfilePage() {
         const data = await response.json();
         if (response.ok) {
           setIsFollowing(Boolean(data.following));
+          setIsBlockedByMe(Boolean(data.blocked_by_me));
+          setIsBlockedMe(Boolean(data.blocked_me));
         }
       } catch (err) {
         console.error('Follow status error:', err);
@@ -161,6 +168,9 @@ function ProfilePage() {
       return;
     }
     if (!followeeEmail || followerEmail === followeeEmail) {
+      return;
+    }
+    if (isBlockedByMe || isBlockedMe) {
       return;
     }
 
@@ -191,6 +201,54 @@ function ProfilePage() {
       console.error('Follow toggle error:', err);
     } finally {
       setIsFollowLoading(false);
+    }
+  };
+
+  const handleBlockToggle = async () => {
+    const blockerEmail = currentUser?.email;
+    const blockedEmail = profile?.email;
+
+    if (!blockerEmail) {
+      navigate('/login');
+      return;
+    }
+    if (!blockedEmail || blockerEmail === blockedEmail) {
+      return;
+    }
+
+    setIsBlockLoading(true);
+    try {
+      const endpoint = isBlockedByMe ? 'unblock' : 'block';
+      const response = await fetch(`http://localhost:5000/api/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          blocker_email: blockerEmail,
+          blocked_email: blockedEmail
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        console.error('Block toggle error:', data.error || data.message);
+        return;
+      }
+
+      const nextBlocked = !isBlockedByMe;
+      setIsBlockedByMe(nextBlocked);
+      if (nextBlocked && isFollowing) {
+        setIsFollowing(false);
+        setFollowCounts((prev) => ({
+          ...prev,
+          followers: Math.max(0, prev.followers - 1)
+        }));
+      }
+    } catch (err) {
+      console.error('Block toggle error:', err);
+    } finally {
+      setIsBlockLoading(false);
     }
   };
 
@@ -238,7 +296,7 @@ function ProfilePage() {
     if (imageUrl.startsWith('http') || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
       return imageUrl;
     }
-    const trimmed = imageUrl.replace(/^\/+/, '');
+    const trimmed = String(imageUrl).replace(/\\/g, '/').replace(/^\/+/, '');
     return `http://localhost:5000/${trimmed}`;
   };
 
@@ -263,7 +321,7 @@ function ProfilePage() {
           <div className="profile-main">
             <div className="profile-avatar">
               {profile.profile_image ? (
-                <img src={profile.profile_image} alt="プロフィール" />
+                <img src={getImageUrl(profile.profile_image)} alt="プロフィール" />
               ) : (
                 'USER'
               )}
@@ -276,25 +334,51 @@ function ProfilePage() {
                 </div>
                 <div className="profile-actions">
                   {!isOwnProfile && (
-                    <button
-                      className={`action-btn btn-follow ${isFollowing ? 'following' : ''}`}
-                      id="followBtn"
-                      onClick={handleFollowToggle}
-                      disabled={isFollowLoading || !profile?.email || currentUser?.email === profile?.email}
-                    >
-                      {!currentUser ? 'ログインでフォロー' : (isFollowing ? 'フォロー中' : 'フォローする')}
-                    </button>
+                    <>
+                      <button
+                        className={`action-btn btn-follow ${isFollowing ? 'following' : ''}`}
+                        id="followBtn"
+                        onClick={handleFollowToggle}
+                        disabled={
+                          isFollowLoading ||
+                          isBlockLoading ||
+                          !profile?.email ||
+                          currentUser?.email === profile?.email ||
+                          isBlockedByMe ||
+                          isBlockedMe
+                        }
+                      >
+                        {isBlockedMe
+                          ? 'ブロックされています'
+                          : (!currentUser ? 'ログインでフォロー' : (isFollowing ? 'フォロー中' : 'フォローする'))}
+                      </button>
+                      <button
+                        className={`action-btn btn-block ${isBlockedByMe ? 'active' : ''}`}
+                        onClick={handleBlockToggle}
+                        disabled={isBlockLoading || !profile?.email || currentUser?.email === profile?.email}
+                      >
+                        {isBlockLoading ? '処理中...' : (isBlockedByMe ? 'ブロック解除' : 'ブロック')}
+                      </button>
+                    </>
                   )}
-                  <Link to="/user-settings">
-                    <button className="action-btn btn-usrsettings" id="usrSettingsBtn">
-                      ユーザー設定
-                    </button>
-                  </Link>
+                  {isOwnProfile && (
+                    <Link to="/user-settings">
+                      <button className="action-btn btn-usrsettings" id="usrSettingsBtn">
+                        ユーザー設定
+                      </button>
+                    </Link>
+                  )}
                 </div>
               </div>
               <p className="profile-bio">
                 {profile.bio || '自己紹介が設定されていません'}
               </p>
+              {!isOwnProfile && isBlockedByMe && (
+                <p className="profile-block-note">このユーザーをブロック中です。フォローやメッセージはできません。</p>
+              )}
+              {!isOwnProfile && isBlockedMe && (
+                <p className="profile-block-note">このユーザーにブロックされています。</p>
+              )}
               <div className="profile-stats">
                 <div className="stat-item">
                   <span className="stat-number">{userProducts.length}</span>
@@ -421,7 +505,7 @@ function ProfilePage() {
                       if (productFilter === 'all') return true;
                       if (productFilter === 'available') return product.status === 1;
                       if (productFilter === 'reserved') return product.status === 2;
-                      if (productFilter === 'sold') return product.status === 3;
+                      if (productFilter === 'sold') return product.status === 0 || product.status === 3;
                       return true;
                     })
                     .map(product => {
@@ -429,11 +513,13 @@ function ProfilePage() {
                       return (
                         <Link to={`/product-detail?id=${product.id}`} key={product.id} className="book-card-link">
                           <div className="book-card">
-                            <div
-                              className="book-image"
-                              style={{ backgroundImage: imageSource ? `url(${getImageUrl(imageSource)})` : 'none' }}
-                            >
-                              {!imageSource && 'NO IMAGE'}
+                            <div className="book-image">
+                              {imageSource ? (
+                                <img src={getImageUrl(imageSource)} alt={product.title} />
+                              ) : (
+                                'NO IMAGE'
+                              )}
+                              {product.status !== 1 && <span className="sold-badge">Sold out</span>}
                             </div>
                             <div className="book-info">
                               <div className="book-title">{product.title}</div>
@@ -477,15 +563,18 @@ function ProfilePage() {
                         }}
                       >
                         <div className="book-card">
-                          <div
-                            className="book-image"
-                            style={{ backgroundImage: imageSource ? `url(${getImageUrl(imageSource)})` : 'none' }}
-                          >
-                            {!imageSource && 'NO IMAGE'}
+                          <div className="book-image">
+                            {imageSource ? (
+                              <img src={getImageUrl(imageSource)} alt={purchase.title} />
+                            ) : (
+                              'NO IMAGE'
+                            )}
+                            <span className="sold-badge">Sold out</span>
                           </div>
                           <div className="book-info">
                             <div className="book-title">{purchase.title}</div>
                             <div className="book-price">¥{(purchase.amount || 0).toLocaleString()}</div>
+                            <div className="book-status-text">{purchase.status_label || purchase.status || ''}</div>
                           </div>
                         </div>
                       </Link>
@@ -523,11 +612,13 @@ function ProfilePage() {
                     return (
                       <Link to={`/product-detail?id=${product.id}`} key={product.id} className="book-card-link">
                         <div className="book-card">
-                          <div
-                            className="book-image"
-                            style={{ backgroundImage: imageSource ? `url(${getImageUrl(imageSource)})` : 'none' }}
-                          >
-                            {!imageSource && 'NO IMAGE'}
+                          <div className="book-image">
+                            {imageSource ? (
+                              <img src={getImageUrl(imageSource)} alt={product.title} />
+                            ) : (
+                              'NO IMAGE'
+                            )}
+                            {product.status !== 1 && <span className="sold-badge">Sold out</span>}
                           </div>
                           <div className="book-info">
                             <div className="book-title">{product.title}</div>

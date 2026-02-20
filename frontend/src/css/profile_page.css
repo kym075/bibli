@@ -56,10 +56,18 @@
     position: relative;
     cursor: pointer;
     transition: transform 0.3s ease;
+    overflow: hidden;
 }
 
 .profile-avatar::after {
     content: none;
+}
+
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
 }
 
 .profile-info {
@@ -156,10 +164,31 @@
     color: white;
 }
 
+.btn-block {
+    background: var(--surface);
+    color: var(--accent-warm);
+    border: 1px solid var(--accent-warm);
+}
+
+.btn-block:hover {
+    background: rgba(180, 107, 61, 0.12);
+}
+
+.btn-block.active {
+    background: rgba(180, 107, 61, 0.18);
+}
+
 .profile-bio {
     color: var(--muted);
     margin-bottom: 1rem;
     line-height: 1.6;
+}
+
+.profile-block-note {
+    margin: 0 0 1rem;
+    color: var(--accent-warm);
+    font-size: 0.85rem;
+    font-weight: 600;
 }
 
 .profile-stats {
@@ -391,6 +420,25 @@
     position: absolute;
 }
 
+.book-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sold-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(31, 27, 22, 0.85);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.03em;
+}
+
 .book-info {
     padding: 0.9rem 1.1rem 1rem;
 }
@@ -409,6 +457,12 @@
     font-size: 1.1rem;
     font-weight: bold;
     color: var(--accent-warm);
+}
+
+.book-status-text {
+    margin-top: 0.35rem;
+    color: var(--muted);
+    font-size: 0.82rem;
 }
 
 .no-image {

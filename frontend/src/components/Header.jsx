@@ -65,7 +65,10 @@ function Header() {
     <header className="header">
       <div className="header-content">
         <div className="header-left">
-          <Link to="/" className="logo">Bibli</Link>
+          <Link to="/" className="logo">
+            <span className="logo-mark" aria-hidden="true"></span>
+            <span className="logo-text">Bibli</span>
+          </Link>
           <div className="search-bar">
             <input
               type="text"

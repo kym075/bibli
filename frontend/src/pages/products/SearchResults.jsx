@@ -1,5 +1,7 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../../css/firebase';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/search_results.css';
@@ -11,6 +13,7 @@ function SearchResults() {
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [currentEmail, setCurrentEmail] = useState('');
 
   const [filters, setFilters] = useState({
     keyword: searchParams.get('q') || '',
@@ -25,7 +28,7 @@ function SearchResults() {
     if (imageUrl.startsWith('http') || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
       return imageUrl;
     }
-    const trimmed = imageUrl.replace(/^\/+/, '');
+    const trimmed = String(imageUrl).replace(/\\/g, '/').replace(/^\/+/, '');
     return `http://localhost:5000/${trimmed}`;
   };
 
@@ -38,6 +41,8 @@ function SearchResults() {
       if (filters.minPrice) params.append('min_price', filters.minPrice);
       if (filters.maxPrice) params.append('max_price', filters.maxPrice);
       if (filters.condition) params.append('condition', filters.condition);
+      params.append('include_sold', '1');
+      if (currentEmail) params.append('viewer_email', currentEmail);
       params.append('page', currentPage);
       params.append('limit', 20);
 
@@ -62,13 +67,20 @@ function SearchResults() {
   };
 
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentEmail(user?.email || '');
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
     const keyword = searchParams.get('q') || '';
     setFilters(prev => ({ ...prev, keyword }));
   }, [searchParams]);
 
   useEffect(() => {
     fetchProducts();
-  }, [filters, currentPage]);
+  }, [filters, currentPage, currentEmail]);
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -194,11 +206,13 @@ function SearchResults() {
                 return (
                   <Link to={`/product-detail?id=${product.id}`} key={product.id} className="book-card-link">
                     <div className="book-card">
-                      <div
-                        className="book-image"
-                        style={{ backgroundImage: imageSource ? `url(${getImageUrl(imageSource)})` : 'none' }}
-                      >
-                        {!imageSource && 'NO IMAGE'}
+                      <div className="book-image">
+                        {imageSource ? (
+                          <img src={getImageUrl(imageSource)} alt={product.title} />
+                        ) : (
+                          'NO IMAGE'
+                        )}
+                        {product.status !== 1 && <span className="sold-badge">Sold out</span>}
                       </div>
                       <div className="book-info">
                         <div className="book-title">{product.title}</div>
