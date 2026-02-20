@@ -33,3 +33,8 @@ npm run dev
 - Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
 - DB: `DATABASE_URL`
 - Firebase Admin: `FIREBASE_SERVICE_ACCOUNT_JSON`
+
+## 秘密情報の取り扱い
+- サービスアカウント鍵をリポジトリに置かないでください。
+- サンプルは `firebase.service-account.example.json` を参照してください。
+- 実鍵はローカル専用ファイル（例: `firebase.service-account.local.json`）として配置し、`.env` の `FIREBASE_SERVICE_ACCOUNT_JSON` で参照してください。
