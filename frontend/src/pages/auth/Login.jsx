@@ -125,6 +125,9 @@ function Login() {
                   />
                   <span>ログイン状態を保持する</span>
                 </label>
+                <Link to="/forgot-password" className="forgot-password">
+                  パスワードを忘れた方
+                </Link>
               </div>
               <button type="submit" className="login-btn">ログイン</button>
             </form>

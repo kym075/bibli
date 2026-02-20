@@ -10,6 +10,7 @@ import secrets
 from decimal import Decimal
 import json
 import os
+import re
 import stripe
 from dotenv import load_dotenv
  
@@ -61,12 +62,45 @@ def _save_product_image(file_storage):
 
     original_name = secure_filename(file_storage.filename)
     ext = original_name.rsplit(".", 1)[1].lower()
-    unique_name = f"{secrets.token_hex(16)}.{ext}"
+    unique_name = f"picturesid_{datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}_{secrets.token_hex(8)}.{ext}"
     upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'products')
     os.makedirs(upload_dir, exist_ok=True)
     file_path = os.path.join(upload_dir, unique_name)
     file_storage.save(file_path)
     return f"uploads/products/{unique_name}"
+
+
+def _save_profile_image(file_storage):
+    if not file_storage or not file_storage.filename:
+        return ""
+    if not _allowed_image(file_storage.filename):
+        return None
+
+    original_name = secure_filename(file_storage.filename)
+    ext = original_name.rsplit(".", 1)[1].lower()
+    unique_name = f"profileid_{datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}_{secrets.token_hex(8)}.{ext}"
+    upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'profiles')
+    os.makedirs(upload_dir, exist_ok=True)
+    file_path = os.path.join(upload_dir, unique_name)
+    file_storage.save(file_path)
+    return f"uploads/profiles/{unique_name}"
+
+
+def _remove_upload_file_if_exists(upload_path):
+    if not upload_path:
+        return
+
+    normalized = upload_path.replace("\\", "/").strip()
+    if not normalized.startswith("uploads/"):
+        return
+
+    rel_path = normalized[len("uploads/"):]
+    absolute_path = os.path.join(app.config['UPLOAD_FOLDER'], rel_path)
+    if os.path.isfile(absolute_path):
+        try:
+            os.remove(absolute_path)
+        except Exception:
+            pass
 
 
 def _normalize_tags(raw_tags):
@@ -149,6 +183,27 @@ def _serialize_product_card(product, image_map=None):
         "seller_id": product.seller_id,
         "status": product.status
     }
+
+
+def _extract_recommendation_tokens(text):
+    if not text:
+        return []
+
+    normalized = str(text).strip().lower()
+    if not normalized:
+        return []
+
+    tokens = re.findall(r"[a-z0-9ぁ-んァ-ヶー一-龥]{2,}", normalized)
+    unique_tokens = []
+    seen = set()
+    for token in tokens:
+        if token in seen:
+            continue
+        seen.add(token)
+        unique_tokens.append(token)
+        if len(unique_tokens) >= 20:
+            break
+    return unique_tokens
 
  
 # ============================
@@ -302,6 +357,19 @@ class Notification(db.Model):
 
     product = db.relationship('Product')
 
+
+class UserNotificationSetting(db.Model):
+    __tablename__ = "user_notification_settings"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    push_notification = db.Column(db.Boolean, default=True)
+    email_notification = db.Column(db.Boolean, default=True)
+    message_notification = db.Column(db.Boolean, default=True)
+    campaign_notification = db.Column(db.Boolean, default=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class ForumThread(db.Model):
     __tablename__ = "forum_threads"
 
@@ -338,16 +406,39 @@ class ForumFollow(db.Model):
     follower_email = db.Column(db.String(120), nullable=False)
     followee_email = db.Column(db.String(120), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class UserBlock(db.Model):
+    __tablename__ = "user_blocks"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    blocker_email = db.Column(db.String(120), nullable=False, index=True)
+    blocked_email = db.Column(db.String(120), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('blocker_email', 'blocked_email', name='uq_user_blocks_blocker_blocked'),
+    )
  
  
-def _create_notification(user_email, notification_type, title, message, related_product_id=None):
-    email = (user_email or '').strip().lower()
+def _create_notification(user_email, notification_type, title, message, related_product_id=None, actor_email=None):
+    email = _normalize_email(user_email)
+    actor = _normalize_email(actor_email)
+    notif_type = (notification_type or 'general').strip().lower()
     if not email:
+        return
+
+    if actor and actor != email:
+        relation = _get_block_relation(email, actor)
+        if relation["is_blocked"]:
+            return
+
+    if not _notification_enabled_for_type(email, notif_type):
         return
 
     db.session.add(Notification(
         user_email=email,
-        notification_type=notification_type or 'general',
+        notification_type=notif_type,
         title=title or '通知',
         message=message or '',
         related_product_id=related_product_id
@@ -369,6 +460,102 @@ def _serialize_notification(notification):
 
 def _normalize_email(value):
     return (value or '').strip().lower()
+
+
+def _get_blocked_email_set(email):
+    normalized = _normalize_email(email)
+    if not normalized:
+        return set()
+
+    rows = (
+        UserBlock.query
+        .filter(
+            db.or_(
+                db.func.lower(UserBlock.blocker_email) == normalized,
+                db.func.lower(UserBlock.blocked_email) == normalized
+            )
+        )
+        .all()
+    )
+
+    blocked_set = set()
+    for row in rows:
+        blocker = _normalize_email(row.blocker_email)
+        blocked = _normalize_email(row.blocked_email)
+        if blocker == normalized and blocked:
+            blocked_set.add(blocked)
+        elif blocked == normalized and blocker:
+            blocked_set.add(blocker)
+    return blocked_set
+
+
+def _coerce_bool(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        return value.strip().lower() in {'1', 'true', 'yes', 'on'}
+    return False
+
+
+def _get_or_create_notification_setting(email):
+    normalized = _normalize_email(email)
+    if not normalized:
+        return None
+
+    setting = (
+        UserNotificationSetting.query
+        .filter(db.func.lower(UserNotificationSetting.user_email) == normalized)
+        .first()
+    )
+    if setting:
+        return setting
+
+    setting = UserNotificationSetting(
+        user_email=normalized,
+        push_notification=True,
+        email_notification=True,
+        message_notification=True,
+        campaign_notification=False
+    )
+    db.session.add(setting)
+    return setting
+
+
+def _notification_enabled_for_type(email, notification_type):
+    setting = _get_or_create_notification_setting(email)
+    if not setting:
+        return False
+
+    if not setting.push_notification:
+        return False
+
+    notif_type = (notification_type or 'general').strip().lower()
+    if notif_type == 'chat':
+        return bool(setting.message_notification)
+    if notif_type in {'campaign'}:
+        return bool(setting.campaign_notification)
+    return True
+
+
+def _get_block_relation(email_a, email_b):
+    a = _normalize_email(email_a)
+    b = _normalize_email(email_b)
+    if not a or not b:
+        return {
+            "blocked_by_a": False,
+            "blocked_by_b": False,
+            "is_blocked": False
+        }
+
+    blocked_by_a = UserBlock.query.filter_by(blocker_email=a, blocked_email=b).first() is not None
+    blocked_by_b = UserBlock.query.filter_by(blocker_email=b, blocked_email=a).first() is not None
+    return {
+        "blocked_by_a": blocked_by_a,
+        "blocked_by_b": blocked_by_b,
+        "is_blocked": blocked_by_a or blocked_by_b
+    }
 
 
 def _find_user_by_email(email):
@@ -654,6 +841,41 @@ def update_profile(email):
     }), 200
 
 
+@app.route('/api/profile/<email>/image', methods=['POST'])
+def upload_profile_image(email):
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({"error": "ユーザーが見つかりません"}), 404
+
+    image_file = request.files.get('image')
+    if not image_file or not image_file.filename:
+        return jsonify({"error": "画像ファイルが必要です"}), 400
+
+    uploaded_url = _save_profile_image(image_file)
+    if uploaded_url is None:
+        return jsonify({"error": "画像形式が不正です"}), 400
+    if not uploaded_url:
+        return jsonify({"error": "画像の保存に失敗しました"}), 500
+
+    old_path = user.profile_image or ""
+    user.profile_image = uploaded_url
+    user.updated_at = datetime.utcnow()
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "プロフィール画像の更新に失敗しました", "detail": str(e)}), 500
+
+    if old_path and old_path != uploaded_url:
+        _remove_upload_file_if_exists(old_path)
+
+    return jsonify({
+        "message": "プロフィール画像を更新しました",
+        "profile_image": user.profile_image
+    }), 200
+
+
 # ============================
 # 商品検索・一覧取得（検索・フィルター・ソート対応）
 # ============================
@@ -668,8 +890,23 @@ def get_products():
         sort = request.args.get('sort', 'newest')
         page = request.args.get('page', 1, type=int)
         limit = request.args.get('limit', 20, type=int)
+        include_sold = (request.args.get('include_sold') or '').strip().lower() in {'1', 'true', 'yes', 'on'}
+        viewer_email = _normalize_email(request.args.get('viewer_email'))
+        blocked_seller_ids = set()
 
-        query = Product.query.filter(Product.status == 1)
+        if viewer_email:
+            blocked_emails = _get_blocked_email_set(viewer_email)
+            if blocked_emails:
+                blocked_users = User.query.filter(db.func.lower(User.email).in_(list(blocked_emails))).all()
+                blocked_seller_ids = {user.id for user in blocked_users if user.id}
+
+        query = Product.query
+        if seller_id:
+            query = query.filter(Product.seller_id == seller_id)
+        elif not include_sold:
+            query = query.filter(Product.status == 1)
+        if blocked_seller_ids:
+            query = query.filter(~Product.seller_id.in_(blocked_seller_ids))
 
         if keyword:
             if keyword.startswith('#'):
@@ -697,9 +934,6 @@ def get_products():
 
         if condition:
             query = query.filter(Product.condition == condition)
-
-        if seller_id:
-            query = query.filter(Product.seller_id == seller_id)
 
         if sort == 'price_asc':
             query = query.order_by(Product.price.asc())
@@ -899,7 +1133,8 @@ def create_product():
                 notification_type='listing',
                 title='出品が完了しました',
                 message=f"「{new_product.title}」を出品しました。",
-                related_product_id=new_product.id
+                related_product_id=new_product.id,
+                actor_email=seller_email
             )
 
             follower_rows = (
@@ -919,7 +1154,8 @@ def create_product():
                     notification_type='follow_listing',
                     title='フォロー中ユーザーが出品しました',
                     message=f"{seller_name}さんが「{new_product.title}」を出品しました。",
-                    related_product_id=new_product.id
+                    related_product_id=new_product.id,
+                    actor_email=seller_email
                 )
 
         db.session.commit()
@@ -1133,6 +1369,10 @@ def get_product_chat_messages(product_id):
 
     seller_email = _normalize_email(seller.email)
     is_seller = current_email == seller_email
+    if not is_seller:
+        relation = _get_block_relation(current_email, seller_email)
+        if relation["is_blocked"]:
+            return jsonify({"error": "ブロック関係のためチャットを利用できません"}), 403
 
     purchase_rows = (
         Purchase.query
@@ -1179,12 +1419,16 @@ def get_product_chat_messages(product_id):
             counterpart = receiver_email if sender_email == seller_email else sender_email
             if not counterpart or counterpart == seller_email:
                 continue
+            if _get_block_relation(seller_email, counterpart)["is_blocked"]:
+                continue
             if counterpart not in latest_by_user:
                 latest_by_user[counterpart] = row.created_at or datetime.utcnow()
 
         for purchase in purchase_rows:
             buyer_email = _normalize_email(purchase.buyer_email)
             if not buyer_email or buyer_email == seller_email:
+                continue
+            if _get_block_relation(seller_email, buyer_email)["is_blocked"]:
                 continue
             if buyer_email not in latest_by_user:
                 latest_by_user[buyer_email] = purchase.created_at or datetime.utcnow()
@@ -1220,7 +1464,7 @@ def get_product_chat_messages(product_id):
     messages = []
     has_updates = False
 
-    if selected_counterpart:
+    if selected_counterpart and not _get_block_relation(current_email, selected_counterpart)["is_blocked"]:
         chat_rows = (
             base_query
             .filter(
@@ -1342,6 +1586,9 @@ def post_product_chat_message(product_id):
     else:
         receiver_email = seller_email
 
+    if _get_block_relation(sender_email, receiver_email)["is_blocked"]:
+        return jsonify({"error": "ブロック関係のためチャットを送信できません"}), 403
+
     new_message = ProductChatMessage(
         product_id=product.id,
         sender_email=sender_email,
@@ -1360,7 +1607,8 @@ def post_product_chat_message(product_id):
                 notification_type='chat',
                 title='取引チャットに新着メッセージ',
                 message=f"「{product.title}」で{sender_name}さんからメッセージが届きました。",
-                related_product_id=product.id
+                related_product_id=product.id,
+                actor_email=sender_email
             )
 
         db.session.commit()
@@ -1547,10 +1795,192 @@ def get_profile_purchases(user_id):
             "amount": purchase.amount,
             "currency": purchase.currency,
             "status": purchase.status,
+            "status_label": _purchase_status_label(purchase.status),
             "created_at": purchase.created_at.isoformat() if purchase.created_at else None
         })
 
     return jsonify({"purchases": result}), 200
+
+
+@app.route('/api/recommendations', methods=['GET'])
+def get_recommendations():
+    email = (request.args.get('email') or '').strip().lower()
+    limit = request.args.get('limit', 8, type=int) or 8
+    limit = max(1, min(limit, 40))
+
+    base_query = Product.query.filter(Product.status == 1)
+    blocked_seller_ids = set()
+    if email:
+        blocked_emails = _get_blocked_email_set(email)
+        if blocked_emails:
+            blocked_users = User.query.filter(db.func.lower(User.email).in_(list(blocked_emails))).all()
+            blocked_seller_ids = {user.id for user in blocked_users if user.id}
+            if blocked_seller_ids:
+                base_query = base_query.filter(~Product.seller_id.in_(blocked_seller_ids))
+
+    # 未ログイン時は新着を返す
+    if not email:
+        products = base_query.order_by(Product.created_at.desc()).limit(limit).all()
+        image_map = _build_primary_image_map([p.id for p in products])
+        return jsonify({"recommendations": [_serialize_product_card(p, image_map) for p in products]}), 200
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        products = base_query.order_by(Product.created_at.desc()).limit(limit).all()
+        image_map = _build_primary_image_map([p.id for p in products])
+        return jsonify({"recommendations": [_serialize_product_card(p, image_map) for p in products]}), 200
+
+    favorites = (
+        Favorite.query
+        .filter_by(user_id=user.id)
+        .order_by(Favorite.created_at.desc(), Favorite.id.desc())
+        .all()
+    )
+    favorite_product_ids = [row.product_id for row in favorites]
+
+    # お気に入りがない場合も新着を返す
+    if not favorite_product_ids:
+        products = (
+            base_query
+            .filter(Product.seller_id != user.id)
+            .order_by(Product.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+        image_map = _build_primary_image_map([p.id for p in products])
+        return jsonify({"recommendations": [_serialize_product_card(p, image_map) for p in products]}), 200
+
+    favorite_products = Product.query.filter(Product.id.in_(favorite_product_ids)).all()
+    favorite_categories = {str(p.category).strip().lower() for p in favorite_products if p.category}
+
+    favorite_tags = {
+        str(tag_row.tag).strip().lower()
+        for tag_row in ProductTag.query.filter(ProductTag.product_id.in_(favorite_product_ids)).all()
+        if tag_row.tag
+    }
+
+    favorite_tokens = set()
+    for product in favorite_products:
+        favorite_tokens.update(_extract_recommendation_tokens(product.title))
+        favorite_tokens.update(_extract_recommendation_tokens(product.description))
+    favorite_tokens.update({token for token in favorite_tags if len(token) >= 2})
+
+    candidates = (
+        base_query
+        .filter(~Product.id.in_(favorite_product_ids))
+        .filter(Product.seller_id != user.id)
+        .order_by(Product.created_at.desc())
+        .limit(300)
+        .all()
+    )
+    if not candidates:
+        return jsonify({"recommendations": []}), 200
+
+    candidate_ids = [p.id for p in candidates]
+    candidate_tag_rows = ProductTag.query.filter(ProductTag.product_id.in_(candidate_ids)).all()
+    candidate_tag_map = {}
+    for row in candidate_tag_rows:
+        candidate_tag_map.setdefault(row.product_id, set()).add(str(row.tag).strip().lower())
+
+    scored = []
+    for candidate in candidates:
+        score = 0
+
+        candidate_category = (candidate.category or '').strip().lower()
+        if candidate_category and candidate_category in favorite_categories:
+            score += 2
+
+        candidate_tags = candidate_tag_map.get(candidate.id, set())
+        tag_matches = len(candidate_tags.intersection(favorite_tags))
+        if tag_matches:
+            score += min(tag_matches, 3) * 4
+
+        text = " ".join([
+            str(candidate.title or '').lower(),
+            str(candidate.description or '').lower(),
+            str(candidate.category or '').lower()
+        ])
+        keyword_matches = 0
+        for token in favorite_tokens:
+            if len(token) < 2:
+                continue
+            if token in text:
+                keyword_matches += 1
+            if keyword_matches >= 4:
+                break
+        score += keyword_matches
+
+        scored.append((score, candidate.created_at or datetime.utcnow(), candidate))
+
+    scored.sort(key=lambda row: (row[0], row[1]), reverse=True)
+    selected_products = [row[2] for row in scored if row[0] > 0][:limit]
+
+    if len(selected_products) < limit:
+        selected_ids = {item.id for item in selected_products}
+        for candidate in candidates:
+            if candidate.id in selected_ids:
+                continue
+            selected_products.append(candidate)
+            selected_ids.add(candidate.id)
+            if len(selected_products) >= limit:
+                break
+
+    image_map = _build_primary_image_map([p.id for p in selected_products])
+    return jsonify({
+        "recommendations": [_serialize_product_card(product, image_map) for product in selected_products]
+    }), 200
+
+
+@app.route('/api/follow/feed', methods=['GET'])
+def get_follow_feed():
+    email = (request.args.get('email') or '').strip().lower()
+    limit = request.args.get('limit', 8, type=int) or 8
+    limit = max(1, min(limit, 40))
+
+    if not email:
+        return jsonify({"products": []}), 200
+
+    follow_rows = (
+        ForumFollow.query
+        .filter(db.func.lower(ForumFollow.follower_email) == email)
+        .all()
+    )
+    followee_emails = {
+        _normalize_email(row.followee_email)
+        for row in follow_rows
+        if _normalize_email(row.followee_email)
+    }
+    blocked_emails = _get_blocked_email_set(email)
+    if blocked_emails:
+        followee_emails = {item for item in followee_emails if item not in blocked_emails}
+    if not followee_emails:
+        return jsonify({"products": []}), 200
+
+    followee_users = User.query.filter(db.func.lower(User.email).in_(list(followee_emails))).all()
+    if not followee_users:
+        return jsonify({"products": []}), 200
+
+    followee_ids = [user.id for user in followee_users]
+    user_map = {user.id: user for user in followee_users}
+
+    products = (
+        Product.query
+        .filter(Product.seller_id.in_(followee_ids), Product.status == 1)
+        .order_by(Product.created_at.desc(), Product.id.desc())
+        .limit(limit)
+        .all()
+    )
+    image_map = _build_primary_image_map([p.id for p in products])
+
+    result = []
+    for product in products:
+        card = _serialize_product_card(product, image_map)
+        seller = user_map.get(product.seller_id)
+        card["seller_name"] = seller.user_name if seller else ""
+        card["seller_user_id"] = seller.user_id if seller else ""
+        result.append(card)
+
+    return jsonify({"products": result}), 200
 
 
 @app.route('/api/notifications', methods=['GET'])
@@ -1565,6 +1995,25 @@ def get_notifications():
         .order_by(Notification.created_at.desc(), Notification.id.desc())
         .all()
     )
+    blocked_emails = _get_blocked_email_set(email)
+    if blocked_emails:
+        blocked_users = User.query.filter(db.func.lower(User.email).in_(list(blocked_emails))).all()
+        blocked_seller_ids = {user.id for user in blocked_users if user.id}
+        related_ids = [item.related_product_id for item in notifications if item.related_product_id]
+        product_map = {}
+        if related_ids:
+            products = Product.query.filter(Product.id.in_(related_ids)).all()
+            product_map = {product.id: product for product in products}
+
+        filtered = []
+        for item in notifications:
+            if item.related_product_id and blocked_seller_ids:
+                product = product_map.get(item.related_product_id)
+                if product and product.seller_id in blocked_seller_ids:
+                    continue
+            filtered.append(item)
+        notifications = filtered
+
     unread_count = sum(1 for item in notifications if not item.is_read)
 
     return jsonify({
@@ -1592,6 +2041,65 @@ def mark_notifications_read_all():
         return jsonify({"error": "通知の更新に失敗しました", "detail": str(e)}), 500
 
     return jsonify({"message": "既読に更新しました", "updated": updated_count}), 200
+
+
+@app.route('/api/notification-settings', methods=['GET'])
+def get_notification_settings():
+    email = _normalize_email(request.args.get('email'))
+    if not email:
+        return jsonify({"error": "email が必要です"}), 400
+
+    setting = _get_or_create_notification_setting(email)
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    return jsonify({
+        "email": email,
+        "push_notification": bool(setting.push_notification),
+        "email_notification": bool(setting.email_notification),
+        "message_notification": bool(setting.message_notification),
+        "campaign_notification": bool(setting.campaign_notification)
+    }), 200
+
+
+@app.route('/api/notification-settings', methods=['PUT'])
+def update_notification_settings():
+    data = request.get_json() or {}
+    email = _normalize_email(data.get('email'))
+    if not email:
+        return jsonify({"error": "email が必要です"}), 400
+
+    setting = _get_or_create_notification_setting(email)
+    if not setting:
+        return jsonify({"error": "設定の取得に失敗しました"}), 500
+
+    if 'push_notification' in data:
+        setting.push_notification = _coerce_bool(data.get('push_notification'))
+    if 'email_notification' in data:
+        setting.email_notification = _coerce_bool(data.get('email_notification'))
+    if 'message_notification' in data:
+        setting.message_notification = _coerce_bool(data.get('message_notification'))
+    if 'campaign_notification' in data:
+        setting.campaign_notification = _coerce_bool(data.get('campaign_notification'))
+    setting.updated_at = datetime.utcnow()
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "通知設定の更新に失敗しました", "detail": str(e)}), 500
+
+    return jsonify({
+        "message": "通知設定を更新しました",
+        "settings": {
+            "push_notification": bool(setting.push_notification),
+            "email_notification": bool(setting.email_notification),
+            "message_notification": bool(setting.message_notification),
+            "campaign_notification": bool(setting.campaign_notification)
+        }
+    }), 200
 
 
 # ============================
@@ -1910,30 +2418,48 @@ def unlike_forum_comment(comment_id):
 
 @app.route('/api/forum/follow/status', methods=['GET'])
 def get_forum_follow_status():
-    follower_email = (request.args.get('follower_email') or '').strip()
-    followee_email = (request.args.get('followee_email') or '').strip()
+    follower_email = _normalize_email(request.args.get('follower_email'))
+    followee_email = _normalize_email(request.args.get('followee_email'))
 
     if not follower_email or not followee_email:
         return jsonify({"error": "follower_email と followee_email が必要です"}), 400
+
+    relation = _get_block_relation(follower_email, followee_email)
+    if relation["is_blocked"]:
+        return jsonify({
+            "following": False,
+            "blocked_by_me": relation["blocked_by_a"],
+            "blocked_me": relation["blocked_by_b"],
+            "is_blocked": True
+        }), 200
 
     is_following = ForumFollow.query.filter_by(
         follower_email=follower_email,
         followee_email=followee_email
     ).first() is not None
 
-    return jsonify({"following": is_following}), 200
+    return jsonify({
+        "following": is_following,
+        "blocked_by_me": relation["blocked_by_a"],
+        "blocked_me": relation["blocked_by_b"],
+        "is_blocked": relation["is_blocked"]
+    }), 200
 
 
 @app.route('/api/forum/follow', methods=['POST'])
 def follow_user():
     data = request.get_json() or {}
-    follower_email = (data.get('follower_email') or '').strip()
-    followee_email = (data.get('followee_email') or '').strip()
+    follower_email = _normalize_email(data.get('follower_email'))
+    followee_email = _normalize_email(data.get('followee_email'))
 
     if not follower_email or not followee_email:
         return jsonify({"error": "follower_email と followee_email が必要です"}), 400
     if follower_email == followee_email:
         return jsonify({"error": "自分自身はフォローできません"}), 400
+
+    relation = _get_block_relation(follower_email, followee_email)
+    if relation["is_blocked"]:
+        return jsonify({"error": "ブロック関係のためフォローできません"}), 403
 
     existing = ForumFollow.query.filter_by(
         follower_email=follower_email,
@@ -1960,8 +2486,8 @@ def follow_user():
 @app.route('/api/forum/unfollow', methods=['POST'])
 def unfollow_user():
     data = request.get_json() or {}
-    follower_email = (data.get('follower_email') or '').strip()
-    followee_email = (data.get('followee_email') or '').strip()
+    follower_email = _normalize_email(data.get('follower_email'))
+    followee_email = _normalize_email(data.get('followee_email'))
 
     if not follower_email or not followee_email:
         return jsonify({"error": "follower_email と followee_email が必要です"}), 400
@@ -1986,30 +2512,48 @@ def unfollow_user():
 
 @app.route('/api/follow/status', methods=['GET'])
 def get_follow_status():
-    follower_email = (request.args.get('follower_email') or '').strip()
-    followee_email = (request.args.get('followee_email') or '').strip()
+    follower_email = _normalize_email(request.args.get('follower_email'))
+    followee_email = _normalize_email(request.args.get('followee_email'))
 
     if not follower_email or not followee_email:
         return jsonify({"error": "follower_email と followee_email が必要です"}), 400
+
+    relation = _get_block_relation(follower_email, followee_email)
+    if relation["is_blocked"]:
+        return jsonify({
+            "following": False,
+            "blocked_by_me": relation["blocked_by_a"],
+            "blocked_me": relation["blocked_by_b"],
+            "is_blocked": True
+        }), 200
 
     is_following = ForumFollow.query.filter_by(
         follower_email=follower_email,
         followee_email=followee_email
     ).first() is not None
 
-    return jsonify({"following": is_following}), 200
+    return jsonify({
+        "following": is_following,
+        "blocked_by_me": relation["blocked_by_a"],
+        "blocked_me": relation["blocked_by_b"],
+        "is_blocked": relation["is_blocked"]
+    }), 200
 
 
 @app.route('/api/follow', methods=['POST'])
 def follow_user_general():
     data = request.get_json() or {}
-    follower_email = (data.get('follower_email') or '').strip()
-    followee_email = (data.get('followee_email') or '').strip()
+    follower_email = _normalize_email(data.get('follower_email'))
+    followee_email = _normalize_email(data.get('followee_email'))
 
     if not follower_email or not followee_email:
         return jsonify({"error": "follower_email と followee_email が必要です"}), 400
     if follower_email == followee_email:
         return jsonify({"error": "自分自身はフォローできません"}), 400
+
+    relation = _get_block_relation(follower_email, followee_email)
+    if relation["is_blocked"]:
+        return jsonify({"error": "ブロック関係のためフォローできません"}), 403
 
     existing = ForumFollow.query.filter_by(
         follower_email=follower_email,
@@ -2036,8 +2580,8 @@ def follow_user_general():
 @app.route('/api/unfollow', methods=['POST'])
 def unfollow_user_general():
     data = request.get_json() or {}
-    follower_email = (data.get('follower_email') or '').strip()
-    followee_email = (data.get('followee_email') or '').strip()
+    follower_email = _normalize_email(data.get('follower_email'))
+    followee_email = _normalize_email(data.get('followee_email'))
 
     if not follower_email or not followee_email:
         return jsonify({"error": "follower_email と followee_email が必要です"}), 400
@@ -2060,9 +2604,330 @@ def unfollow_user_general():
     return jsonify({"message": "フォロー解除しました"}), 200
 
 
+@app.route('/api/follow/list', methods=['GET'])
+def get_follow_list():
+    email = _normalize_email(request.args.get('email'))
+    list_type = (request.args.get('type') or 'following').strip().lower()
+
+    if not email:
+        return jsonify({"error": "email が必要です"}), 400
+    if list_type not in {'following', 'followers'}:
+        return jsonify({"error": "type は following または followers を指定してください"}), 400
+
+    if list_type == 'following':
+        rows = (
+            ForumFollow.query
+            .filter(db.func.lower(ForumFollow.follower_email) == email)
+            .order_by(ForumFollow.created_at.desc(), ForumFollow.id.desc())
+            .all()
+        )
+        target_emails = [_normalize_email(row.followee_email) for row in rows if _normalize_email(row.followee_email)]
+    else:
+        rows = (
+            ForumFollow.query
+            .filter(db.func.lower(ForumFollow.followee_email) == email)
+            .order_by(ForumFollow.created_at.desc(), ForumFollow.id.desc())
+            .all()
+        )
+        target_emails = [_normalize_email(row.follower_email) for row in rows if _normalize_email(row.follower_email)]
+
+    if not target_emails:
+        return jsonify({"users": []}), 200
+
+    users = User.query.filter(db.func.lower(User.email).in_(target_emails)).all()
+    user_map = {_normalize_email(user.email): user for user in users if user.email}
+
+    result = []
+    seen = set()
+    for target_email in target_emails:
+        if not target_email or target_email in seen:
+            continue
+        seen.add(target_email)
+
+        target_user = user_map.get(target_email)
+        if not target_user:
+            continue
+
+        block_relation = _get_block_relation(email, target_email)
+        result.append({
+            "email": target_user.email,
+            "user_id": target_user.user_id,
+            "user_name": target_user.user_name or target_user.name or (target_user.email.split('@')[0] if target_user.email else 'ユーザー'),
+            "profile_image": target_user.profile_image,
+            "blocked_by_me": block_relation["blocked_by_a"],
+            "blocked_me": block_relation["blocked_by_b"],
+            "is_blocked": block_relation["is_blocked"]
+        })
+
+    return jsonify({"users": result}), 200
+
+
+@app.route('/api/block/status', methods=['GET'])
+def get_block_status():
+    requester_email = _normalize_email(request.args.get('requester_email'))
+    target_email = _normalize_email(request.args.get('target_email'))
+
+    if not requester_email or not target_email:
+        return jsonify({"error": "requester_email と target_email が必要です"}), 400
+
+    relation = _get_block_relation(requester_email, target_email)
+    return jsonify({
+        "blocked_by_me": relation["blocked_by_a"],
+        "blocked_me": relation["blocked_by_b"],
+        "is_blocked": relation["is_blocked"]
+    }), 200
+
+
+@app.route('/api/block/list', methods=['GET'])
+def get_block_list():
+    email = _normalize_email(request.args.get('email'))
+    if not email:
+        return jsonify({"error": "email が必要です"}), 400
+
+    rows = (
+        UserBlock.query
+        .filter(db.func.lower(UserBlock.blocker_email) == email)
+        .order_by(UserBlock.created_at.desc(), UserBlock.id.desc())
+        .all()
+    )
+    blocked_emails = [_normalize_email(row.blocked_email) for row in rows if _normalize_email(row.blocked_email)]
+    if not blocked_emails:
+        return jsonify({"users": []}), 200
+
+    users = User.query.filter(db.func.lower(User.email).in_(blocked_emails)).all()
+    user_map = {_normalize_email(user.email): user for user in users if user.email}
+
+    result = []
+    for blocked_email in blocked_emails:
+        user = user_map.get(blocked_email)
+        if not user:
+            continue
+        result.append({
+            "email": user.email,
+            "user_id": user.user_id,
+            "user_name": user.user_name or user.name or (user.email.split('@')[0] if user.email else 'ユーザー'),
+            "profile_image": user.profile_image
+        })
+
+    return jsonify({"users": result}), 200
+
+
+@app.route('/api/block', methods=['POST'])
+def block_user():
+    data = request.get_json() or {}
+    blocker_email = _normalize_email(data.get('blocker_email'))
+    blocked_email = _normalize_email(data.get('blocked_email'))
+
+    if not blocker_email or not blocked_email:
+        return jsonify({"error": "blocker_email と blocked_email が必要です"}), 400
+    if blocker_email == blocked_email:
+        return jsonify({"error": "自分自身はブロックできません"}), 400
+
+    existing = UserBlock.query.filter_by(blocker_email=blocker_email, blocked_email=blocked_email).first()
+    if existing:
+        return jsonify({"message": "既にブロック済みです"}), 200
+
+    block = UserBlock(
+        blocker_email=blocker_email,
+        blocked_email=blocked_email
+    )
+
+    # ブロック時は相互フォローを解除
+    follow_rows = ForumFollow.query.filter(
+        db.or_(
+            db.and_(
+                db.func.lower(ForumFollow.follower_email) == blocker_email,
+                db.func.lower(ForumFollow.followee_email) == blocked_email
+            ),
+            db.and_(
+                db.func.lower(ForumFollow.follower_email) == blocked_email,
+                db.func.lower(ForumFollow.followee_email) == blocker_email
+            )
+        )
+    ).all()
+
+    try:
+        db.session.add(block)
+        for row in follow_rows:
+            db.session.delete(row)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "ブロックに失敗しました", "detail": str(e)}), 500
+
+    return jsonify({"message": "ブロックしました"}), 201
+
+
+@app.route('/api/unblock', methods=['POST'])
+def unblock_user():
+    data = request.get_json() or {}
+    blocker_email = _normalize_email(data.get('blocker_email'))
+    blocked_email = _normalize_email(data.get('blocked_email'))
+
+    if not blocker_email or not blocked_email:
+        return jsonify({"error": "blocker_email と blocked_email が必要です"}), 400
+
+    block_row = UserBlock.query.filter_by(blocker_email=blocker_email, blocked_email=blocked_email).first()
+    if not block_row:
+        return jsonify({"message": "ブロックしていません"}), 200
+
+    try:
+        db.session.delete(block_row)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "ブロック解除に失敗しました", "detail": str(e)}), 500
+
+    return jsonify({"message": "ブロック解除しました"}), 200
+
+
 # ============================
 # Stripe 決済
 # ============================
+PURCHASE_STATUS_LABELS = {
+    'paid': '購入完了',
+    'preparing': '発送準備中',
+    'shipped': '発送済み',
+    'completed': '受取完了'
+}
+
+
+def _purchase_status_label(status):
+    return PURCHASE_STATUS_LABELS.get(status or '', status or '不明')
+
+
+def _allowed_next_purchase_status(purchase, actor_email):
+    actor = _normalize_email(actor_email)
+    if not actor or not purchase:
+        return []
+
+    buyer_email = _normalize_email(purchase.buyer_email)
+    seller_user = User.query.get(purchase.seller_id) if purchase.seller_id else None
+    seller_email = _normalize_email(seller_user.email) if seller_user and seller_user.email else ''
+    current_status = (purchase.status or 'paid').strip().lower()
+
+    options = []
+    if actor == seller_email:
+        if current_status == 'paid':
+            options.append('preparing')
+        elif current_status == 'preparing':
+            options.append('shipped')
+    elif actor == buyer_email:
+        if current_status == 'shipped':
+            options.append('completed')
+
+    return options
+
+
+@app.route('/api/products/<int:product_id>/purchase-status', methods=['GET'])
+def get_product_purchase_status(product_id):
+    email = _normalize_email(request.args.get('email'))
+    product = Product.query.get(product_id)
+    if not product:
+        return jsonify({"error": "商品が見つかりません"}), 404
+
+    purchase = (
+        Purchase.query
+        .filter_by(product_id=product_id)
+        .order_by(Purchase.created_at.desc(), Purchase.id.desc())
+        .first()
+    )
+    if not purchase:
+        return jsonify({"purchase": None}), 200
+
+    seller_user = User.query.get(purchase.seller_id) if purchase.seller_id else None
+    seller_email = _normalize_email(seller_user.email) if seller_user and seller_user.email else ''
+    buyer_email = _normalize_email(purchase.buyer_email)
+
+    role = 'viewer'
+    if email and email == seller_email:
+        role = 'seller'
+    elif email and email == buyer_email:
+        role = 'buyer'
+
+    next_status = _allowed_next_purchase_status(purchase, email)
+    return jsonify({
+        "purchase": {
+            "id": purchase.id,
+            "product_id": purchase.product_id,
+            "status": purchase.status,
+            "status_label": _purchase_status_label(purchase.status),
+            "buyer_email": buyer_email,
+            "seller_email": seller_email,
+            "created_at": purchase.created_at.isoformat() if purchase.created_at else None
+        },
+        "role": role,
+        "next_status_options": [
+            {"value": status, "label": _purchase_status_label(status)}
+            for status in next_status
+        ]
+    }), 200
+
+
+@app.route('/api/purchases/<int:purchase_id>/status', methods=['POST'])
+def update_purchase_status(purchase_id):
+    data = request.get_json() or {}
+    actor_email = _normalize_email(data.get('actor_email'))
+    next_status = (data.get('status') or '').strip().lower()
+
+    if not actor_email:
+        return jsonify({"error": "actor_email が必要です"}), 400
+    if not next_status:
+        return jsonify({"error": "status が必要です"}), 400
+
+    purchase = Purchase.query.get(purchase_id)
+    if not purchase:
+        return jsonify({"error": "購入情報が見つかりません"}), 404
+
+    allowed = _allowed_next_purchase_status(purchase, actor_email)
+    if next_status not in allowed:
+        return jsonify({"error": "そのステータスには更新できません"}), 403
+
+    previous_status = (purchase.status or 'paid').strip().lower()
+    purchase.status = next_status
+
+    seller_user = User.query.get(purchase.seller_id) if purchase.seller_id else None
+    seller_email = _normalize_email(seller_user.email) if seller_user and seller_user.email else ''
+    buyer_email = _normalize_email(purchase.buyer_email)
+    product = Product.query.get(purchase.product_id)
+
+    notify_target = ''
+    actor_name = _display_name_from_email(actor_email, _find_user_by_email(actor_email))
+    if actor_email == seller_email:
+        notify_target = buyer_email
+    elif actor_email == buyer_email:
+        notify_target = seller_email
+
+    try:
+        if notify_target:
+            title = '取引ステータスが更新されました'
+            message = f"「{product.title if product else '商品'}」の状態が「{_purchase_status_label(next_status)}」になりました。"
+            if next_status == 'completed' and previous_status != 'completed':
+                message = f"{actor_name}さんが「{product.title if product else '商品'}」を受け取りました。"
+            _create_notification(
+                user_email=notify_target,
+                notification_type='purchase',
+                title=title,
+                message=message,
+                related_product_id=purchase.product_id,
+                actor_email=actor_email
+            )
+
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "ステータス更新に失敗しました", "detail": str(e)}), 500
+
+    return jsonify({
+        "message": "取引ステータスを更新しました",
+        "purchase": {
+            "id": purchase.id,
+            "status": purchase.status,
+            "status_label": _purchase_status_label(purchase.status)
+        }
+    }), 200
+
+
 def _format_purchase_response(purchase, product):
     return {
         "purchase": {
@@ -2075,6 +2940,7 @@ def _format_purchase_response(purchase, product):
             "stripe_session_id": purchase.stripe_session_id,
             "stripe_payment_intent_id": purchase.stripe_payment_intent_id,
             "status": purchase.status,
+            "status_label": _purchase_status_label(purchase.status),
             "created_at": purchase.created_at.isoformat() if purchase.created_at else None
         },
         "product": {
@@ -2135,7 +3001,8 @@ def _upsert_purchase_from_session(session):
             notification_type='purchase',
             title='購入が完了しました',
             message=f"「{product.title}」の購入が完了しました。",
-            related_product_id=product.id
+            related_product_id=product.id,
+            actor_email=seller_email
         )
 
     if seller_email and seller_email != buyer_email:
@@ -2144,7 +3011,8 @@ def _upsert_purchase_from_session(session):
             notification_type='sold',
             title='商品が購入されました',
             message=f"「{product.title}」が購入されました。",
-            related_product_id=product.id
+            related_product_id=product.id,
+            actor_email=buyer_email
         )
     try:
         db.session.commit()
@@ -2275,6 +3143,7 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(host='0.0.0.0', port=5000, debug=True)
+
 
 
 

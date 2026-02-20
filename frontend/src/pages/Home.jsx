@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../css/firebase';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import '../css/index.css';
@@ -9,23 +11,64 @@ const getImageUrl = (imageUrl) => {
   if (imageUrl.startsWith('http') || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
     return imageUrl;
   }
-  const trimmed = imageUrl.replace(/^\/+/, '');
+  const trimmed = String(imageUrl).replace(/\\/g, '/').replace(/^\/+/, '');
   return `http://localhost:5000/${trimmed}`;
 };
 
 function Home() {
   const [products, setProducts] = useState([]);
+  const [recommendProducts, setRecommendProducts] = useState([]);
+  const [followProducts, setFollowProducts] = useState([]);
+  const [currentUserEmail, setCurrentUserEmail] = useState('');
+  const [recommendLoading, setRecommendLoading] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+
+  const renderProductGrid = (items) => (
+    <div className="book-grid">
+      {items.length > 0 ? (
+        items.map((product) => (
+          <Link key={product.id} to={`/product-detail?id=${product.id}`} className="book-card-link">
+            <div className="book-card">
+              <div className="book-image">
+                {product.image_url ? (
+                  <img src={getImageUrl(product.image_url)} alt={product.title} />
+                ) : (
+                  'NO IMAGE'
+                )}
+                {product.status !== 1 && <span className="sold-badge">Sold out</span>}
+              </div>
+              <div className="book-info">
+                <div className="book-title">{product.title}</div>
+                <div className="book-price">¥{product.price?.toLocaleString()}</div>
+              </div>
+            </div>
+          </Link>
+        ))
+      ) : (
+        <p>商品がありません。</p>
+      )}
+    </div>
+  );
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/hello')
-      .then(response => response.json())
-      .catch(error => console.error('Flask API呼び出しエラー:', error));
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUserEmail(user?.email || '');
+    });
+    return () => unsubscribe();
+  }, []);
 
-    // 商品のリストを取得（新しいAPIレスポンス形式に対応）
-    fetch('http://localhost:5000/api/products?limit=8')
+  useEffect(() => {
+    const params = new URLSearchParams({
+      limit: '8',
+      include_sold: '1'
+    });
+    if (currentUserEmail) {
+      params.set('viewer_email', currentUserEmail);
+    }
+
+    fetch(`http://localhost:5000/api/products?${params.toString()}`)
       .then(response => response.json())
       .then(data => {
-        // 新しいレスポンス形式：{ products: [...], total: 0, ... }
         if (data.products) {
           setProducts(data.products);
         } else {
@@ -33,7 +76,64 @@ function Home() {
         }
       })
       .catch(error => console.error('Products API呼び出しエラー:', error));
-  }, []);
+  }, [currentUserEmail]);
+
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      setRecommendLoading(true);
+      try {
+        const params = new URLSearchParams({ limit: '8' });
+        if (currentUserEmail) {
+          params.set('email', currentUserEmail);
+        }
+        const response = await fetch(`http://localhost:5000/api/recommendations?${params.toString()}`);
+        const data = await response.json();
+        if (response.ok) {
+          setRecommendProducts(data.recommendations || []);
+        } else {
+          setRecommendProducts([]);
+        }
+      } catch (error) {
+        console.error('Recommendations API呼び出しエラー:', error);
+        setRecommendProducts([]);
+      } finally {
+        setRecommendLoading(false);
+      }
+    };
+
+    fetchRecommendations();
+  }, [currentUserEmail]);
+
+  useEffect(() => {
+    if (!currentUserEmail) {
+      setFollowProducts([]);
+      return;
+    }
+
+    const fetchFollowFeed = async () => {
+      setFollowLoading(true);
+      try {
+        const params = new URLSearchParams({
+          email: currentUserEmail,
+          limit: '8'
+        });
+        const response = await fetch(`http://localhost:5000/api/follow/feed?${params.toString()}`);
+        const data = await response.json();
+        if (response.ok) {
+          setFollowProducts(data.products || []);
+        } else {
+          setFollowProducts([]);
+        }
+      } catch (error) {
+        console.error('Follow feed API呼び出しエラー:', error);
+        setFollowProducts([]);
+      } finally {
+        setFollowLoading(false);
+      }
+    };
+
+    fetchFollowFeed();
+  }, [currentUserEmail]);
 
   return (
     <>
@@ -80,56 +180,24 @@ function Home() {
         {/* 新着の本 */}
         <section className="section">
           <h2 className="section-title">新着の本</h2>
-          <div className="book-grid">
-            {products.length > 0 ? (
-              products.slice(0, 4).map(product => (
-                <Link key={product.id} to={`/product-detail?id=${product.id}`}>
-                  <div className="book-card">
-                    <div
-                      className="book-image"
-                      style={{ backgroundImage: product.image_url ? `url(${getImageUrl(product.image_url)})` : 'none' }}
-                    >
-                      {!product.image_url && 'NO IMAGE'}
-                    </div>
-                    <div className="book-info">
-                      <div className="book-title">{product.title}</div>
-                      <div className="book-price">¥{product.price?.toLocaleString()}</div>
-                    </div>
-                  </div>
-                </Link>
-              ))
-            ) : (
-              <p>Loading products...</p>
-            )}
-          </div>
+          {products.length > 0 ? renderProductGrid(products.slice(0, 4)) : <p>Loading products...</p>}
         </section>
 
-        {/* 注目の本 */}
+        {/* おすすめ */}
         <section className="section">
-          <h2 className="section-title">注目の本</h2>
-          <div className="book-grid">
-            {products.length > 0 ? (
-              products.slice(0, 4).map(product => (
-                <Link key={product.id} to={`/product-detail?id=${product.id}`}>
-                  <div className="book-card">
-                    <div
-                      className="book-image"
-                      style={{ backgroundImage: product.image_url ? `url(${getImageUrl(product.image_url)})` : 'none' }}
-                    >
-                      {!product.image_url && 'NO IMAGE'}
-                    </div>
-                    <div className="book-info">
-                      <div className="book-title">{product.title}</div>
-                      <div className="book-price">¥{product.price?.toLocaleString()}</div>
-                    </div>
-                  </div>
-                </Link>
-              ))
-            ) : (
-              <p>Loading products...</p>
+          <h2 className="section-title">おすすめ商品</h2>
+          {recommendLoading ? <p>おすすめを読み込み中...</p> : renderProductGrid(recommendProducts.slice(0, 4))}
+        </section>
+
+        {currentUserEmail && (
+          <section className="section">
+            <h2 className="section-title">フォロー中ユーザーの新着</h2>
+            {followLoading ? <p>フォロー中の新着を読み込み中...</p> : (
+              followProducts.length > 0 ? renderProductGrid(followProducts.slice(0, 4)) : <p>フォロー中ユーザーの出品はまだありません。</p>
             )}
-          </div>
-        </section></main>
+          </section>
+        )}
+      </main>
 
       <Footer />
     </>

@@ -43,6 +43,12 @@ function ProductDetail() {
   const [chatError, setChatError] = useState('');
   const [chatScope, setChatScope] = useState('open');
   const chatThreadRef = useRef(null);
+  const chatInputRef = useRef(null);
+  const isFetchingChatRef = useRef(false);
+  const [purchaseStatusData, setPurchaseStatusData] = useState(null);
+  const [purchaseStatusLoading, setPurchaseStatusLoading] = useState(false);
+  const [purchaseStatusError, setPurchaseStatusError] = useState('');
+  const [purchaseStatusUpdating, setPurchaseStatusUpdating] = useState(false);
 
   useEffect(() => {
     if (!productId) {
@@ -80,6 +86,8 @@ function ProductDetail() {
     setSelectedChatEmail('');
     setChatInput('');
     setChatError('');
+    setPurchaseStatusData(null);
+    setPurchaseStatusError('');
   }, [productId]);
 
   useEffect(() => {
@@ -191,7 +199,7 @@ function ProductDetail() {
     if (imageUrl.startsWith('http') || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
       return imageUrl;
     }
-    const trimmed = imageUrl.replace(/^\/+/, '');
+    const trimmed = String(imageUrl).replace(/\\/g, '/').replace(/^\/+/, '');
     return `http://localhost:5000/${trimmed}`;
   };
 
@@ -202,13 +210,21 @@ function ProductDetail() {
     return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const loadChatMessages = async (counterpartEmail = '') => {
+  const loadChatMessages = async (counterpartEmail = '', options = {}) => {
+    const { silent = false } = options;
     if (!currentUser?.email || !product?.id) {
       return;
     }
+    if (isFetchingChatRef.current) {
+      return;
+    }
 
-    setChatLoading(true);
-    setChatError('');
+    isFetchingChatRef.current = true;
+
+    if (!silent) {
+      setChatLoading(true);
+      setChatError('');
+    }
 
     try {
       const params = new URLSearchParams({ email: currentUser.email });
@@ -238,9 +254,14 @@ function ProductDetail() {
       }
     } catch (err) {
       console.error('Chat fetch error:', err);
-      setChatError(err.message || 'チャットの読み込みに失敗しました');
+      if (!silent) {
+        setChatError(err.message || 'チャットの読み込みに失敗しました');
+      }
     } finally {
-      setChatLoading(false);
+      if (!silent) {
+        setChatLoading(false);
+      }
+      isFetchingChatRef.current = false;
     }
   };
 
@@ -254,7 +275,7 @@ function ProductDetail() {
     setIsChatOpen(nextOpen);
 
     if (nextOpen) {
-      await loadChatMessages();
+      await loadChatMessages('', { silent: false });
     }
   };
 
@@ -263,7 +284,7 @@ function ProductDetail() {
       return;
     }
     setSelectedChatEmail(email);
-    await loadChatMessages(email);
+    await loadChatMessages(email, { silent: false });
   };
 
   const handleChatSubmit = async (e) => {
@@ -307,7 +328,7 @@ function ProductDetail() {
       }
 
       setChatInput('');
-      await loadChatMessages(receiverEmail);
+      await loadChatMessages(receiverEmail, { silent: true });
     } catch (err) {
       console.error('Chat send error:', err);
       setChatError(err.message || 'メッセージ送信に失敗しました');
@@ -324,11 +345,17 @@ function ProductDetail() {
 
     const chatPollingTarget = isOwnProduct ? selectedChatEmail : '';
     const timer = setInterval(() => {
-      loadChatMessages(chatPollingTarget);
-    }, 5000);
+      if (isChatSending) {
+        return;
+      }
+      if (document.activeElement === chatInputRef.current) {
+        return;
+      }
+      loadChatMessages(chatPollingTarget, { silent: true });
+    }, 10000);
 
     return () => clearInterval(timer);
-  }, [isChatOpen, currentUser, product, isOwnProduct, selectedChatEmail]);
+  }, [isChatOpen, currentUser, product, isOwnProduct, selectedChatEmail, isChatSending]);
   const handlePurchaseClick = () => {
     if (!currentUser) {
       navigate('/login');
@@ -478,6 +505,67 @@ function ProductDetail() {
     }
   };
 
+  const fetchPurchaseStatus = async () => {
+    if (!product?.id) {
+      setPurchaseStatusData(null);
+      return;
+    }
+
+    setPurchaseStatusLoading(true);
+    setPurchaseStatusError('');
+    try {
+      const emailParam = currentUser?.email ? `?email=${encodeURIComponent(currentUser.email)}` : '';
+      const response = await fetch(`http://localhost:5000/api/products/${product.id}/purchase-status${emailParam}`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || '取引ステータスの取得に失敗しました');
+      }
+      setPurchaseStatusData(data);
+    } catch (err) {
+      console.error('Purchase status fetch error:', err);
+      setPurchaseStatusError(err.message || '取引ステータスの取得に失敗しました');
+      setPurchaseStatusData(null);
+    } finally {
+      setPurchaseStatusLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPurchaseStatus();
+  }, [product?.id, currentUser?.email]);
+
+  const handlePurchaseStatusUpdate = async (nextStatus) => {
+    const purchaseId = purchaseStatusData?.purchase?.id;
+    if (!purchaseId || !currentUser?.email || !nextStatus) {
+      return;
+    }
+
+    setPurchaseStatusUpdating(true);
+    setPurchaseStatusError('');
+    try {
+      const response = await fetch(`http://localhost:5000/api/purchases/${purchaseId}/status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          actor_email: currentUser.email,
+          status: nextStatus
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || '取引ステータスの更新に失敗しました');
+      }
+      await fetchPurchaseStatus();
+    } catch (err) {
+      console.error('Purchase status update error:', err);
+      setPurchaseStatusError(err.message || '取引ステータスの更新に失敗しました');
+    } finally {
+      setPurchaseStatusUpdating(false);
+    }
+  };
+
   if (loading) {
     return (
       <>
@@ -514,6 +602,11 @@ function ProductDetail() {
   const chatInputPlaceholder = isOwnProduct
     ? (selectedChatEmail ? '購入希望者に返信...' : '購入希望者を選択してください')
     : '出品者へメッセージを送る';
+  const purchase = purchaseStatusData?.purchase || null;
+  const purchaseRole = purchaseStatusData?.role || 'viewer';
+  const nextStatusOptions = Array.isArray(purchaseStatusData?.next_status_options)
+    ? purchaseStatusData.next_status_options
+    : [];
 
   return (
     <>
@@ -611,7 +704,7 @@ function ProductDetail() {
                   <Link to={`/profile/${product.seller.user_id}`} className="seller-profile">
                     <div className="seller-avatar">
                       {product.seller.profile_image ? (
-                        <img src={product.seller.profile_image} alt={product.seller.user_name} />
+                        <img src={getImageUrl(product.seller.profile_image)} alt={product.seller.user_name} />
                       ) : (
                         'USER'
                       )}
@@ -628,6 +721,39 @@ function ProductDetail() {
                   >
                     {!currentUser ? 'ログインでフォロー' : (isFollowing ? 'フォロー中' : 'フォロー')}
                   </button>
+                </div>
+              )}
+
+              {purchase && (
+                <div className="purchase-status-panel">
+                  <div className="purchase-status-head">
+                    <span>取引ステータス</span>
+                    <strong>{purchase.status_label || purchase.status}</strong>
+                  </div>
+                  {purchaseStatusLoading && <p className="purchase-status-note">更新中...</p>}
+                  {purchaseStatusError && <p className="purchase-status-error">{purchaseStatusError}</p>}
+                  {!purchaseStatusLoading && nextStatusOptions.length > 0 && (
+                    <div className="purchase-status-actions">
+                      {nextStatusOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className="btn-small purchase-status-btn"
+                          onClick={() => handlePurchaseStatusUpdate(option.value)}
+                          disabled={purchaseStatusUpdating}
+                        >
+                          {purchaseStatusUpdating ? '更新中...' : option.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {!purchaseStatusLoading && nextStatusOptions.length === 0 && (
+                    <p className="purchase-status-note">
+                      {purchaseRole === 'viewer'
+                        ? '取引当事者のみステータスを更新できます。'
+                        : '現在、更新可能なステータスはありません。'}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -767,6 +893,7 @@ function ProductDetail() {
 
           <form className="chat-input-row" onSubmit={handleChatSubmit}>
             <input
+              ref={chatInputRef}
               type="text"
               className="chat-input"
               value={chatInput}

@@ -320,6 +320,7 @@
     background: var(--surface-muted);
     padding: 16px;
     border-radius: 4px;
+    margin-top: 12px;
     margin-bottom: 24px;
 }
 
@@ -393,6 +394,58 @@
 
 .btn-secondary:hover {
     background: var(--surface-muted);
+}
+
+.purchase-status-panel {
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: var(--surface-muted);
+}
+
+.purchase-status-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--ink);
+}
+
+.purchase-status-head strong {
+    color: var(--accent);
+    font-size: 0.95rem;
+}
+
+.purchase-status-actions {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.purchase-status-btn {
+    border: 1px solid var(--accent);
+    background: var(--surface);
+    color: var(--accent);
+}
+
+.purchase-status-btn:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+.purchase-status-note {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.purchase-status-error {
+    margin-top: 8px;
+    color: var(--accent-warm);
+    font-size: 0.85rem;
+    font-weight: 600;
 }
 
 /* コミュニケーションアクション */
