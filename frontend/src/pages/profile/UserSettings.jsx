@@ -186,7 +186,8 @@ function UserSettings() {
       }));
 
       setTimeout(() => {
-        navigate('/profile');
+        const nextUserId = data?.user?.user_id || formData.user_id;
+        navigate(`/profile/${nextUserId}`);
       }, 1200);
     } catch (err) {
       console.error('Update error:', err);
