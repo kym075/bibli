@@ -814,21 +814,6 @@ def hello():
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json() or {}
-    _ensure_user_id_backfill_once()
-
-    if 'user_id' in data:
-        next_user_id = _normalize_public_user_id(data.get('user_id'))
-        if not _is_valid_public_user_id(next_user_id):
-            return jsonify({"error": "user_id must be 3-30 chars of a-z, 0-9, _, ., -"}), 400
-        duplicate = (
-            User.query
-            .filter(db.func.lower(User.user_id) == next_user_id)
-            .filter(User.id != user.id)
-            .first()
-        )
-        if duplicate:
-            return jsonify({"error": "user_id は既に使われています"}), 409
-        user.user_id = next_user_id
     email = _normalize_email(data.get('email'))
     user_id = _normalize_public_user_id(data.get('user_id'))
     data['email'] = email
@@ -1023,6 +1008,21 @@ def update_profile(email):
         return jsonify({"error": "ユーザーが見つかりません"}), 404
 
     data = request.get_json() or {}
+    _ensure_user_id_backfill_once()
+
+    if 'user_id' in data:
+        next_user_id = _normalize_public_user_id(data.get('user_id'))
+        if not _is_valid_public_user_id(next_user_id):
+            return jsonify({"error": "user_id must be 3-30 chars of a-z, 0-9, _, ., -"}), 400
+        duplicate = (
+            User.query
+            .filter(db.func.lower(User.user_id) == next_user_id)
+            .filter(User.id != user.id)
+            .first()
+        )
+        if duplicate:
+            return jsonify({"error": "user_id は既に使われています"}), 409
+        user.user_id = next_user_id
 
     # 更新可能なフィールドのみ更新
     if 'user_name' in data:

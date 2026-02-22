@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+﻿import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { auth } from '../css/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -41,9 +41,7 @@ function Header() {
         }
       } catch (err) {
         console.error('Header user fetch error:', err);
-        if (active) {
-          setUserProfile(null);
-        }
+        if (active) setUserProfile(null);
       }
     });
 
@@ -63,10 +61,7 @@ function Header() {
     };
 
     const closeDropdown = (e) => {
-      if (
-        !hamburgerMenu?.contains(e.target) &&
-        !hamburgerDropdown?.contains(e.target)
-      ) {
+      if (!hamburgerMenu?.contains(e.target) && !hamburgerDropdown?.contains(e.target)) {
         hamburgerDropdown?.classList.remove('show');
         hamburgerMenu?.classList.remove('active');
       }
@@ -100,6 +95,7 @@ function Header() {
 
   const headerProfileImageUrl = getImageUrl(userProfile?.profile_image || '');
   const headerUserName = (userProfile?.user_name || user?.displayName || user?.email || '').trim();
+  const profilePath = userProfile?.user_id ? `/profile/${userProfile.user_id}` : '/profile';
 
   return (
     <header className="header">
@@ -128,7 +124,7 @@ function Header() {
             {!user ? (
               <Link to="/login" className="btn btn-secondary">ログイン/登録</Link>
             ) : (
-              <Link to="/profile" className="user-icon-link" aria-label="プロフィール">
+              <Link to={profilePath} className="user-icon-link" aria-label="プロフィール">
                 <span className="user-circle-icon">
                   {headerProfileImageUrl && (
                     <img src={headerProfileImageUrl} alt="プロフィールアイコン" className="user-circle-image" />
@@ -146,7 +142,7 @@ function Header() {
           <div className="hamburger-dropdown" id="hamburger-dropdown">
             {user ? (
               <>
-                <Link to="/profile" className="dropdown-item">
+                <Link to={profilePath} className="dropdown-item">
                   <span className="dropdown-icon">P</span>
                   <span className="dropdown-text">プロフィール</span>
                 </Link>
