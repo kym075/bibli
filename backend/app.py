@@ -39,6 +39,7 @@ stripe.api_key = STRIPE_SECRET_KEY
  
 db = SQLAlchemy(app)
 _FORUM_SCHEMA_READY = False
+_USER_ID_BACKFILL_READY = False
 
 FORUM_CATEGORY_LABELS = {
     "chat": "雑談",
@@ -584,6 +585,56 @@ def _normalize_email(value):
     return (value or '').strip().lower()
 
 
+def _normalize_public_user_id(value):
+    return (value or '').strip().lower()
+
+
+def _is_valid_public_user_id(value):
+    return bool(re.fullmatch(r'[a-z0-9_.-]{3,30}', value or ''))
+
+
+def _generate_unique_user_id(source):
+    base_source = _normalize_public_user_id(source)
+    base_source = base_source.split('@')[0] if '@' in base_source else base_source
+    sanitized = re.sub(r'[^a-z0-9_.-]', '', base_source)
+    base = (sanitized or 'user')[:50]
+
+    candidate = base
+    sequence = 1
+    while User.query.filter(db.func.lower(User.user_id) == candidate).first():
+        suffix = f"-{sequence}"
+        candidate = f"{base[:max(1, 50 - len(suffix))]}{suffix}"
+        sequence += 1
+    return candidate
+
+
+def _ensure_user_id_backfill_once():
+    global _USER_ID_BACKFILL_READY
+    if _USER_ID_BACKFILL_READY:
+        return
+
+    users = User.query.order_by(User.id.asc()).all()
+    seen = set()
+    changed = False
+
+    for user in users:
+        current = _normalize_public_user_id(user.user_id)
+        if current and current not in seen:
+            seen.add(current)
+            continue
+
+        source = user.email or current or f"user{user.id}"
+        new_user_id = _generate_unique_user_id(source)
+        user.user_id = new_user_id
+        seen.add(new_user_id)
+        changed = True
+
+    if changed:
+        db.session.commit()
+
+    _USER_ID_BACKFILL_READY = True
+
+
 def _coerce_optional_int(value):
     if value is None or value == '':
         return None
@@ -763,11 +814,31 @@ def hello():
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json() or {}
+    _ensure_user_id_backfill_once()
+
+    if 'user_id' in data:
+        next_user_id = _normalize_public_user_id(data.get('user_id'))
+        if not _is_valid_public_user_id(next_user_id):
+            return jsonify({"error": "user_id must be 3-30 chars of a-z, 0-9, _, ., -"}), 400
+        duplicate = (
+            User.query
+            .filter(db.func.lower(User.user_id) == next_user_id)
+            .filter(User.id != user.id)
+            .first()
+        )
+        if duplicate:
+            return jsonify({"error": "user_id は既に使われています"}), 409
+        user.user_id = next_user_id
+    email = _normalize_email(data.get('email'))
+    user_id = _normalize_public_user_id(data.get('user_id'))
+    data['email'] = email
+    _ensure_user_id_backfill_once()
 
     # React 側と一致するように修正（phone_numberを受け付ける）
     phone = data.get('phone_number') or data.get('phone')
     required_fields = {
         'user_name': data.get('user_name'),
+        'user_id': user_id,
         'email': data.get('email'),
         'password': data.get('password'),
         'address': data.get('address'),
@@ -781,6 +852,12 @@ def register():
         if not value:
             return jsonify({"error": f"{field} が必要です"}), 400
 
+    if not _is_valid_public_user_id(user_id):
+        return jsonify({"error": "user_id must be 3-30 chars of a-z, 0-9, _, ., -"}), 400
+
+    if User.query.filter(db.func.lower(User.user_id) == user_id).first():
+        return jsonify({"error": "user_id は既に使われています"}), 409
+
     if User.query.filter_by(email=data['email']).first():
         return jsonify({"error": "email は既に使われています"}), 409
 
@@ -791,7 +868,7 @@ def register():
     hashed_pw = generate_password_hash(data['password'], method='pbkdf2:sha256')
 
     # user_idを自動生成（email のローカル部分を使用）
-    user_id_base = data['email'].split('@')[0]
+    user_id_base = user_id
 
     user = User(
         user_id=user_id_base,
@@ -847,7 +924,7 @@ def login():
         return jsonify({"error": "認証失敗"}), 401
  
     payload = {
-        "user_id": int(user.user_id),
+        "user_id": int(user.id),
         "exp": datetime.utcnow() + timedelta(hours=24)
     }
     token = jwt.encode(payload, app.config['SECRET_KEY'], algorithm='HS256')
@@ -3489,4 +3566,5 @@ def get_purchase_by_session(session_id):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+        _ensure_user_id_backfill_once()
     app.run(host='0.0.0.0', port=5000, debug=True)

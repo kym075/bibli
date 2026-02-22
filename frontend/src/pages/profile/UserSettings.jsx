@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+﻿import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { auth } from '../../css/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -11,6 +11,7 @@ function UserSettings() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
+    user_id: '',
     user_name: '',
     bio: '',
     address: '',
@@ -38,31 +39,35 @@ function UserSettings() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        // バックエンドから現在のプロフィール情報を取得
-        try {
-          const response = await fetch(`http://localhost:5000/api/profile/${currentUser.email}`);
-          if (response.ok) {
-            const data = await response.json();
-            setFormData({
-              user_name: data.user_name || '',
-              bio: data.bio || '',
-              address: data.address || '',
-              phone_number: data.phone_number || '',
-              birth_date: data.birth_date || '',
-              real_name: data.real_name || '',
-              name_kana: data.name_kana || '',
-              profile_image: data.profile_image || '',
-              password: '',
-              passwordConf: ''
-            });
-          }
-        } catch (err) {
-          console.error('Profile fetch error:', err);
-        }
+      if (!currentUser) {
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      setUser(currentUser);
+      try {
+        const response = await fetch(`http://localhost:5000/api/profile/${currentUser.email}`);
+        if (response.ok) {
+          const data = await response.json();
+          setFormData({
+            user_id: data.user_id || '',
+            user_name: data.user_name || '',
+            bio: data.bio || '',
+            address: data.address || '',
+            phone_number: data.phone_number || '',
+            birth_date: data.birth_date || '',
+            real_name: data.real_name || '',
+            name_kana: data.name_kana || '',
+            profile_image: data.profile_image || '',
+            password: '',
+            passwordConf: ''
+          });
+        }
+      } catch (err) {
+        console.error('Profile fetch error:', err);
+      } finally {
+        setLoading(false);
+      }
     });
 
     return () => unsubscribe();
@@ -70,17 +75,21 @@ function UserSettings() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    let nextValue = value;
+
+    if (name === 'user_id') {
+      nextValue = value.toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+    }
+
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: nextValue
     }));
   };
 
   const handleProfileImageChange = async (e) => {
     const file = e.target.files?.[0];
-    if (!file || !user?.email) {
-      return;
-    }
+    if (!file || !user?.email) return;
 
     setImageUploadError('');
     if (!file.type.startsWith('image/')) {
@@ -124,7 +133,11 @@ function UserSettings() {
     setMessage('');
     setError('');
 
-    // パスワード確認
+    if (!/^[a-z0-9_.-]{3,30}$/.test(formData.user_id)) {
+      setError('user IDは3-30文字、a-z 0-9 _ . - で入力してください');
+      return;
+    }
+
     if (formData.password && formData.password !== formData.passwordConf) {
       setError('パスワードが一致しません');
       return;
@@ -135,8 +148,8 @@ function UserSettings() {
       return;
     }
 
-    // 更新データを準備（パスワードが空の場合は含めない）
     const updateData = {
+      user_id: formData.user_id,
       user_name: formData.user_name,
       bio: formData.bio,
       address: formData.address,
@@ -153,27 +166,28 @@ function UserSettings() {
       const response = await fetch(`http://localhost:5000/api/profile/${user.email}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(updateData)
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setMessage('プロフィールを更新しました');
-        // パスワードフィールドをクリア
-        setFormData(prev => ({
-          ...prev,
-          password: '',
-          passwordConf: ''
-        }));
-        setTimeout(() => {
-          navigate('/profile');
-        }, 2000);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.error || '更新に失敗しました');
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || '更新に失敗しました');
+        return;
       }
+
+      setMessage('プロフィールを更新しました');
+      setFormData((prev) => ({
+        ...prev,
+        user_id: data?.user?.user_id || prev.user_id,
+        password: '',
+        passwordConf: ''
+      }));
+
+      setTimeout(() => {
+        navigate('/profile');
+      }, 1200);
     } catch (err) {
       console.error('Update error:', err);
       setError('更新に失敗しました');
@@ -207,17 +221,15 @@ function UserSettings() {
   return (
     <>
       <Header />
-
-      {/* メインコンテンツ */}
       <main className="main-content">
         <h1 className="settings-title">ユーザー設定</h1>
 
-        {message && <div style={{padding: '10px', backgroundColor: '#d4edda', color: '#155724', borderRadius: '5px', marginBottom: '20px'}}>{message}</div>}
-        {error && <div style={{padding: '10px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '5px', marginBottom: '20px'}}>{error}</div>}
+        {message && <div style={{ padding: '10px', backgroundColor: '#d4edda', color: '#155724', borderRadius: '5px', marginBottom: '20px' }}>{message}</div>}
+        {error && <div style={{ padding: '10px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '5px', marginBottom: '20px' }}>{error}</div>}
 
         <form className="user-settings-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>プロフィールアイコン:</label>
+            <label>プロフィールアイコン</label>
             <div className="profile-image-setting-row">
               <div className="profile-image-preview">
                 {formData.profile_image ? (
@@ -238,14 +250,31 @@ function UserSettings() {
               </label>
             </div>
             {imageUploadError && <div className="inline-error-message">{imageUploadError}</div>}
-            <div className="help-text">JPG / PNG / GIF / WebP（5MB以下）</div>
+            <div className="help-text">JPG / PNG / GIF / WebP、5MB以下</div>
           </div>
+
           <div className="form-group">
-            <label htmlFor="email">メールアドレス (変更不可):</label>
-            <input type="email" id="email" name="email" value={user.email} disabled style={{backgroundColor: '#f0f0f0'}} />
+            <label htmlFor="email">メールアドレス（変更不可）</label>
+            <input type="email" id="email" name="email" value={user.email} disabled style={{ backgroundColor: '#f0f0f0' }} />
           </div>
+
           <div className="form-group">
-            <label htmlFor="user_name">ユーザー名:</label>
+            <label htmlFor="user_id">user ID（公開ID）</label>
+            <input
+              type="text"
+              id="user_id"
+              name="user_id"
+              value={formData.user_id}
+              onChange={handleChange}
+              maxLength={30}
+              placeholder="例: yani_123"
+              required
+            />
+            <div className="help-text">他ユーザーと重複不可。3-30文字、a-z 0-9 _ . -</div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="user_name">ユーザー名</label>
             <input
               type="text"
               id="user_name"
@@ -256,20 +285,22 @@ function UserSettings() {
               required
             />
           </div>
+
           <div className="form-group">
-            <label htmlFor="real_name">氏名（漢字）:</label>
+            <label htmlFor="real_name">本名（漢字）</label>
             <input
               type="text"
               id="real_name"
               name="real_name"
               value={formData.real_name}
               onChange={handleChange}
-              placeholder="氏名（漢字）を入力"
+              placeholder="本名（漢字）を入力"
               required
             />
           </div>
+
           <div className="form-group">
-            <label htmlFor="name_kana">氏名（フリガナ）:</label>
+            <label htmlFor="name_kana">本名（フリガナ）</label>
             <input
               type="text"
               id="name_kana"
@@ -280,8 +311,9 @@ function UserSettings() {
               required
             />
           </div>
+
           <div className="form-group">
-            <label htmlFor="bio">自己紹介:</label>
+            <label htmlFor="bio">自己紹介</label>
             <textarea
               id="bio"
               name="bio"
@@ -293,8 +325,9 @@ function UserSettings() {
             ></textarea>
             <div className="help-text">{formData.bio.length}/120文字</div>
           </div>
+
           <div className="form-group">
-            <label htmlFor="address">住所:</label>
+            <label htmlFor="address">住所</label>
             <input
               type="text"
               id="address"
@@ -305,34 +338,36 @@ function UserSettings() {
               required
             />
           </div>
+
           <div className="form-group">
-            <label htmlFor="phone_number">電話番号 (変更不可):</label>
+            <label htmlFor="phone_number">電話番号（変更不可）</label>
             <input
               type="tel"
               id="phone_number"
               name="phone_number"
               value={formData.phone_number}
               readOnly
-              placeholder="電話番号を入力"
               inputMode="numeric"
               pattern="[0-9]*"
-              style={{backgroundColor: '#f0f0f0'}}
+              style={{ backgroundColor: '#f0f0f0' }}
               required
             />
           </div>
+
           <div className="form-group">
-            <label htmlFor="birth_date">生年月日 (変更不可):</label>
+            <label htmlFor="birth_date">生年月日（変更不可）</label>
             <input
               type="date"
               id="birth_date"
               name="birth_date"
               value={formData.birth_date}
               readOnly
-              style={{backgroundColor: '#f0f0f0'}}
+              style={{ backgroundColor: '#f0f0f0' }}
             />
           </div>
+
           <div className="form-group">
-            <label htmlFor="password">新しいパスワード (変更する場合のみ):</label>
+            <label htmlFor="password">新しいパスワード（変更時のみ）</label>
             <input
               type="password"
               id="password"
@@ -342,8 +377,9 @@ function UserSettings() {
               placeholder="新しいパスワードを入力"
             />
           </div>
+
           <div className="form-group">
-            <label htmlFor="passwordConf">パスワード(確認):</label>
+            <label htmlFor="passwordConf">パスワード（確認）</label>
             <input
               type="password"
               id="passwordConf"
@@ -353,6 +389,7 @@ function UserSettings() {
               placeholder="新しいパスワードを再入力"
             />
           </div>
+
           <div className="form-actions">
             <button type="submit" className="btn btn-save">保存</button>
           </div>
@@ -365,5 +402,3 @@ function UserSettings() {
 }
 
 export default UserSettings;
-
-
