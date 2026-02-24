@@ -4,6 +4,8 @@ import { auth } from '../css/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import bibliLogo from '../assets/bibli-logo.png';
 
+const HEADER_PROFILE_CACHE_PREFIX = 'header_profile:';
+
 function Header() {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
@@ -19,6 +21,31 @@ function Header() {
     return `http://localhost:5000/${trimmed}`;
   };
 
+  const readCachedProfile = (email) => {
+    if (!email) return null;
+    try {
+      const raw = window.sessionStorage.getItem(`${HEADER_PROFILE_CACHE_PREFIX}${email.toLowerCase()}`);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  };
+
+  const writeCachedProfile = (email, profile) => {
+    if (!email || !profile) return;
+    try {
+      window.sessionStorage.setItem(
+        `${HEADER_PROFILE_CACHE_PREFIX}${email.toLowerCase()}`,
+        JSON.stringify(profile)
+      );
+    } catch {
+      // ignore cache errors
+    }
+  };
+
   useEffect(() => {
     let active = true;
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -30,19 +57,26 @@ function Header() {
         return;
       }
 
+      const normalizedEmail = String(currentUser.email).trim().toLowerCase();
+      const cachedProfile = readCachedProfile(normalizedEmail);
+      if (cachedProfile) {
+        setUserProfile(cachedProfile);
+      }
+
       try {
         const response = await fetch(`http://localhost:5000/api/user/${encodeURIComponent(currentUser.email)}`);
         if (!active) return;
         if (response.ok) {
           const data = await response.json();
           setUserProfile(data);
+          writeCachedProfile(normalizedEmail, data);
         } else {
-          setUserProfile(null);
+          setUserProfile((prev) => prev || null);
         }
       } catch (err) {
         console.error('Header user fetch error:', err);
         if (active) {
-          setUserProfile(null);
+          setUserProfile((prev) => prev || null);
         }
       }
     });
@@ -99,7 +133,7 @@ function Header() {
   };
 
   const headerProfileImageUrl = getImageUrl(userProfile?.profile_image || '');
-  const headerUserName = (userProfile?.user_name || user?.displayName || user?.email || '').trim();
+  const headerUserName = (userProfile?.user_name || user?.displayName || 'ユーザー').trim();
 
   return (
     <header className="header">
