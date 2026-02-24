@@ -321,6 +321,30 @@ input:checked + .toggle-slider:before {
     font-size: 0.85rem;
 }
 
+.notification-success {
+    margin: 0.75rem 1rem 0;
+    padding: 0.7rem 0.9rem;
+    border-radius: 10px;
+    background: rgba(47, 93, 80, 0.12);
+    border: 1px solid rgba(47, 93, 80, 0.35);
+    color: var(--accent);
+    font-size: 0.85rem;
+}
+
+.notification-note-item {
+    justify-content: flex-start;
+}
+
+.notification-note-item:hover {
+    background: var(--surface);
+}
+
+.notification-note-text {
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 500;
+}
+
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
     .page-title {

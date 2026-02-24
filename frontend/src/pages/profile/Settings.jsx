@@ -25,6 +25,7 @@ function Settings() {
   });
   const [notificationSaving, setNotificationSaving] = useState('');
   const [notificationError, setNotificationError] = useState('');
+  const [notificationMessage, setNotificationMessage] = useState('');
 
   const getImageUrl = (imageUrl) => {
     if (!imageUrl) return '';
@@ -83,6 +84,7 @@ function Settings() {
 
   const fetchNotificationSettings = async (email) => {
     if (!email) return;
+    setNotificationError('');
     try {
       const response = await fetch(`http://localhost:5000/api/notification-settings?email=${encodeURIComponent(email)}`);
       const data = await response.json();
@@ -141,6 +143,7 @@ function Settings() {
     const next = { ...notificationSettings, [key]: value };
     setNotificationSettings(next);
     setNotificationError('');
+    setNotificationMessage('');
     setNotificationSaving(key);
 
     try {
@@ -158,6 +161,15 @@ function Settings() {
       if (!response.ok) {
         throw new Error(data.error || '通知設定の更新に失敗しました');
       }
+      if (data?.settings) {
+        setNotificationSettings({
+          push_notification: Boolean(data.settings.push_notification),
+          email_notification: Boolean(data.settings.email_notification),
+          message_notification: Boolean(data.settings.message_notification),
+          campaign_notification: Boolean(data.settings.campaign_notification)
+        });
+      }
+      setNotificationMessage('通知設定を更新しました');
     } catch (err) {
       console.error('Notification setting update error:', err);
       setNotificationSettings(previous);
@@ -378,44 +390,16 @@ function Settings() {
             </div>
           </section>
 
-          {/* 支払い設定 */}
-          <section className="settings-section">
-            <h2 className="section-title">支払い</h2>
-            <div className="settings-list">
-              <a href="#" className="settings-item" data-modal="payment">
-                <div className="item-left">
-                  <span className="item-icon">C</span>
-                  <span className="item-text">クレジットカード</span>
-                </div>
-                <span className="item-arrow">›</span>
-              </a>
-              <a href="#" className="settings-item">
-                <div className="item-left">
-                  <span className="item-icon">B</span>
-                  <span className="item-text">振込先口座</span>
-                </div>
-                <span className="item-arrow">›</span>
-              </a>
-              <a href="#" className="settings-item">
-                <div className="item-left">
-                  <span className="item-icon">S</span>
-                  <span className="item-text">売上金・ポイント</span>
-                </div>
-                <span className="item-value">¥0</span>
-                <span className="item-arrow">›</span>
-              </a>
-            </div>
-          </section>
-
           {/* 通知設定 */}
           <section className="settings-section">
             <h2 className="section-title">通知</h2>
             <div className="settings-list">
               {notificationError && <div className="follow-error">{notificationError}</div>}
+              {notificationMessage && <div className="notification-success">{notificationMessage}</div>}
               <div className="settings-item toggle-item">
                 <div className="item-left">
                   <span className="item-icon">N</span>
-                  <span className="item-text">プッシュ通知</span>
+                  <span className="item-text">通知を受け取る</span>
                 </div>
                 <label className="toggle-switch">
                   <input
@@ -428,53 +412,10 @@ function Settings() {
                   <span className="toggle-slider"></span>
                 </label>
               </div>
-              <div className="settings-item toggle-item">
-                <div className="item-left">
-                  <span className="item-icon">E</span>
-                  <span className="item-text">メール通知</span>
-                </div>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    id="emailNotification"
-                    checked={notificationSettings.email_notification}
-                    onChange={(e) => handleNotificationToggle('email_notification', e.target.checked)}
-                    disabled={notificationSaving === 'email_notification'}
-                  />
-                  <span className="toggle-slider"></span>
-                </label>
-              </div>
-              <div className="settings-item toggle-item">
-                <div className="item-left">
-                  <span className="item-icon">M</span>
-                  <span className="item-text">メッセージ通知</span>
-                </div>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    id="messageNotification"
-                    checked={notificationSettings.message_notification}
-                    onChange={(e) => handleNotificationToggle('message_notification', e.target.checked)}
-                    disabled={notificationSaving === 'message_notification'}
-                  />
-                  <span className="toggle-slider"></span>
-                </label>
-              </div>
-              <div className="settings-item toggle-item">
-                <div className="item-left">
-                  <span className="item-icon">C</span>
-                  <span className="item-text">お知らせ・キャンペーン</span>
-                </div>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    id="campaignNotification"
-                    checked={notificationSettings.campaign_notification}
-                    onChange={(e) => handleNotificationToggle('campaign_notification', e.target.checked)}
-                    disabled={notificationSaving === 'campaign_notification'}
-                  />
-                  <span className="toggle-slider"></span>
-                </label>
+              <div className="settings-item no-pointer notification-note-item">
+                <span className="item-text notification-note-text">
+                  OFFにすると、お知らせ・取引・メッセージ通知が停止します。
+                </span>
               </div>
             </div>
           </section>
