@@ -76,11 +76,15 @@ function ForumDetail() {
   const [isLiking, setIsLiking] = useState(false);
   const [hasLikedThread, setHasLikedThread] = useState(false);
   const [likedComments, setLikedComments] = useState({});
+  const [commentLikePending, setCommentLikePending] = useState({});
+  const [replyTo, setReplyTo] = useState(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
 
-  const getThreadLikeKey = (id) => `forum-thread-like-${id}`;
-  const getCommentLikeKey = (id) => `forum-comment-like-${id}`;
+  const normalizeEmail = (value) => (value || '').trim().toLowerCase();
+  const getUserScopedSuffix = () => normalizeEmail(currentUser?.email) || 'anonymous';
+  const getThreadLikeKey = (id) => `forum-thread-like-${id}-${getUserScopedSuffix()}`;
+  const getCommentLikeKey = (id) => `forum-comment-like-${id}-${getUserScopedSuffix()}`;
 
   const readThreadLike = (id) => {
     try {
@@ -137,6 +141,8 @@ function ForumDetail() {
         setComments(commentData);
         setHasLikedThread(readThreadLike(threadData.id));
         setLikedComments(readCommentLikes(commentData));
+        setCommentLikePending({});
+        setReplyTo(null);
       } else {
         setError(data.error || 'スレッドの取得に失敗しました');
       }
@@ -210,14 +216,20 @@ function ForumDetail() {
     try {
       const action = nextLiked ? 'like' : 'unlike';
       const response = await fetch(`http://localhost:5000/api/forum/threads/${thread.id}/${action}`, {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          actor_email: normalizeEmail(currentUser?.email)
+        })
       });
       const data = await response.json();
       if (response.ok) {
         setThread(prev => ({ ...prev, like_count: data.like_count }));
-        setHasLikedThread(nextLiked);
+        setHasLikedThread(Boolean(data.liked));
         try {
-          if (nextLiked) {
+          if (data.liked) {
             localStorage.setItem(getThreadLikeKey(thread.id), '1');
           } else {
             localStorage.removeItem(getThreadLikeKey(thread.id));
@@ -225,9 +237,12 @@ function ForumDetail() {
         } catch (err) {
           console.error('Thread like write error:', err);
         }
+      } else {
+        setError(data.error || 'いいねの更新に失敗しました');
       }
     } catch (err) {
       console.error('Thread like error:', err);
+      setError('いいねの更新に失敗しました');
     } finally {
       setIsLiking(false);
     }
@@ -241,9 +256,9 @@ function ForumDetail() {
     }
     if (!commentInput.trim() || !thread) return;
 
-    const currentUser = auth.currentUser;
-    const authorName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'ゲスト';
-    const authorEmail = currentUser?.email || '';
+    const authenticatedUser = auth.currentUser;
+    const authorName = authenticatedUser?.displayName || authenticatedUser?.email?.split('@')[0] || 'ゲスト';
+    const authorEmail = authenticatedUser?.email || '';
 
     setIsSubmitting(true);
     try {
@@ -255,7 +270,8 @@ function ForumDetail() {
         body: JSON.stringify({
           content: commentInput.trim(),
           author_name: authorName,
-          author_email: authorEmail
+          author_email: authorEmail,
+          parent_comment_id: replyTo?.id ?? null
         })
       });
       const data = await response.json();
@@ -264,6 +280,7 @@ function ForumDetail() {
         setThread(prev => ({ ...prev, comment_count: (prev.comment_count || 0) + 1 }));
         setLikedComments(prev => ({ ...prev, [data.comment.id]: false }));
         setCommentInput('');
+        setReplyTo(null);
       } else {
         setError(data.error || 'コメントの投稿に失敗しました');
       }
@@ -280,11 +297,21 @@ function ForumDetail() {
       navigate('/login');
       return;
     }
+    if (commentLikePending[commentId]) {
+      return;
+    }
     const nextLiked = !likedComments[commentId];
+    setCommentLikePending(prev => ({ ...prev, [commentId]: true }));
     try {
       const action = nextLiked ? 'like' : 'unlike';
       const response = await fetch(`http://localhost:5000/api/forum/comments/${commentId}/${action}`, {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          actor_email: normalizeEmail(currentUser?.email)
+        })
       });
       const data = await response.json();
       if (response.ok) {
@@ -293,9 +320,9 @@ function ForumDetail() {
             comment.id === commentId ? { ...comment, like_count: data.like_count } : comment
           )
         );
-        setLikedComments(prev => ({ ...prev, [commentId]: nextLiked }));
+        setLikedComments(prev => ({ ...prev, [commentId]: Boolean(data.liked) }));
         try {
-          if (nextLiked) {
+          if (data.liked) {
             localStorage.setItem(getCommentLikeKey(commentId), '1');
           } else {
             localStorage.removeItem(getCommentLikeKey(commentId));
@@ -303,10 +330,26 @@ function ForumDetail() {
         } catch (err) {
           console.error('Comment like write error:', err);
         }
+      } else {
+        setError(data.error || 'コメントのいいね更新に失敗しました');
       }
     } catch (err) {
       console.error('Comment like error:', err);
+      setError('コメントのいいね更新に失敗しました');
+    } finally {
+      setCommentLikePending(prev => ({ ...prev, [commentId]: false }));
     }
+  };
+
+  const handleReplyStart = (comment) => {
+    setReplyTo({
+      id: comment.id,
+      authorName: comment.author_name
+    });
+  };
+
+  const handleReplyCancel = () => {
+    setReplyTo(null);
   };
 
   const handleFollowToggle = async () => {
@@ -370,6 +413,9 @@ function ForumDetail() {
 
   const canFollow = Boolean(thread.author_email) && currentUser?.email !== thread.author_email;
   const followLabel = currentUser ? (isFollowing ? 'フォロー中' : 'フォロー') : 'ログインでフォロー';
+  const orderedComments = comments
+    .slice()
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
   return (
     <>
@@ -459,8 +505,11 @@ function ForumDetail() {
         <div className="comments-section thread-container">
           <div className="comments-header">コメント ({comments.length}件)</div>
 
-          {comments.map((comment) => (
-            <div className="comment-item fade-in" key={comment.id}>
+          {orderedComments.map((comment) => (
+            <div
+              className={`comment-item fade-in ${comment.parent_comment_id ? 'comment-reply' : ''}`}
+              key={comment.id}
+            >
               <div className="comment-header">
                 <div className="comment-avatar">USER</div>
                 <div className="comment-author">
@@ -473,14 +522,30 @@ function ForumDetail() {
                 <button
                   className={`comment-action ${likedComments[comment.id] ? 'liked' : ''}`}
                   onClick={() => handleCommentLike(comment.id)}
+                  disabled={Boolean(commentLikePending[comment.id])}
                 >
                   <ThumbIcon /><span>{comment.like_count || 0}</span>
+                </button>
+                <button
+                  className="comment-action"
+                  onClick={() => handleReplyStart(comment)}
+                  type="button"
+                >
+                  返信
                 </button>
               </div>
             </div>
           ))}
 
           <form className="comment-form" onSubmit={handleCommentSubmit}>
+            {replyTo && (
+              <div className="reply-target">
+                <span>{replyTo.authorName} さんへの返信</span>
+                <button type="button" className="reply-cancel-btn" onClick={handleReplyCancel}>
+                  返信をやめる
+                </button>
+              </div>
+            )}
             <div className="form-title">コメントを投稿する</div>
             <textarea
               className="comment-input"

@@ -2,6 +2,7 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS, cross_origin
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import inspect, text
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import jwt
@@ -37,6 +38,8 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 stripe.api_key = STRIPE_SECRET_KEY
  
 db = SQLAlchemy(app)
+_FORUM_SCHEMA_READY = False
+_USER_ID_BACKFILL_READY = False
 
 FORUM_CATEGORY_LABELS = {
     "chat": "雑談",
@@ -482,6 +485,7 @@ class ForumComment(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     thread_id = db.Column(db.Integer, db.ForeignKey('forum_threads.id'), nullable=False)
+    parent_comment_id = db.Column(db.Integer, db.ForeignKey('forum_comments.id'))
     author_name = db.Column(db.String(100), nullable=False)
     author_email = db.Column(db.String(120))
     content = db.Column(db.Text, nullable=False)
@@ -489,6 +493,33 @@ class ForumComment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     thread = db.relationship('ForumThread', backref=db.backref('comments', cascade='all, delete-orphan'))
+    parent_comment = db.relationship('ForumComment', remote_side=[id], backref=db.backref('replies', cascade='all, delete-orphan'))
+
+
+class ForumThreadLike(db.Model):
+    __tablename__ = "forum_thread_likes"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    thread_id = db.Column(db.Integer, db.ForeignKey('forum_threads.id'), nullable=False)
+    user_email = db.Column(db.String(120), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('thread_id', 'user_email', name='uq_forum_thread_likes_thread_user'),
+    )
+
+
+class ForumCommentLike(db.Model):
+    __tablename__ = "forum_comment_likes"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    comment_id = db.Column(db.Integer, db.ForeignKey('forum_comments.id'), nullable=False)
+    user_email = db.Column(db.String(120), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('comment_id', 'user_email', name='uq_forum_comment_likes_comment_user'),
+    )
 
 
 class ForumFollow(db.Model):
@@ -552,6 +583,96 @@ def _serialize_notification(notification):
 
 def _normalize_email(value):
     return (value or '').strip().lower()
+
+
+def _normalize_public_user_id(value):
+    return (value or '').strip().lower()
+
+
+def _is_valid_public_user_id(value):
+    return bool(re.fullmatch(r'[a-z0-9_.-]{3,30}', value or ''))
+
+
+def _generate_unique_user_id(source):
+    base_source = _normalize_public_user_id(source)
+    base_source = base_source.split('@')[0] if '@' in base_source else base_source
+    sanitized = re.sub(r'[^a-z0-9_.-]', '', base_source)
+    base = (sanitized or 'user')[:50]
+
+    candidate = base
+    sequence = 1
+    while User.query.filter(db.func.lower(User.user_id) == candidate).first():
+        suffix = f"-{sequence}"
+        candidate = f"{base[:max(1, 50 - len(suffix))]}{suffix}"
+        sequence += 1
+    return candidate
+
+
+def _ensure_user_id_backfill_once():
+    global _USER_ID_BACKFILL_READY
+    if _USER_ID_BACKFILL_READY:
+        return
+
+    users = User.query.order_by(User.id.asc()).all()
+    seen = set()
+    changed = False
+
+    for user in users:
+        current = _normalize_public_user_id(user.user_id)
+        if current and current not in seen:
+            seen.add(current)
+            continue
+
+        source = user.email or current or f"user{user.id}"
+        new_user_id = _generate_unique_user_id(source)
+        user.user_id = new_user_id
+        seen.add(new_user_id)
+        changed = True
+
+    if changed:
+        db.session.commit()
+
+    _USER_ID_BACKFILL_READY = True
+
+
+def _coerce_optional_int(value):
+    if value is None or value == '':
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _get_forum_actor_email():
+    data = request.get_json(silent=True) or {}
+    email = _normalize_email(data.get('actor_email'))
+    if email:
+        return email
+    return _normalize_email(request.args.get('actor_email'))
+
+
+def _ensure_forum_schema_once():
+    global _FORUM_SCHEMA_READY
+    if _FORUM_SCHEMA_READY:
+        return
+
+    inspector = inspect(db.engine)
+    table_names = set(inspector.get_table_names())
+
+    # create missing forum like tables defined by SQLAlchemy models
+    if 'forum_thread_likes' not in table_names or 'forum_comment_likes' not in table_names:
+        db.create_all()
+        inspector = inspect(db.engine)
+        table_names = set(inspector.get_table_names())
+
+    if 'forum_comments' in table_names:
+        column_names = {col['name'] for col in inspector.get_columns('forum_comments')}
+        if 'parent_comment_id' not in column_names:
+            db.session.execute(text("ALTER TABLE forum_comments ADD COLUMN parent_comment_id INTEGER NULL"))
+            db.session.commit()
+
+    _FORUM_SCHEMA_READY = True
 
 
 def _get_blocked_email_set(email):
@@ -693,11 +814,16 @@ def hello():
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json() or {}
+    email = _normalize_email(data.get('email'))
+    user_id = _normalize_public_user_id(data.get('user_id'))
+    data['email'] = email
+    _ensure_user_id_backfill_once()
 
     # React 側と一致するように修正（phone_numberを受け付ける）
     phone = data.get('phone_number') or data.get('phone')
     required_fields = {
         'user_name': data.get('user_name'),
+        'user_id': user_id,
         'email': data.get('email'),
         'password': data.get('password'),
         'address': data.get('address'),
@@ -711,6 +837,12 @@ def register():
         if not value:
             return jsonify({"error": f"{field} が必要です"}), 400
 
+    if not _is_valid_public_user_id(user_id):
+        return jsonify({"error": "user_id must be 3-30 chars of a-z, 0-9, _, ., -"}), 400
+
+    if User.query.filter(db.func.lower(User.user_id) == user_id).first():
+        return jsonify({"error": "user_id は既に使われています"}), 409
+
     if User.query.filter_by(email=data['email']).first():
         return jsonify({"error": "email は既に使われています"}), 409
 
@@ -721,7 +853,7 @@ def register():
     hashed_pw = generate_password_hash(data['password'], method='pbkdf2:sha256')
 
     # user_idを自動生成（email のローカル部分を使用）
-    user_id_base = data['email'].split('@')[0]
+    user_id_base = user_id
 
     user = User(
         user_id=user_id_base,
@@ -777,7 +909,7 @@ def login():
         return jsonify({"error": "認証失敗"}), 401
  
     payload = {
-        "user_id": int(user.user_id),
+        "user_id": int(user.id),
         "exp": datetime.utcnow() + timedelta(hours=24)
     }
     token = jwt.encode(payload, app.config['SECRET_KEY'], algorithm='HS256')
@@ -876,6 +1008,21 @@ def update_profile(email):
         return jsonify({"error": "ユーザーが見つかりません"}), 404
 
     data = request.get_json() or {}
+    _ensure_user_id_backfill_once()
+
+    if 'user_id' in data:
+        next_user_id = _normalize_public_user_id(data.get('user_id'))
+        if not _is_valid_public_user_id(next_user_id):
+            return jsonify({"error": "user_id must be 3-30 chars of a-z, 0-9, _, ., -"}), 400
+        duplicate = (
+            User.query
+            .filter(db.func.lower(User.user_id) == next_user_id)
+            .filter(User.id != user.id)
+            .first()
+        )
+        if duplicate:
+            return jsonify({"error": "user_id は既に使われています"}), 409
+        user.user_id = next_user_id
 
     # 更新可能なフィールドのみ更新
     if 'user_name' in data:
@@ -2191,6 +2338,7 @@ def serve_upload(filename):
 # ============================
 @app.route('/api/forum/threads', methods=['GET'])
 def get_forum_threads():
+    _ensure_forum_schema_once()
     try:
         category = request.args.get('category', '').strip()
         sort = request.args.get('sort', 'newest').strip()
@@ -2259,6 +2407,7 @@ def get_forum_threads():
 
 @app.route('/api/forum/threads', methods=['POST'])
 def create_forum_thread():
+    _ensure_forum_schema_once()
     data = request.get_json() or {}
 
     category = (data.get('category') or '').strip()
@@ -2299,6 +2448,7 @@ def create_forum_thread():
 
 @app.route('/api/forum/threads/<int:thread_id>', methods=['GET'])
 def get_forum_thread(thread_id):
+    _ensure_forum_schema_once()
     thread = ForumThread.query.get(thread_id)
     if not thread:
         return jsonify({"error": "スレッドが見つかりません"}), 404
@@ -2335,6 +2485,7 @@ def get_forum_thread(thread_id):
             {
                 "id": comment.id,
                 "thread_id": comment.thread_id,
+                "parent_comment_id": comment.parent_comment_id,
                 "author_name": comment.author_name,
                 "author_email": comment.author_email,
                 "content": comment.content,
@@ -2348,6 +2499,7 @@ def get_forum_thread(thread_id):
 
 @app.route('/api/forum/threads/<int:thread_id>/comments', methods=['POST'])
 def create_forum_comment(thread_id):
+    _ensure_forum_schema_once()
     thread = ForumThread.query.get(thread_id)
     if not thread:
         return jsonify({"error": "スレッドが見つかりません"}), 404
@@ -2356,12 +2508,22 @@ def create_forum_comment(thread_id):
     content = (data.get('content') or '').strip()
     author_name = (data.get('author_name') or 'ゲスト').strip() or 'ゲスト'
     author_email = (data.get('author_email') or '').strip() or None
+    parent_comment_id = _coerce_optional_int(data.get('parent_comment_id'))
 
     if not content:
-        return jsonify({"error": "コメント内容が必要です"}), 400
+        return jsonify({"error": "コメント本文が必要です"}), 400
+    if len(content) > 2000:
+        return jsonify({"error": "コメント本文は2000文字以内で入力してください"}), 400
+
+    parent_comment = None
+    if parent_comment_id is not None:
+        parent_comment = ForumComment.query.get(parent_comment_id)
+        if not parent_comment or parent_comment.thread_id != thread_id:
+            return jsonify({"error": "返信先コメントが不正です"}), 400
 
     comment = ForumComment(
         thread_id=thread_id,
+        parent_comment_id=parent_comment.id if parent_comment else None,
         author_name=author_name,
         author_email=author_email,
         content=content
@@ -2379,6 +2541,7 @@ def create_forum_comment(thread_id):
         "comment": {
             "id": comment.id,
             "thread_id": comment.thread_id,
+            "parent_comment_id": comment.parent_comment_id,
             "author_name": comment.author_name,
             "author_email": comment.author_email,
             "content": comment.content,
@@ -2387,70 +2550,129 @@ def create_forum_comment(thread_id):
         }
     }), 201
 
+def _apply_forum_thread_like(thread, actor_email, liked):
+    if actor_email:
+        existing = (
+            ForumThreadLike.query
+            .filter(
+                ForumThreadLike.thread_id == thread.id,
+                db.func.lower(ForumThreadLike.user_email) == actor_email
+            )
+            .first()
+        )
+
+        if liked and not existing:
+            db.session.add(ForumThreadLike(thread_id=thread.id, user_email=actor_email))
+            thread.like_count = (thread.like_count or 0) + 1
+        elif not liked and existing:
+            db.session.delete(existing)
+            thread.like_count = max((thread.like_count or 0) - 1, 0)
+        return
+
+    if liked:
+        thread.like_count = (thread.like_count or 0) + 1
+    else:
+        thread.like_count = max((thread.like_count or 0) - 1, 0)
+
+
+def _apply_forum_comment_like(comment, actor_email, liked):
+    if actor_email:
+        existing = (
+            ForumCommentLike.query
+            .filter(
+                ForumCommentLike.comment_id == comment.id,
+                db.func.lower(ForumCommentLike.user_email) == actor_email
+            )
+            .first()
+        )
+
+        if liked and not existing:
+            db.session.add(ForumCommentLike(comment_id=comment.id, user_email=actor_email))
+            comment.like_count = (comment.like_count or 0) + 1
+        elif not liked and existing:
+            db.session.delete(existing)
+            comment.like_count = max((comment.like_count or 0) - 1, 0)
+        return
+
+    if liked:
+        comment.like_count = (comment.like_count or 0) + 1
+    else:
+        comment.like_count = max((comment.like_count or 0) - 1, 0)
 
 @app.route('/api/forum/threads/<int:thread_id>/like', methods=['POST'])
 def like_forum_thread(thread_id):
+    _ensure_forum_schema_once()
     thread = ForumThread.query.get(thread_id)
     if not thread:
         return jsonify({"error": "スレッドが見つかりません"}), 404
 
-    thread.like_count = (thread.like_count or 0) + 1
+    actor_email = _get_forum_actor_email()
+    _apply_forum_thread_like(thread, actor_email, liked=True)
+
     try:
         db.session.commit()
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "いいねに失敗しました", "detail": str(e)}), 500
 
-    return jsonify({"like_count": thread.like_count}), 200
+    return jsonify({"like_count": thread.like_count, "liked": True}), 200
 
 
 @app.route('/api/forum/threads/<int:thread_id>/unlike', methods=['POST'])
 def unlike_forum_thread(thread_id):
+    _ensure_forum_schema_once()
     thread = ForumThread.query.get(thread_id)
     if not thread:
         return jsonify({"error": "スレッドが見つかりません"}), 404
 
-    thread.like_count = max((thread.like_count or 0) - 1, 0)
+    actor_email = _get_forum_actor_email()
+    _apply_forum_thread_like(thread, actor_email, liked=False)
+
     try:
         db.session.commit()
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "いいね解除に失敗しました", "detail": str(e)}), 500
 
-    return jsonify({"like_count": thread.like_count}), 200
+    return jsonify({"like_count": thread.like_count, "liked": False}), 200
 
 
 @app.route('/api/forum/comments/<int:comment_id>/like', methods=['POST'])
 def like_forum_comment(comment_id):
+    _ensure_forum_schema_once()
     comment = ForumComment.query.get(comment_id)
     if not comment:
         return jsonify({"error": "コメントが見つかりません"}), 404
 
-    comment.like_count = (comment.like_count or 0) + 1
+    actor_email = _get_forum_actor_email()
+    _apply_forum_comment_like(comment, actor_email, liked=True)
+
     try:
         db.session.commit()
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "いいねに失敗しました", "detail": str(e)}), 500
 
-    return jsonify({"like_count": comment.like_count}), 200
+    return jsonify({"like_count": comment.like_count, "liked": True}), 200
 
 
 @app.route('/api/forum/comments/<int:comment_id>/unlike', methods=['POST'])
 def unlike_forum_comment(comment_id):
+    _ensure_forum_schema_once()
     comment = ForumComment.query.get(comment_id)
     if not comment:
         return jsonify({"error": "コメントが見つかりません"}), 404
 
-    comment.like_count = max((comment.like_count or 0) - 1, 0)
+    actor_email = _get_forum_actor_email()
+    _apply_forum_comment_like(comment, actor_email, liked=False)
+
     try:
         db.session.commit()
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "いいね解除に失敗しました", "detail": str(e)}), 500
 
-    return jsonify({"like_count": comment.like_count}), 200
-
+    return jsonify({"like_count": comment.like_count, "liked": False}), 200
 
 @app.route('/api/forum/follow/status', methods=['GET'])
 def get_forum_follow_status():
@@ -3344,12 +3566,5 @@ def get_purchase_by_session(session_id):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+        _ensure_user_id_backfill_once()
     app.run(host='0.0.0.0', port=5000, debug=True)
-
-
-
-
-
-
-
-

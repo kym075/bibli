@@ -118,6 +118,12 @@
     margin-top: 0.4rem;
 }
 
+.form-hint {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 0.35rem;
+}
+
 .error-message {
     font-size: 0.85rem;
     color: var(--accent-warm);
