@@ -33,7 +33,6 @@ function ProductDetail() {
   const [sellerProductsLoading, setSellerProductsLoading] = useState(false);
   const [genreRecommendProducts, setGenreRecommendProducts] = useState([]);
   const [genreRecommendLoading, setGenreRecommendLoading] = useState(false);
-  const [showAllRecommendProducts, setShowAllRecommendProducts] = useState(false);
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
@@ -53,7 +52,6 @@ function ProductDetail() {
   const [purchaseStatusData, setPurchaseStatusData] = useState(null);
   const [purchaseStatusLoading, setPurchaseStatusLoading] = useState(false);
   const [purchaseStatusError, setPurchaseStatusError] = useState('');
-  const [purchaseStatusUpdating, setPurchaseStatusUpdating] = useState(false);
 
   useEffect(() => {
     if (!productId) {
@@ -84,7 +82,6 @@ function ProductDetail() {
     setImageError(false);
     setSelectedImageIndex(0);
     setShowCancelConfirm(false);
-    setShowAllRecommendProducts(false);
 
     setIsChatOpen(false);
     setChatMessages([]);
@@ -105,7 +102,7 @@ function ProductDetail() {
       }
 
       try {
-        const response = await fetch(`http://localhost:5000/api/user/${user.email}`);
+        const response = await fetch(`http://localhost:5000/api/user/${encodeURIComponent(user.email)}`);
         if (response.ok) {
           const data = await response.json();
           setCurrentUserId(data.id);
@@ -642,7 +639,7 @@ function ProductDetail() {
       try {
         const params = new URLSearchParams({
           q: category,
-          include_sold: '1',
+          include_sold: '0',
           limit: '24'
         });
         if (currentUser?.email) {
@@ -654,7 +651,7 @@ function ProductDetail() {
         if (!active) return;
 
         if (response.ok && Array.isArray(data.products)) {
-          const filtered = data.products.filter((item) => item.id !== product.id);
+          const filtered = data.products.filter((item) => item.id !== product.id && Number(item.status) === 1);
           setGenreRecommendProducts(filtered);
         } else {
           setGenreRecommendProducts([]);
@@ -676,38 +673,6 @@ function ProductDetail() {
       active = false;
     };
   }, [product?.category, product?.id, currentUser?.email]);
-
-  const handlePurchaseStatusUpdate = async (nextStatus) => {
-    const purchaseId = purchaseStatusData?.purchase?.id;
-    if (!purchaseId || !currentUser?.email || !nextStatus) {
-      return;
-    }
-
-    setPurchaseStatusUpdating(true);
-    setPurchaseStatusError('');
-    try {
-      const response = await fetch(`http://localhost:5000/api/purchases/${purchaseId}/status`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          actor_email: currentUser.email,
-          status: nextStatus
-        })
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || '取引ステータスの更新に失敗しました');
-      }
-      await fetchPurchaseStatus();
-    } catch (err) {
-      console.error('Purchase status update error:', err);
-      setPurchaseStatusError(err.message || '取引ステータスの更新に失敗しました');
-    } finally {
-      setPurchaseStatusUpdating(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -747,19 +712,18 @@ function ProductDetail() {
     : '出品者へメッセージを送る';
   const purchase = purchaseStatusData?.purchase || null;
   const purchaseRole = purchaseStatusData?.role || 'viewer';
-  const nextStatusOptions = Array.isArray(purchaseStatusData?.next_status_options)
-    ? purchaseStatusData.next_status_options
-    : [];
   const isPurchaseCompleted = (purchase?.status || '').toLowerCase() === 'completed';
   const shippingMethodLabel = product.shipping_method_label || product.shipping_method || '未定';
   const shippingDaysLabel = product.shipping_days || '未設定';
   const relatedKeywords = buildRelatedKeywords(product);
-  const hasMoreSellerProducts = sellerOtherProducts.length > 8;
-  const hasMoreRecommendProducts = genreRecommendProducts.length > 8;
-  const visibleSellerProducts = sellerOtherProducts.slice(0, 8);
-  const visibleRecommendProducts = showAllRecommendProducts
-    ? genreRecommendProducts
-    : genreRecommendProducts.slice(0, 8);
+  const sellerRatingCount = Number(product?.seller?.rating?.count || 0);
+  const sellerRatingAverage = Number(product?.seller?.rating?.average || 0);
+  const sellerRatingAverageText = sellerRatingCount > 0 ? sellerRatingAverage.toFixed(1) : '-';
+  const hasMoreSellerProducts = sellerOtherProducts.length > 4;
+  const hasMoreRecommendProducts = genreRecommendProducts.length > 4;
+  const recommendMorePath = `/search?sort=popular&include_sold=0&q=${encodeURIComponent((product?.category || '').trim())}`;
+  const visibleSellerProducts = sellerOtherProducts.slice(0, 4);
+  const visibleRecommendProducts = genreRecommendProducts.slice(0, 4);
 
   return (
     <>
@@ -870,34 +834,12 @@ function ProductDetail() {
                     </div>
                     {purchaseStatusLoading && <p className="purchase-status-note">更新中...</p>}
                     {purchaseStatusError && <p className="purchase-status-error">{purchaseStatusError}</p>}
-                    {!purchaseStatusLoading && nextStatusOptions.length > 0 && (
-                      <div className="purchase-status-actions">
-                        {nextStatusOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            className="btn-small purchase-status-btn"
-                            onClick={() => handlePurchaseStatusUpdate(option.value)}
-                            disabled={purchaseStatusUpdating}
-                          >
-                            {purchaseStatusUpdating ? '更新中...' : option.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
                     {purchaseRole !== 'viewer' && (
                       <div className="purchase-status-actions">
                         <Link to={`/transaction?product_id=${product.id}`} className="btn-small purchase-status-btn purchase-screen-link">
                           取引画面を開く
                         </Link>
                       </div>
-                    )}
-                    {!purchaseStatusLoading && nextStatusOptions.length === 0 && (
-                      <p className="purchase-status-note">
-                        {purchaseRole === 'viewer'
-                          ? '取引当事者のみステータスを更新できます。'
-                          : '現在、更新可能なステータスはありません。'}
-                      </p>
                     )}
 
                     {isPurchaseCompleted && purchaseRole !== 'viewer' && (
@@ -964,7 +906,10 @@ function ProductDetail() {
                     </div>
                     <div className="seller-details">
                       <h4>{product.seller.user_name}</h4>
-                      <div className="rating"><span>(5.0)</span></div>
+                      <div className="rating" aria-label={`評価 ${sellerRatingAverageText} (${sellerRatingCount}件)`}>
+                        <span>★{sellerRatingAverageText}</span>
+                        <span>({sellerRatingCount}件)</span>
+                      </div>
                     </div>
                   </Link>
                   <button
@@ -995,9 +940,10 @@ function ProductDetail() {
           <div className="related-products">
             <div className="section-head">
               <h3>この出品者の商品</h3>
+              <span className="section-head-line" aria-hidden="true"></span>
               {hasMoreSellerProducts && product?.seller?.user_id && (
                 <Link to={`/profile/${product.seller.user_id}`} className="section-more-link">
-                  もっと見る
+                  さらに表示
                 </Link>
               )}
             </div>
@@ -1024,14 +970,11 @@ function ProductDetail() {
           <div className="related-products">
             <div className="section-head">
               <h3>この商品を見ている人におすすめ</h3>
+              <span className="section-head-line" aria-hidden="true"></span>
               {hasMoreRecommendProducts && (
-                <button
-                  type="button"
-                  className="section-more-link"
-                  onClick={() => setShowAllRecommendProducts((prev) => !prev)}
-                >
-                  {showAllRecommendProducts ? '閉じる' : 'もっと見る'}
-                </button>
+                <Link to={recommendMorePath} className="section-more-link">
+                  さらに表示
+                </Link>
               )}
             </div>
               {genreRecommendLoading ? (

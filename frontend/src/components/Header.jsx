@@ -3,12 +3,14 @@ import { useEffect, useState } from 'react';
 import { auth } from '../css/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import bibliLogo from '../assets/bibli-logo.png';
-
-const HEADER_PROFILE_CACHE_PREFIX = 'header_profile:';
+import notificationIcon from '../../../image/tuti.png';
+import notificationUnreadIcon from '../../../image/tuti2.png';
+import { fetchUserProfileByEmail, readCachedUserProfile } from '../utils/userProfile';
 
 function Header() {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [searchKeyword, setSearchKeyword] = useState('');
   const navigate = useNavigate();
 
@@ -19,31 +21,6 @@ function Header() {
     }
     const trimmed = String(imageUrl).replace(/\\/g, '/').replace(/^\/+/, '');
     return `http://localhost:5000/${trimmed}`;
-  };
-
-  const readCachedProfile = (email) => {
-    if (!email) return null;
-    try {
-      const raw = window.sessionStorage.getItem(`${HEADER_PROFILE_CACHE_PREFIX}${email.toLowerCase()}`);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed !== 'object') return null;
-      return parsed;
-    } catch {
-      return null;
-    }
-  };
-
-  const writeCachedProfile = (email, profile) => {
-    if (!email || !profile) return;
-    try {
-      window.sessionStorage.setItem(
-        `${HEADER_PROFILE_CACHE_PREFIX}${email.toLowerCase()}`,
-        JSON.stringify(profile)
-      );
-    } catch {
-      // ignore cache errors
-    }
   };
 
   useEffect(() => {
@@ -58,18 +35,16 @@ function Header() {
       }
 
       const normalizedEmail = String(currentUser.email).trim().toLowerCase();
-      const cachedProfile = readCachedProfile(normalizedEmail);
+      const cachedProfile = readCachedUserProfile(normalizedEmail);
       if (cachedProfile) {
         setUserProfile(cachedProfile);
       }
 
       try {
-        const response = await fetch(`http://localhost:5000/api/user/${encodeURIComponent(currentUser.email)}`);
+        const data = await fetchUserProfileByEmail(normalizedEmail);
         if (!active) return;
-        if (response.ok) {
-          const data = await response.json();
+        if (data) {
           setUserProfile(data);
-          writeCachedProfile(normalizedEmail, data);
         } else {
           setUserProfile((prev) => prev || null);
         }
@@ -112,6 +87,44 @@ function Header() {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    let timerId = null;
+
+    const loadNotificationCount = async () => {
+      if (!user?.email) {
+        if (active) setUnreadNotificationCount(0);
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:5000/api/notifications?email=${encodeURIComponent(user.email)}`);
+        if (!response.ok) {
+          throw new Error('通知件数の取得に失敗しました');
+        }
+
+        const data = await response.json();
+        if (active) {
+          setUnreadNotificationCount(Number(data.unread_count || 0));
+        }
+      } catch (err) {
+        console.error('Header notifications fetch error:', err);
+      }
+    };
+
+    loadNotificationCount();
+    timerId = window.setInterval(loadNotificationCount, 30000);
+    window.addEventListener('focus', loadNotificationCount);
+
+    return () => {
+      active = false;
+      if (timerId) {
+        window.clearInterval(timerId);
+      }
+      window.removeEventListener('focus', loadNotificationCount);
+    };
+  }, [user?.email]);
+
   const handleLogout = async () => {
     await signOut(auth);
   };
@@ -131,7 +144,12 @@ function Header() {
 
   const headerProfileImageUrl = getImageUrl(userProfile?.profile_image || '');
   const headerUserName = (userProfile?.user_name || user?.displayName || 'ユーザー').trim();
-  const profilePath = userProfile?.user_id ? `/profile/${userProfile.user_id}` : '/profile';
+  const profilePath = userProfile?.user_id ? `/profile/${userProfile.user_id}` : '/settings';
+  const hasUnreadNotifications = unreadNotificationCount > 0;
+  const notificationIconSrc = hasUnreadNotifications ? notificationUnreadIcon : notificationIcon;
+  const notificationAriaLabel = hasUnreadNotifications
+    ? `未読通知 ${unreadNotificationCount} 件`
+    : '通知はありません';
 
   return (
     <header className="header">
@@ -169,6 +187,10 @@ function Header() {
                 <span className="header-user-name">{headerUserName || 'ユーザー'}</span>
               </Link>
             )}
+
+            <Link to="/news" className="header-notification-link" aria-label={notificationAriaLabel}>
+              <img src={notificationIconSrc} alt="通知" className="header-notification-image" />
+            </Link>
 
             <button className="hamburger-menu" id="hamburger-menu" type="button" aria-label="メニュー">
               <span></span><span></span><span></span>

@@ -87,7 +87,10 @@ function Home() {
         const response = await fetch(`http://localhost:5000/api/recommendations?${params.toString()}`);
         const data = await response.json();
         if (response.ok) {
-          setRecommendProducts(data.recommendations || []);
+          const recommendations = Array.isArray(data.recommendations)
+            ? data.recommendations.filter((item) => Number(item.status) === 1)
+            : [];
+          setRecommendProducts(recommendations);
         } else {
           setRecommendProducts([]);
         }
@@ -133,6 +136,9 @@ function Home() {
     fetchFollowFeed();
   }, [currentUserEmail]);
 
+  const hasMoreNewBooks = products.length > 4;
+  const hasMoreRecommendBooks = recommendProducts.length > 4;
+
   return (
     <>
       <Header />
@@ -177,13 +183,23 @@ function Home() {
 
         {/* 新着の本 */}
         <section className="section">
-          <h2 className="section-title">新着の本</h2>
+          <div className="home-section-head">
+            <h2 className="section-title">新着の本</h2>
+            {hasMoreNewBooks && (
+              <Link to="/search?sort=newest&include_sold=1" className="home-more-link">さらに表示</Link>
+            )}
+          </div>
           {products.length > 0 ? renderProductGrid(products.slice(0, 4)) : <p>Loading products...</p>}
         </section>
 
         {/* おすすめ */}
         <section className="section">
-          <h2 className="section-title">おすすめ商品</h2>
+          <div className="home-section-head">
+            <h2 className="section-title">おすすめ商品</h2>
+            {hasMoreRecommendBooks && (
+              <Link to="/search?sort=popular&include_sold=0" className="home-more-link">さらに表示</Link>
+            )}
+          </div>
           {recommendLoading ? <p>おすすめを読み込み中...</p> : renderProductGrid(recommendProducts.slice(0, 4))}
         </section>
 

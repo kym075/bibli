@@ -367,3 +367,41 @@ input:checked + .toggle-slider:before {
         white-space: nowrap;
     }
 }
+
+@media (max-width: 520px) {
+    .main-content {
+        padding: 1rem 0.6rem;
+    }
+
+    .settings-item {
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .item-left {
+        gap: 0.65rem;
+    }
+
+    .item-text {
+        font-size: 0.86rem;
+    }
+
+    .item-value {
+        max-width: 92px;
+        font-size: 0.8rem;
+    }
+
+    .follow-tab-row {
+        flex-wrap: wrap;
+    }
+
+    .follow-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .follow-action-btn {
+        width: 100%;
+        text-align: center;
+    }
+}

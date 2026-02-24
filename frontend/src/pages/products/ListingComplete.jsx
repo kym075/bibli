@@ -1,10 +1,32 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/listing_complete.css';
+import { auth } from '../../css/firebase';
+import { resolveProfilePathByEmail } from '../../utils/userProfile';
 
 function ListingComplete() {
-  const navigate = useNavigate();
+  const [profilePath, setProfilePath] = useState('/settings');
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user?.email) {
+        setProfilePath('/login');
+        return;
+      }
+      try {
+        const nextPath = await resolveProfilePathByEmail(user.email, '/settings');
+        setProfilePath(nextPath);
+      } catch (err) {
+        console.error('ListingComplete profile path resolve error:', err);
+        setProfilePath('/settings');
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <>
@@ -24,7 +46,7 @@ function ListingComplete() {
             </p>
 
             <div className="action-buttons">
-              <Link to="/profile" className="action-btn btn-check" id="checkBtn">
+              <Link to={profilePath} className="action-btn btn-check" id="checkBtn">
                 出品した商品を確認する
               </Link>
               <Link to="/products/listing" className="action-btn btn-continue" id="continueBtn">

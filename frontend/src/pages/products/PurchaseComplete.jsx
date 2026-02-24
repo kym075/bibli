@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/purchase_complete.css';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../../css/firebase';
+import { resolveProfilePathByEmail } from '../../utils/userProfile';
 
 function PurchaseComplete() {
   const [searchParams] = useSearchParams();
@@ -10,6 +13,7 @@ function PurchaseComplete() {
   const [purchaseData, setPurchaseData] = useState(null);
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState('');
+  const [profilePath, setProfilePath] = useState('/settings');
 
   const fetchPurchase = async () => {
     if (!sessionId) {
@@ -46,6 +50,24 @@ function PurchaseComplete() {
   useEffect(() => {
     fetchPurchase();
   }, [sessionId]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user?.email) {
+        setProfilePath('/login');
+        return;
+      }
+      try {
+        const nextPath = await resolveProfilePathByEmail(user.email, '/settings');
+        setProfilePath(nextPath);
+      } catch (err) {
+        console.error('PurchaseComplete profile path resolve error:', err);
+        setProfilePath('/settings');
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   if (status === 'loading') {
     return (
@@ -146,7 +168,7 @@ function PurchaseComplete() {
               <Link to={`/transaction?product_id=${product?.id}`} className="action-btn btn-primary" id="chatBtn">
                 取引画面を開く
               </Link>
-              <Link to="/profile" className="action-btn btn-secondary" id="historyBtn">
+              <Link to={profilePath} className="action-btn btn-secondary" id="historyBtn">
                 購入履歴を確認する
               </Link>
               <Link to="/" className="action-btn btn-secondary" id="homeBtn">

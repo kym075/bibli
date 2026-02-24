@@ -199,10 +199,37 @@ def _build_primary_image_map(product_ids):
     return image_map
 
 
-def _serialize_product_card(product, image_map=None):
+def _build_latest_purchase_map(product_ids):
+    if not product_ids:
+        return {}
+
+    purchase_map = {}
+    rows = (
+        Purchase.query
+        .filter(Purchase.product_id.in_(product_ids))
+        .order_by(Purchase.product_id.asc(), Purchase.created_at.desc(), Purchase.id.desc())
+        .all()
+    )
+    for row in rows:
+        if row.product_id in purchase_map:
+            continue
+        status = (row.status or '').strip().lower()
+        purchase_map[row.product_id] = {
+            "purchase_id": row.id,
+            "status": status,
+            "status_label": _purchase_status_label(status)
+        }
+    return purchase_map
+
+
+def _serialize_product_card(product, image_map=None, purchase_map=None):
     primary_image = product.image_url or ''
     if not primary_image and image_map is not None:
         primary_image = image_map.get(product.id, '')
+
+    purchase = purchase_map.get(product.id) if purchase_map else None
+    purchase_status = purchase["status"] if purchase else ''
+    is_in_transaction = purchase_status in {'paid', 'preparing', 'shipped'}
 
     return {
         "id": product.id,
@@ -214,7 +241,11 @@ def _serialize_product_card(product, image_map=None):
         "image_url": primary_image,
         "created_at": product.created_at.isoformat() if product.created_at else None,
         "seller_id": product.seller_id,
-        "status": product.status
+        "status": product.status,
+        "purchase_id": purchase["purchase_id"] if purchase else None,
+        "purchase_status": purchase_status,
+        "purchase_status_label": purchase["status_label"] if purchase else '',
+        "is_in_transaction": is_in_transaction
     }
 
 
@@ -784,6 +815,57 @@ def _display_name_from_email(email, user=None):
     return (email.split('@')[0] if email else 'ユーザー')
 
 
+def _build_user_rating_summary(target_email):
+    normalized_email = _normalize_email(target_email)
+    if not normalized_email:
+        return {
+            "count": 0,
+            "average": 0.0,
+            "reviews": []
+        }
+
+    aggregate = (
+        db.session.query(
+            db.func.count(PurchaseReview.id),
+            db.func.avg(PurchaseReview.rating)
+        )
+        .filter(db.func.lower(PurchaseReview.reviewee_email) == normalized_email)
+        .first()
+    )
+
+    rating_count = int((aggregate[0] if aggregate else 0) or 0)
+    rating_average = float((aggregate[1] if aggregate else 0) or 0)
+
+    comment_rows = (
+        PurchaseReview.query
+        .filter(db.func.lower(PurchaseReview.reviewee_email) == normalized_email)
+        .filter(PurchaseReview.comment.isnot(None))
+        .filter(db.func.length(db.func.trim(PurchaseReview.comment)) > 0)
+        .order_by(PurchaseReview.created_at.desc(), PurchaseReview.id.desc())
+        .limit(5)
+        .all()
+    )
+
+    review_comments = []
+    for row in comment_rows:
+        reviewer_email = _normalize_email(row.reviewer_email)
+        reviewer_user = _find_user_by_email(reviewer_email)
+        review_comments.append({
+            "id": row.id,
+            "rating": int(row.rating or 0),
+            "comment": row.comment or '',
+            "reviewer_email": reviewer_email,
+            "reviewer_name": _display_name_from_email(reviewer_email, reviewer_user),
+            "created_at": row.created_at.isoformat() if row.created_at else None
+        })
+
+    return {
+        "count": rating_count,
+        "average": round(rating_average, 2),
+        "reviews": review_comments
+    }
+
+
 def _serialize_chat_message(chat_message, seller_email, current_email):
     sender_email = _normalize_email(chat_message.sender_email)
     sender_user = _find_user_by_email(sender_email)
@@ -953,6 +1035,7 @@ def get_profile(email):
 
     follower_count = ForumFollow.query.filter_by(followee_email=user.email).count()
     following_count = ForumFollow.query.filter_by(follower_email=user.email).count()
+    rating_summary = _build_user_rating_summary(user.email)
 
     return jsonify({
         "id": user.id,
@@ -969,7 +1052,8 @@ def get_profile(email):
         "created_at": user.created_at.isoformat() if user.created_at else None,
         "status": user.status,
         "follower_count": follower_count,
-        "following_count": following_count
+        "following_count": following_count,
+        "rating": rating_summary
     }), 200
 
 
@@ -984,6 +1068,7 @@ def get_profile_by_id(user_id):
 
     follower_count = ForumFollow.query.filter_by(followee_email=user.email).count()
     following_count = ForumFollow.query.filter_by(follower_email=user.email).count()
+    rating_summary = _build_user_rating_summary(user.email)
 
     return jsonify({
         "id": user.id,
@@ -994,7 +1079,8 @@ def get_profile_by_id(user_id):
         "bio": user.bio,
         "created_at": user.created_at.isoformat() if user.created_at else None,
         "follower_count": follower_count,
-        "following_count": following_count
+        "following_count": following_count,
+        "rating": rating_summary
     }), 200
 
 
@@ -1199,6 +1285,7 @@ def get_products():
         products = query.offset(offset).limit(limit).all()
 
         image_map = _build_primary_image_map([p.id for p in products])
+        purchase_map = _build_latest_purchase_map([p.id for p in products])
 
         result = {
             "total": total,
@@ -1206,7 +1293,7 @@ def get_products():
             "limit": limit,
             "total_pages": (total + limit - 1) // limit,
             "products": [
-                _serialize_product_card(p, image_map)
+                _serialize_product_card(p, image_map, purchase_map)
                 for p in products
             ]
         }
@@ -1255,6 +1342,7 @@ def get_product_detail(product_id):
         ]
 
         seller = User.query.filter_by(id=product.seller_id).first()
+        seller_rating = _build_user_rating_summary(seller.email) if seller and seller.email else {"count": 0, "average": 0.0}
         shipping_info = ProductShippingInfo.query.filter_by(product_id=product.id).first()
 
         result = {
@@ -1279,7 +1367,11 @@ def get_product_detail(product_id):
                 "user_id": seller.user_id if seller else None,
                 "user_name": seller.user_name if seller else "不明",
                 "email": seller.email if seller else None,
-                "profile_image": seller.profile_image if seller else None
+                "profile_image": seller.profile_image if seller else None,
+                "rating": {
+                    "count": int(seller_rating.get("count", 0) or 0),
+                    "average": float(seller_rating.get("average", 0) or 0)
+                }
             } if seller else None
         }
 
