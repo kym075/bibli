@@ -1,10 +1,13 @@
-import { Link } from 'react-router-dom';
+﻿import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../css/firebase';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import '../css/index.css';
+
+const VISIBLE_FORUM_ITEMS = 5;
+const FORUM_ROTATE_MS = 3000;
 
 const getImageUrl = (imageUrl) => {
   if (!imageUrl) return '';
@@ -15,16 +18,22 @@ const getImageUrl = (imageUrl) => {
   return `http://localhost:5000/${trimmed}`;
 };
 
+const categories = ['文芸', '漫画', '参考書', '洋書', '雑誌', '絵本', '自己啓発', 'その他'];
+const genres = ['ファンタジー', '科学', 'ホラー', '恋愛', '歴史', '詩集', 'ビジネス書', '自己啓発', 'その他'];
+
 function Home() {
   const [products, setProducts] = useState([]);
+  const [weeklyPopularThreads, setWeeklyPopularThreads] = useState([]);
   const [recommendProducts, setRecommendProducts] = useState([]);
   const [followProducts, setFollowProducts] = useState([]);
   const [currentUserEmail, setCurrentUserEmail] = useState('');
+  const [weeklyPopularLoading, setWeeklyPopularLoading] = useState(false);
   const [recommendLoading, setRecommendLoading] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [forumSlideIndex, setForumSlideIndex] = useState(0);
 
   const renderProductGrid = (items) => (
-    <div className="book-grid">
+    <div className="book-grid home-listing-grid">
       {items.length > 0 ? (
         items.map((product) => (
           <Link key={product.id} to={`/product-detail?id=${product.id}`} className="book-card-link">
@@ -43,7 +52,45 @@ function Home() {
           </Link>
         ))
       ) : (
-        <p>商品がありません。</p>
+        <p>投稿がありません。</p>
+      )}
+    </div>
+  );
+
+  const renderForumCarousel = (items) => {
+    if (items.length === 0) {
+      return <p>1週間以内の掲示板投稿がありません。</p>;
+    }
+
+    const slideWidthPercent = 100 / VISIBLE_FORUM_ITEMS;
+
+    return (
+      <div
+        className="forum-carousel-track"
+        style={{ transform: `translateX(-${forumSlideIndex * slideWidthPercent}%)` }}
+      >
+        {items.map((thread) => (
+          <Link key={thread.id} to={`/forum/${thread.id}`} className="forum-carousel-item-link">
+            <article className="forum-carousel-item">
+              <p className="forum-carousel-title">{thread.title}</p>
+              <div className="forum-carousel-meta">
+                <span>{thread.category_label || '掲示板'}</span>
+                <span>閲覧 {thread.view_count || 0}</span>
+              </div>
+            </article>
+          </Link>
+        ))}
+      </div>
+    );
+  };
+
+  const renderForumTopSection = () => (
+    <div className="forum-carousel-window">
+      <h2 className="section-title">人気の掲示板投稿</h2>
+      {weeklyPopularLoading ? (
+        <p>読み込み中...</p>
+      ) : (
+        renderForumCarousel(weeklyPopularThreads)
       )}
     </div>
   );
@@ -65,16 +112,71 @@ function Home() {
     }
 
     fetch(`http://localhost:5000/api/products?${params.toString()}`)
-      .then(response => response.json())
-      .then(data => {
-        if (data.products) {
-          setProducts(data.products);
-        } else {
-          setProducts([]);
-        }
+      .then((response) => response.json())
+      .then((data) => {
+        setProducts(Array.isArray(data.products) ? data.products : []);
       })
-      .catch(error => console.error('Products API呼び出しエラー:', error));
+      .catch((error) => {
+        console.error('Products API error:', error);
+        setProducts([]);
+      });
   }, [currentUserEmail]);
+
+  useEffect(() => {
+    const fetchWeeklyPopular = async () => {
+      setWeeklyPopularLoading(true);
+      try {
+        const params = new URLSearchParams({
+          sort: 'newest',
+          limit: '120'
+        });
+        const response = await fetch(`http://localhost:5000/api/forum/threads?${params.toString()}`);
+        const data = await response.json();
+        if (!response.ok || !Array.isArray(data.threads)) {
+          setWeeklyPopularThreads([]);
+          return;
+        }
+
+        const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        const weeklyThreads = data.threads
+          .filter((thread) => {
+            if (!thread?.created_at) return false;
+            const createdAtMs = new Date(thread.created_at).getTime();
+            return Number.isFinite(createdAtMs) && createdAtMs >= oneWeekAgo;
+          })
+          .sort((a, b) => {
+            const viewDiff = (b.view_count || 0) - (a.view_count || 0);
+            if (viewDiff !== 0) return viewDiff;
+            return (b.comment_count || 0) - (a.comment_count || 0);
+          })
+          .slice(0, 10);
+
+        setWeeklyPopularThreads(weeklyThreads);
+      } catch (error) {
+        console.error('Weekly popular forum API error:', error);
+        setWeeklyPopularThreads([]);
+      } finally {
+        setWeeklyPopularLoading(false);
+      }
+    };
+
+    fetchWeeklyPopular();
+  }, []);
+
+  useEffect(() => {
+    setForumSlideIndex(0);
+  }, [weeklyPopularThreads.length]);
+
+  useEffect(() => {
+    const maxSlide = Math.max(weeklyPopularThreads.length - VISIBLE_FORUM_ITEMS, 0);
+    if (maxSlide <= 0) return undefined;
+
+    const timer = setInterval(() => {
+      setForumSlideIndex((prev) => (prev >= maxSlide ? 0 : prev + 1));
+    }, FORUM_ROTATE_MS);
+
+    return () => clearInterval(timer);
+  }, [weeklyPopularThreads.length]);
 
   useEffect(() => {
     const fetchRecommendations = async () => {
@@ -92,7 +194,7 @@ function Home() {
           setRecommendProducts([]);
         }
       } catch (error) {
-        console.error('Recommendations API呼び出しエラー:', error);
+        console.error('Recommendations API error:', error);
         setRecommendProducts([]);
       } finally {
         setRecommendLoading(false);
@@ -123,7 +225,7 @@ function Home() {
           setFollowProducts([]);
         }
       } catch (error) {
-        console.error('Follow feed API呼び出しエラー:', error);
+        console.error('Follow feed API error:', error);
         setFollowProducts([]);
       } finally {
         setFollowLoading(false);
@@ -137,64 +239,79 @@ function Home() {
     <>
       <Header />
 
-      <main className="main-content" style={{width: '100%', maxWidth: '1200px', margin: '0 auto'}}>
-        {/* ピックアップエリア */}
+      <main className="main-content" style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
         <div className="pickup-area">
           <h2>本好きのためのマーケットプレイス</h2>
           <p>あなたの大切な本を新しい読者に届けませんか？</p>
         </div>
 
-        {/* カテゴリから探す */}
-        <section className="section">
-          <h2 className="section-title">カテゴリから探す</h2>
-          <div className="categories">
-            <Link to="/search?q=小説"><button className="category-btn">小説</button></Link>
-            <Link to="/search?q=漫画"><button className="category-btn">漫画</button></Link>
-            <Link to="/search?q=専門書"><button className="category-btn">専門書</button></Link>
-            <Link to="/search?q=絵本"><button className="category-btn">絵本</button></Link>
-            <Link to="/search?q=雑誌"><button className="category-btn">雑誌</button></Link>
-            <Link to="/search?q=洋書"><button className="category-btn">洋書</button></Link>
-            <Link to="/search?q=自己啓発"><button className="category-btn">自己啓発</button></Link>
-            <Link to="/search?q=その他"><button className="category-btn">その他</button></Link>
+        <section className="section home-forum-top-section">
+          {renderForumTopSection()}
+        </section>
+
+        <div className="home-market-layout">
+          <aside className="home-market-sidebar">
+            <section className="section home-side-block">
+              <h3 className="home-side-title">カテゴリから探す</h3>
+              <div className="categories home-side-list">
+                {categories.map((category) => (
+                  <Link key={category} to={`/search?q=${encodeURIComponent(category)}`}>
+                    <button className="category-btn">{category}</button>
+                  </Link>
+                ))}
+              </div>
+            </section>
+
+            <section className="section home-side-block">
+              <h3 className="home-side-title">ジャンルで探す</h3>
+              <div className="genres home-side-list">
+                {genres.map((genre) => (
+                  <Link key={genre} to={`/search?q=${encodeURIComponent(genre)}`}>
+                    <button className="genre-btn">{genre}</button>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          </aside>
+
+          <div className="home-market-main">
+            <section className="section home-product-block">
+              <div className="home-block-head">
+                <div className="home-title-group">
+                  <h2 className="section-title">新着の商品</h2>
+                  <Link to="/search" className="home-more-btn">もっと見る</Link>
+                </div>
+              </div>
+              {products.length > 0 ? renderProductGrid(products.slice(0, 8)) : <p>Loading products...</p>}
+            </section>
+
+            <section className="section home-product-block">
+              <div className="home-block-head">
+                <div className="home-title-group">
+                  <h2 className="section-title">おすすめの商品</h2>
+                  <Link to="/search" className="home-more-btn">もっと見る</Link>
+                </div>
+              </div>
+              {recommendLoading ? <p>おすすめを読み込み中...</p> : renderProductGrid(recommendProducts.slice(0, 8))}
+            </section>
+
+            <section className="section home-product-block">
+              <div className="home-block-head">
+                <div className="home-title-group">
+                  <h2 className="section-title">フォロー中の出品</h2>
+                  <Link to={currentUserEmail ? '/search' : '/login'} className="home-more-btn">もっと見る</Link>
+                </div>
+              </div>
+              {currentUserEmail ? (
+                followLoading ? <p>フォロー中の新着を読み込み中...</p> : (
+                  followProducts.length > 0 ? renderProductGrid(followProducts.slice(0, 8)) : <p>フォロー中ユーザーの出品はまだありません。</p>
+                )
+              ) : (
+                <p>ログインするとフォロー中の出品を表示できます。</p>
+              )}
+            </section>
           </div>
-        </section>
-
-        {/* ジャンルから探す */}
-        <section className="section">
-          <h2 className="section-title">ジャンルから探す</h2>
-          <div className="genres">
-            <Link to="/search?q=ファンタジー"><button className="genre-btn">ファンタジー</button></Link>
-            <Link to="/search?q=純文学"><button className="genre-btn">純文学</button></Link>
-            <Link to="/search?q=ホラー"><button className="genre-btn">ホラー</button></Link>
-            <Link to="/search?q=歴史"><button className="genre-btn">歴史</button></Link>
-            <Link to="/search?q=童話"><button className="genre-btn">童話</button></Link>
-            <Link to="/search?q=恋愛"><button className="genre-btn">恋愛</button></Link>
-            <Link to="/search?q=ビジネス書"><button className="genre-btn">ビジネス書</button></Link>
-            <Link to="/search?q=自己啓発"><button className="genre-btn">自己啓発</button></Link>
-            <Link to="/search?q=その他"><button className="genre-btn">その他</button></Link>
-          </div>
-        </section>
-
-        {/* 新着の本 */}
-        <section className="section">
-          <h2 className="section-title">新着の本</h2>
-          {products.length > 0 ? renderProductGrid(products.slice(0, 4)) : <p>Loading products...</p>}
-        </section>
-
-        {/* おすすめ */}
-        <section className="section">
-          <h2 className="section-title">おすすめ商品</h2>
-          {recommendLoading ? <p>おすすめを読み込み中...</p> : renderProductGrid(recommendProducts.slice(0, 4))}
-        </section>
-
-        {currentUserEmail && (
-          <section className="section">
-            <h2 className="section-title">フォロー中ユーザーの新着</h2>
-            {followLoading ? <p>フォロー中の新着を読み込み中...</p> : (
-              followProducts.length > 0 ? renderProductGrid(followProducts.slice(0, 4)) : <p>フォロー中ユーザーの出品はまだありません。</p>
-            )}
-          </section>
-        )}
+        </div>
       </main>
 
       <Footer />
@@ -203,6 +320,3 @@ function Home() {
 }
 
 export default Home;
-
-
-
