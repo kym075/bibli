@@ -5,6 +5,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/profile_page.css';
+import { fetchUserProfileByEmail } from '../../utils/userProfile';
 
 function ProfilePage() {
   const { userId } = useParams();
@@ -31,6 +32,9 @@ function ProfilePage() {
     profile?.email &&
     currentUser.email.toLowerCase() === profile.email.toLowerCase()
   );
+  const ratingCount = Number(profile?.rating?.count || 0);
+  const ratingAverage = Number(profile?.rating?.average || 0);
+  const ratingAverageText = ratingCount > 0 ? ratingAverage.toFixed(1) : '-';
 
   useEffect(() => {
     if (!profile) return;
@@ -47,17 +51,25 @@ function ProfilePage() {
       try {
         // URLにuserIdがない場合、ログインユーザーのプロフィールにリダイレクト
         if (!userId && firebaseUser) {
-          const userResponse = await fetch(`http://localhost:5000/api/user/${firebaseUser.email}`);
-          if (userResponse.ok) {
-            const userData = await userResponse.json();
+          const userData = await fetchUserProfileByEmail(firebaseUser.email);
+          if (userData?.user_id) {
             navigate(`/profile/${userData.user_id}`, { replace: true });
             return;
           }
+          setError('プロフィール情報の取得に失敗しました');
+          setLoading(false);
+          return;
         }
 
         // URLにuserIdがない＆未ログインの場合
         if (!userId && !firebaseUser) {
           setError('ログインしてください');
+          setLoading(false);
+          return;
+        }
+
+        if (!userId) {
+          setError('ユーザーが見つかりません');
           setLoading(false);
           return;
         }
@@ -309,6 +321,22 @@ function ProfilePage() {
     setProductFilter(filter);
   };
 
+  const isInTransactionProduct = (product) => {
+    if (!product) return false;
+    if (typeof product.is_in_transaction === 'boolean') {
+      return product.is_in_transaction;
+    }
+    const purchaseStatus = String(product.purchase_status || '').trim().toLowerCase();
+    return ['paid', 'preparing', 'shipped'].includes(purchaseStatus);
+  };
+
+  const isSoldProduct = (product) => {
+    if (!product) return false;
+    const purchaseStatus = String(product.purchase_status || '').trim().toLowerCase();
+    if (purchaseStatus === 'completed') return true;
+    return (product.status === 0 || product.status === 3) && !isInTransactionProduct(product);
+  };
+
   return (
     <>
       <Header />
@@ -328,8 +356,12 @@ function ProfilePage() {
             <div className="profile-info">
               <div className="profile-name-section">
                 <div className="profile-name">
-                  {profile.user_name}
-                  <div className="verified-badge">認証済み</div>
+                  <span>{profile.user_name}</span>
+                  <div className="profile-rating-inline" aria-label={`評価 ${ratingAverageText} (${ratingCount}件)`}>
+                    <span className="profile-rating-star">★</span>
+                    <span className="profile-rating-value">{ratingAverageText}</span>
+                    <span className="profile-rating-count">({ratingCount}件)</span>
+                  </div>
                 </div>
                 <div className="profile-actions">
                   {!isOwnProfile && (
@@ -388,8 +420,8 @@ function ProfilePage() {
                   <span className="stat-label">販売実績</span>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-number">-</span>
-                  <span className="stat-label">評価</span>
+                  <span className="stat-number">{ratingAverageText}</span>
+                  <span className="stat-label">評価 ({ratingCount}件)</span>
                 </div>
                 <div className="stat-item">
                   <span className="stat-number">{followCounts.followers}</span>
@@ -473,9 +505,9 @@ function ProfilePage() {
                   {userProducts
                     .filter(product => {
                       if (productFilter === 'all') return true;
-                      if (productFilter === 'available') return product.status === 1;
-                      if (productFilter === 'reserved') return product.status === 2;
-                      if (productFilter === 'sold') return product.status === 0 || product.status === 3;
+                      if (productFilter === 'available') return product.status === 1 && !isInTransactionProduct(product);
+                      if (productFilter === 'reserved') return isInTransactionProduct(product);
+                      if (productFilter === 'sold') return isSoldProduct(product);
                       return true;
                     })
                     .map(product => {

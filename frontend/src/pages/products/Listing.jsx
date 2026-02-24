@@ -126,7 +126,7 @@ function Listing() {
 
     try {
       // ユーザーIDを取得（Firebaseのメールアドレスでデータベースから検索）
-      const userResponse = await fetch(`http://localhost:5000/api/user/${currentUser.email}`);
+      const userResponse = await fetch(`http://localhost:5000/api/user/${encodeURIComponent(currentUser.email)}`);
       if (!userResponse.ok) {
         throw new Error('ユーザー情報の取得に失敗しました');
       }

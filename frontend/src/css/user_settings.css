@@ -123,3 +123,53 @@ h1{
 .btn-save:hover {
     background: var(--accent-strong);
 }
+
+@media (max-width: 768px) {
+    .main-content {
+        padding: 1rem;
+    }
+
+    .user-settings-form {
+        padding: 1.25rem;
+    }
+
+    h1 {
+        font-size: 1.55rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.1rem;
+    }
+
+    .profile-image-setting-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .btn-save {
+        width: 100%;
+        padding: 0.85rem 1.2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-content {
+        padding: 0.75rem;
+    }
+
+    .user-settings-form {
+        padding: 1rem;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        font-size: 0.95rem;
+        padding: 0.75rem 0.85rem;
+    }
+
+    .profile-image-preview {
+        width: 72px;
+        height: 72px;
+    }
+}

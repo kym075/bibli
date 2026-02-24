@@ -5,6 +5,7 @@ import { auth } from "../../css/firebase";
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/login.css';
+import { fetchUserProfileByEmail } from '../../utils/userProfile';
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -52,18 +53,15 @@ function Login() {
       }
       // alert("ログイン成功！");
       try {
-        const profileResponse = await fetch(`http://localhost:5000/api/user/${encodeURIComponent(user.email)}`);
-        if (profileResponse.ok) {
-          const profileData = await profileResponse.json();
-          if (profileData?.user_id) {
-            navigate(`/profile/${profileData.user_id}`);
-            return;
-          }
+        const profileData = await fetchUserProfileByEmail(user.email);
+        if (profileData?.user_id) {
+          navigate(`/profile/${profileData.user_id}`);
+          return;
         }
       } catch (fetchErr) {
         console.error('Login profile route resolve error:', fetchErr);
       }
-      navigate("/profile");
+      navigate('/settings');
     } catch (error) {
       console.error("Firebase Login Error:", error);
       let message = 'ログインに失敗しました';

@@ -46,7 +46,7 @@ function UserSettings() {
 
       setUser(currentUser);
       try {
-        const response = await fetch(`http://localhost:5000/api/profile/${currentUser.email}`);
+        const response = await fetch(`http://localhost:5000/api/profile/${encodeURIComponent(currentUser.email)}`);
         if (response.ok) {
           const data = await response.json();
           setFormData({
@@ -106,7 +106,7 @@ function UserSettings() {
 
     setIsUploadingImage(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/profile/${user.email}/image`, {
+      const response = await fetch(`http://localhost:5000/api/profile/${encodeURIComponent(user.email)}/image`, {
         method: 'POST',
         body: payload
       });
@@ -163,7 +163,7 @@ function UserSettings() {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/profile/${user.email}`, {
+      const response = await fetch(`http://localhost:5000/api/profile/${encodeURIComponent(user.email)}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
