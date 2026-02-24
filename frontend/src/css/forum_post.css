@@ -1,11 +1,11 @@
-/* メインコンテンツ */
+﻿/* 繝｡繧､繝ｳ繧ｳ繝ｳ繝・Φ繝・*/
 .main-content {
     max-width: 800px;
     margin: 0 auto;
     padding: 2rem;
 }
 
-/* ページタイトル */
+/* 繝壹・繧ｸ繧ｿ繧､繝医Ν */
 .page-header {
     text-align: center;
     margin-bottom: 3rem;
@@ -52,12 +52,25 @@
     z-index: 1;
 }
 
-/* ブレッドクラム */
+/* 繝悶Ξ繝・ラ繧ｯ繝ｩ繝 */
 .breadcrumb {
     margin-bottom: 2rem;
 }
 
-.back-btn {
+@keyframes forumPostBtnSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.breadcrumb .back-btn,
+.breadcrumb .back-btn:link,
+.breadcrumb .back-btn:visited {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -67,23 +80,26 @@
     padding: 0.8rem 1.5rem;
     border-radius: 12px;
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
     transition: all 0.3s ease;
-    box-shadow: var(--shadow);
+    box-shadow: none;
+    animation: forumPostBtnSlideIn 0.5s ease-out both;
+    animation-delay: 0.05s;
 }
 
-.back-btn:hover {
+.breadcrumb .back-btn:hover {
     transform: translateY(-3px);
+    background: var(--surface-muted);
     border-color: var(--accent);
     color: var(--accent);
 }
 
-.back-btn::before {
+.breadcrumb .back-btn::before {
     content: "←";
     font-size: 1.2rem;
 }
 
-/* フォームコンテナ */
+/* 繝輔か繝ｼ繝繧ｳ繝ｳ繝・リ */
 .form-container {
     background: var(--surface);
     border-radius: var(--radius);
@@ -104,7 +120,7 @@
     }
 }
 
-/* フォーム要素 */
+/* 繝輔か繝ｼ繝隕∫ｴ */
 .form-group {
     margin-bottom: 2.5rem;
 }
@@ -164,7 +180,8 @@
 
 .form-textarea {
     width: 100%;
-    min-height: 200px;
+    min-height: 344px;
+    height: 344px;
     padding: 1rem;
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -183,7 +200,7 @@
     box-shadow: 0 0 0 3px rgba(47, 93, 80, 0.12);
 }
 
-/* カテゴリ説明 */
+/* 繧ｫ繝・ざ繝ｪ隱ｬ譏・*/
 .category-descriptions {
     background: var(--surface-muted);
     border-radius: 12px;
@@ -254,7 +271,7 @@
     font-size: 0.9rem;
 }
 
-/* 文字数カウント */
+/* 譁・ｭ玲焚繧ｫ繧ｦ繝ｳ繝・*/
 .char-count {
     display: flex;
     justify-content: space-between;
@@ -276,7 +293,7 @@
     line-height: 1.5;
 }
 
-/* 投稿プレビュー */
+/* 謚慕ｨｿ繝励Ξ繝薙Η繝ｼ */
 .preview-section {
     margin-top: 2rem;
     padding-top: 2rem;
@@ -345,7 +362,7 @@
     white-space: pre-wrap;
 }
 
-/* 送信ボタン */
+/* 騾∽ｿ｡繝懊ち繝ｳ */
 .submit-section {
     text-align: center;
     margin-top: 3rem;
@@ -367,6 +384,8 @@
     display: inline-flex;
     align-items: center;
     gap: 0.8rem;
+    animation: forumPostBtnSlideIn 0.5s ease-out both;
+    animation-delay: 0.14s;
 }
 
 .submit-btn:hover:not(:disabled) {
@@ -385,7 +404,7 @@
     content: "";
 }
 
-/* 下書き保存 */
+/* 荳区嶌縺堺ｿ晏ｭ・*/
 .draft-actions {
     display: flex;
     justify-content: center;
@@ -403,6 +422,8 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
+    animation: forumPostBtnSlideIn 0.5s ease-out both;
+    animation-delay: 0.1s;
 }
 
 .draft-btn:hover {
@@ -411,7 +432,7 @@
     transform: translateY(-2px);
 }
 
-/* エラーメッセージ */
+/* 繧ｨ繝ｩ繝ｼ繝｡繝・そ繝ｼ繧ｸ */
 .error-message {
     color: var(--accent-warm);
     font-size: 0.9rem;
@@ -430,7 +451,7 @@
     background: rgba(180, 107, 61, 0.08) !important;
 }
 
-/* 成功メッセージ */
+/* 謌仙粥繝｡繝・そ繝ｼ繧ｸ */
 .success-message {
     background: var(--accent);
     color: white;
@@ -446,7 +467,7 @@
     content: "";
 }
 
-/* レスポンシブデザイン */
+/* 繝ｬ繧ｹ繝昴Φ繧ｷ繝悶ョ繧ｶ繧､繝ｳ */
 @media (max-width: 768px) {
     .header-content {
         flex-direction: column;
@@ -478,6 +499,11 @@
         padding: 2rem 1rem;
     }
 
+    .form-textarea {
+        min-height: 284px;
+        height: 284px;
+    }
+
     .submit-btn {
         padding: 1.2rem 3rem;
         font-size: 1.1rem;
@@ -498,4 +524,6 @@
         gap: 0.5rem;
     }
 }
+
+
 
