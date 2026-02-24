@@ -404,8 +404,70 @@
 }
 
 @media (max-width: 768px) {
+    .search-results-title {
+        font-size: 1.4rem;
+    }
+
+    .search-info {
+        font-size: 0.95rem;
+    }
+
+    .filter-sort-area {
+        padding: 1rem;
+    }
+
+    .controls-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.9rem;
+    }
+
+    .control-group {
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+    }
+
+    .price-range {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .price-input {
+        flex: 1;
+        min-width: 120px;
+    }
+
     .book-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 30px 12px;
+    }
+}
+
+@media (max-width: 600px) {
+    .book-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px 10px;
+    }
+
+    .book-title {
+        font-size: 14px;
+    }
+
+    .pagination {
+        flex-wrap: wrap;
+        gap: 0.4rem;
+    }
+
+    .pagination-btn {
+        padding: 0.65rem 0.9rem;
+        font-size: 0.86rem;
+    }
+}
+
+@media (max-width: 420px) {
+    .book-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
     }
 }

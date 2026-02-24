@@ -394,6 +394,11 @@
 }
 
 @media (max-width: 900px) {
+    .transaction-page {
+        margin-top: 62px;
+        padding: 0 12px;
+    }
+
     .transaction-layout {
         flex-direction: column;
     }
@@ -403,7 +408,88 @@
         position: static;
     }
 
+    .transaction-main-head h1 {
+        font-size: 30px;
+    }
+
     .transaction-chat-thread {
         max-height: 260px;
+    }
+}
+
+@media (max-width: 768px) {
+    .transaction-main-head {
+        padding: 12px 14px;
+    }
+
+    .transaction-main-head h1 {
+        font-size: 24px;
+    }
+
+    .transaction-main-head p {
+        font-size: 13px;
+    }
+
+    .transaction-sidebar h2 {
+        font-size: 24px;
+    }
+
+    .transaction-product-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .transaction-product-meta span {
+        font-size: 15px;
+    }
+
+    .transaction-info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .transaction-info-row strong {
+        text-align: left;
+    }
+
+    .transaction-chat-form {
+        flex-direction: column;
+    }
+
+    .transaction-chat-form button {
+        width: 100%;
+        min-height: 42px;
+    }
+}
+
+@media (max-width: 520px) {
+    .transaction-page {
+        padding: 0 8px;
+    }
+
+    .transaction-sidebar,
+    .transaction-main-head,
+    .transaction-box {
+        padding: 12px;
+        border-radius: 10px;
+    }
+
+    .transaction-main-head h1 {
+        font-size: 21px;
+    }
+
+    .transaction-box-head {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .transaction-participant {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .transaction-chat-thread {
+        max-height: 220px;
     }
 }

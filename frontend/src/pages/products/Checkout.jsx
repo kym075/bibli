@@ -79,8 +79,8 @@ function Checkout() {
 
       try {
         const [userResponse, profileResponse] = await Promise.all([
-          fetch(`http://localhost:5000/api/user/${user.email}`),
-          fetch(`http://localhost:5000/api/profile/${user.email}`)
+          fetch(`http://localhost:5000/api/user/${encodeURIComponent(user.email)}`),
+          fetch(`http://localhost:5000/api/profile/${encodeURIComponent(user.email)}`)
         ]);
 
         if (userResponse.ok) {

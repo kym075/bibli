@@ -18,6 +18,7 @@ function SearchResults() {
   const [filters, setFilters] = useState({
     keyword: searchParams.get('q') || '',
     sort: searchParams.get('sort') || 'newest',
+    includeSold: searchParams.get('include_sold') || '1',
     minPrice: searchParams.get('min_price') || '',
     maxPrice: searchParams.get('max_price') || '',
     condition: searchParams.get('condition') || ''
@@ -41,7 +42,7 @@ function SearchResults() {
       if (filters.minPrice) params.append('min_price', filters.minPrice);
       if (filters.maxPrice) params.append('max_price', filters.maxPrice);
       if (filters.condition) params.append('condition', filters.condition);
-      params.append('include_sold', '1');
+      params.append('include_sold', filters.includeSold || '1');
       if (currentEmail) params.append('viewer_email', currentEmail);
       params.append('page', currentPage);
       params.append('limit', 20);
@@ -74,8 +75,16 @@ function SearchResults() {
   }, []);
 
   useEffect(() => {
-    const keyword = searchParams.get('q') || '';
-    setFilters(prev => ({ ...prev, keyword }));
+    setFilters(prev => ({
+      ...prev,
+      keyword: searchParams.get('q') || '',
+      sort: searchParams.get('sort') || 'newest',
+      includeSold: searchParams.get('include_sold') || '1',
+      minPrice: searchParams.get('min_price') || '',
+      maxPrice: searchParams.get('max_price') || '',
+      condition: searchParams.get('condition') || ''
+    }));
+    setCurrentPage(1);
   }, [searchParams]);
 
   useEffect(() => {

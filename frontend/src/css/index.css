@@ -61,6 +61,37 @@ main.main-content {
     background: var(--accent);
 }
 
+.home-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+}
+
+.home-section-head .section-title {
+    margin-bottom: 0;
+}
+
+.home-more-link {
+    border: none;
+    background: transparent;
+    color: var(--accent);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.home-more-link:hover {
+    text-decoration: underline;
+}
+
 .categories,.genres {
     display: flex;
     flex-wrap: wrap;
@@ -195,8 +226,79 @@ main.main-content {
 }
 
 @media (max-width: 768px) {
+    main.main-content {
+        padding: 1rem !important;
+    }
+
+    .pickup-area {
+        padding: 1.35rem;
+        margin-bottom: 2rem;
+    }
+
+    .pickup-area h2 {
+        font-size: 1.35rem;
+    }
+
+    .pickup-area p {
+        font-size: 0.95rem;
+    }
+
     .book-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 30px 12px;
+    }
+
+    .category-btn,
+    .genre-btn {
+        padding: 0.65rem 1rem;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .section {
+        margin-bottom: 2.2rem;
+    }
+
+    .section-title {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+    }
+
+    .section-title::before {
+        width: 18px;
+    }
+
+    .home-section-head {
+        margin-bottom: 1rem;
+    }
+
+    .home-more-link {
+        font-size: 0.88rem;
+    }
+
+    .book-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px 10px;
+    }
+
+    .book-title {
+        font-size: 14px;
+    }
+
+    .book-price-badge {
+        padding: 4px 8px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 420px) {
+    .book-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .book-title {
+        font-size: 15px;
     }
 }

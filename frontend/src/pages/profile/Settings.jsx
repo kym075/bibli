@@ -112,7 +112,7 @@ function Settings() {
       }
 
       try {
-        const response = await fetch(`http://localhost:5000/api/profile/${user.email}`);
+        const response = await fetch(`http://localhost:5000/api/profile/${encodeURIComponent(user.email)}`);
         if (response.ok) {
           const data = await response.json();
           setProfile(data);
