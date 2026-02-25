@@ -6,6 +6,11 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/search_results.css';
 
+const isSoldOutProduct = (product) => {
+  const status = Number(product?.status);
+  return status === 0 || status === 3;
+};
+
 function SearchResults() {
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
@@ -222,7 +227,7 @@ function SearchResults() {
                         ) : (
                           'NO IMAGE'
                         )}
-                        {product.status !== 1 && <span className="sold-badge">Sold out</span>}
+                        {isSoldOutProduct(product) && <span className="sold-badge">Sold out</span>}
                         <span className="book-price-badge">¥{product.price?.toLocaleString()}</span>
                       </div>
                       <div className="book-title">{product.title}</div>

@@ -521,7 +521,7 @@ function ProfilePage() {
                               ) : (
                                 'NO IMAGE'
                               )}
-                              {product.status !== 1 && <span className="sold-badge">Sold out</span>}
+                              {isSoldProduct(product) && <span className="sold-badge">Sold out</span>}
                               <span className="book-price-badge">¥{product.price.toLocaleString()}</span>
                             </div>
                             <div className="book-title">{product.title}</div>
@@ -610,7 +610,7 @@ function ProfilePage() {
                               ) : (
                                 'NO IMAGE'
                               )}
-                              {product.status !== 1 && <span className="sold-badge">Sold out</span>}
+                              {isSoldProduct(product) && <span className="sold-badge">Sold out</span>}
                               <span className="book-price-badge">¥{product.price.toLocaleString()}</span>
                             </div>
                             <div className="book-title">{product.title}</div>

@@ -219,7 +219,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 category: category,
                 condition: condition,
                 description: description,
-                passion: document.getElementById('passion').value.trim(),
                 tags: tags,
                 price: parseInt(price),
                 shipping: shipping,

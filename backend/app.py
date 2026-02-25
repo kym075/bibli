@@ -341,7 +341,7 @@ class Product(db.Model):
     seller_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     category = db.Column(db.String(100))
     image_url = db.Column(db.String(255))
-    status = db.Column(db.SmallInteger, default=1)  # 1: 販売中, 0: 売り切れ
+    status = db.Column(db.SmallInteger, default=1)  # 1: 販売中, 0: 売却済み, 2: 出品取り消し
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -1225,10 +1225,16 @@ def get_products():
                 blocked_users = User.query.filter(db.func.lower(User.email).in_(list(blocked_emails))).all()
                 blocked_seller_ids = {user.id for user in blocked_users if user.id}
 
-        query = Product.query
+        # 取り消し済み(status=2)は全一覧から除外する
+        query = Product.query.filter(Product.status != 2)
         if seller_id:
             query = query.filter(Product.seller_id == seller_id)
-        elif not include_sold:
+            if not include_sold:
+                query = query.filter(Product.status == 1)
+        elif include_sold:
+            # 公開一覧では「販売中 + 売却済み」を表示し、出品取り消しは除外する
+            query = query.filter(Product.status.in_([0, 1, 3]))
+        else:
             query = query.filter(Product.status == 1)
         if blocked_seller_ids:
             query = query.filter(~Product.seller_id.in_(blocked_seller_ids))
@@ -1313,7 +1319,7 @@ def get_product_detail(product_id):
     try:
         product = Product.query.filter_by(id=product_id).first()
 
-        if not product:
+        if not product or product.status == 2:
             return jsonify({"error": "商品が見つかりません"}), 404
 
         try:
@@ -1686,7 +1692,7 @@ def cancel_product(product_id):
     if existing_purchase:
         return jsonify({"error": "購入済みのため取り消しできません"}), 400
 
-    product.status = 0
+    product.status = 2
     product.updated_at = datetime.utcnow()
 
     try:
