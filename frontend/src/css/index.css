@@ -423,6 +423,11 @@ main.main-content {
     padding: 10px;
 }
 
+.forum-carousel-title-head::before {
+    content: none;
+    display: none;
+}
+
 .forum-carousel-track {
     display: flex;
     gap: 10px;
@@ -518,7 +523,7 @@ main.main-content {
     display: block;
     margin-bottom: 10px;
     padding-bottom: 8px;
-    border-bottom: none;
+    border-bottom: 3px solid var(--accent);
 }
 
 .home-title-group {
@@ -533,13 +538,17 @@ main.main-content {
     background: transparent;
 }
 
-.home-block-head .section-title {
+.home-block-title {
     margin-bottom: 0;
     font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--ink);
 }
 
-.home-title-group .section-title::before {
-    width: 18px;
+.home-block-title::before,
+.home-block-title::after {
+    content: none;
+    display: none;
 }
 
 .home-more-btn {
