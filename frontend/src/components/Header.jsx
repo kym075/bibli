@@ -130,16 +130,13 @@ function Header() {
   };
 
   const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchKeyword.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchKeyword.trim())}`);
+    e?.preventDefault();
+    const keyword = searchKeyword.trim();
+    if (keyword) {
+      navigate(`/search?q=${encodeURIComponent(keyword)}`);
+      return;
     }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleSearch(e);
-    }
+    navigate('/search');
   };
 
   const headerProfileImageUrl = getImageUrl(userProfile?.profile_image || '');
@@ -158,15 +155,17 @@ function Header() {
           <Link to="/" className="logo">
             <img src={bibliLogo} alt="Bibli" className="logo-image" />
           </Link>
-          <div className="search-bar">
+          <form className="search-bar" onSubmit={handleSearch}>
             <input
               type="text"
               placeholder="キーワードで検索..."
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
-              onKeyPress={handleKeyPress}
             />
-          </div>
+            <button type="submit" className="search-submit-button" aria-label="検索">
+              <span className="search-submit-icon" aria-hidden="true">⌕</span>
+            </button>
+          </form>
         </div>
 
         <div className="header-right">
@@ -200,13 +199,13 @@ function Header() {
           <div className="hamburger-dropdown" id="hamburger-dropdown">
             {user ? (
               <>
-                <Link to={profilePath} className="dropdown-item">
-                  <span className="dropdown-icon">P</span>
-                  <span className="dropdown-text">プロフィール</span>
+                <Link to="/" className="dropdown-item">
+                  <span className="dropdown-icon">H</span>
+                  <span className="dropdown-text">ホーム</span>
                 </Link>
-                <Link to="/news" className="dropdown-item">
-                  <span className="dropdown-icon">N</span>
-                  <span className="dropdown-text">お知らせ</span>
+                <Link to="/search" className="dropdown-item">
+                  <span className="dropdown-icon">Q</span>
+                  <span className="dropdown-text">検索</span>
                 </Link>
                 <Link to="/forum" className="dropdown-item">
                   <span className="dropdown-icon">B</span>
@@ -223,6 +222,14 @@ function Header() {
               </>
             ) : (
               <>
+                <Link to="/" className="dropdown-item">
+                  <span className="dropdown-icon">H</span>
+                  <span className="dropdown-text">ホーム</span>
+                </Link>
+                <Link to="/search" className="dropdown-item">
+                  <span className="dropdown-icon">Q</span>
+                  <span className="dropdown-text">検索</span>
+                </Link>
                 <Link to="/login" className="dropdown-item">
                   <span className="dropdown-icon">L</span>
                   <span className="dropdown-text">ログイン</span>

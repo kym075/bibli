@@ -45,14 +45,6 @@ const ThumbIcon = (props) => (
   </IconBase>
 );
 
-const ShareIcon = (props) => (
-  <IconBase {...props}>
-    <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7" />
-    <path d="M16 6l-4-4-4 4" />
-    <path d="M12 2v14" />
-  </IconBase>
-);
-
 const FlagIcon = (props) => (
   <IconBase {...props}>
     <path d="M5 3v18" />
@@ -390,7 +382,7 @@ function ForumDetail() {
     return (
       <>
         <Header />
-        <main className="main-content">
+        <main className="main-content forum-detail-page">
           <p>読み込み中...</p>
         </main>
         <Footer />
@@ -402,7 +394,7 @@ function ForumDetail() {
     return (
       <>
         <Header />
-        <main className="main-content">
+        <main className="main-content forum-detail-page">
           <p>{error || 'スレッドが見つかりません'}</p>
           <Link to="/forum" className="back-btn">掲示板一覧へ戻る</Link>
         </main>
@@ -420,7 +412,7 @@ function ForumDetail() {
   return (
     <>
       <Header />
-      <main className="main-content">
+      <main className="main-content forum-detail-page">
         <div className="breadcrumb">
           <Link to="/forum" className="back-btn">掲示板一覧へ戻る</Link>
         </div>
@@ -491,9 +483,6 @@ function ForumDetail() {
                 disabled={isLiking}
               >
                 <ThumbIcon /><span>{thread.like_count || 0}</span>
-              </button>
-              <button className="action-btn">
-                <ShareIcon /><span>シェア</span>
               </button>
               <Link to="/contact" className="action-btn">
                 <FlagIcon /><span>報告</span>

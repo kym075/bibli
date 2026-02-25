@@ -173,10 +173,13 @@ function Forum() {
     return null;
   }
 
+  const isEmptyState = !loading && !error && threads.length === 0;
+  const hasStatusMessage = loading || Boolean(error) || isEmptyState;
+
   return (
     <>
       <Header />
-      <main className="main-content">
+      <main className="main-content forum-page">
         <div className="page-header fade-in">
           <h1 className="page-title">掲示板</h1>
           <p className="page-subtitle">「本好きの熱量で繋がる」コミュニティ</p>
@@ -220,11 +223,11 @@ function Forum() {
             </div>
           </div>
 
-          <div className="thread-list">
-            {loading && <p>読み込み中...</p>}
-            {!loading && error && <p>{error}</p>}
+          <div className={`thread-list ${hasStatusMessage ? 'thread-list-status' : ''}`}>
+            {loading && <p className="thread-list-message">読み込み中...</p>}
+            {!loading && error && <p className="thread-list-message thread-list-message-error">{error}</p>}
             {!loading && !error && threads.length === 0 && (
-              <p>投稿がまだありません。最初のトピックを投稿してみましょう。</p>
+              <p className="thread-list-message">投稿がまだありません。最初のトピックを投稿してみましょう。</p>
             )}
             {!loading && !error && threads.map((thread) => (
               <Link to={`/forum/${thread.id}`} key={thread.id} className="thread-link">
