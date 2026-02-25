@@ -18,6 +18,11 @@ const getImageUrl = (imageUrl) => {
   return `http://localhost:5000/${trimmed}`;
 };
 
+const isSoldOutProduct = (product) => {
+  const status = Number(product?.status);
+  return status === 0 || status === 3;
+};
+
 const categories = ['文芸', '漫画', '参考書', '洋書', '雑誌', '絵本', '自己啓発', 'その他'];
 const genres = ['ファンタジー', '科学', 'ホラー', '恋愛', '歴史', '詩集', 'ビジネス書', '自己啓発', 'その他'];
 
@@ -44,7 +49,7 @@ function Home() {
                 ) : (
                   'NO IMAGE'
                 )}
-                {product.status !== 1 && <span className="sold-badge">Sold out</span>}
+                {isSoldOutProduct(product) && <span className="sold-badge">Sold out</span>}
                 <span className="book-price-badge">¥{product.price?.toLocaleString()}</span>
               </div>
               <div className="book-title">{product.title}</div>

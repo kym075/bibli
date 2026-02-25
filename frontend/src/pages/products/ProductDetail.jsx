@@ -536,9 +536,8 @@ function ProductDetail() {
       });
       const data = await response.json();
       if (response.ok) {
-        setCancelMessage('出品を取り消しました');
-        setProduct((prev) => ({ ...prev, status: 0 }));
-        setShowCancelConfirm(false);
+        navigate('/profile');
+        return;
       } else {
         setCancelError(data.error || '出品の取り消しに失敗しました');
       }
@@ -706,6 +705,8 @@ function ProductDetail() {
   const mainImageUrl = imageUrls[safeIndex] || '';
   const imageUrl = imageError ? '' : getImageUrl(mainImageUrl);
   const productStatus = product.status ?? 1;
+  const isSoldOutStatus = Number(productStatus) === 0 || Number(productStatus) === 3;
+  const isCancelledStatus = Number(productStatus) === 2;
   const selectedChatParticipant = chatParticipants.find((item) => item.email === selectedChatEmail) || null;
   const chatInputPlaceholder = isOwnProduct
     ? (selectedChatEmail ? '購入希望者に返信...' : '購入希望者を選択してください')
@@ -789,7 +790,7 @@ function ProductDetail() {
                       </button>
                     </div>
                     <button className="btn-large btn-purchase purchase-primary" onClick={handlePurchaseClick} disabled={productStatus !== 1}>
-                      {productStatus === 1 ? '購入手続きへ' : '売り切れ'}
+                      {productStatus === 1 ? '購入手続きへ' : (isCancelledStatus ? '出品取り消し済み' : (isSoldOutStatus ? '売り切れ' : '公開停止中'))}
                     </button>
                   </div>
                 )}
@@ -798,7 +799,7 @@ function ProductDetail() {
                   <div className="secondary-actions cancel-section">
                     {productStatus !== 1 ? (
                       <button className="btn-large btn-outline btn-cancel" disabled>
-                        出品取り消し済み
+                        {isCancelledStatus ? '出品取り消し済み' : (isSoldOutStatus ? '売却済み' : '公開停止中')}
                       </button>
                     ) : showCancelConfirm ? (
                       <div className="cancel-confirm">
@@ -957,7 +958,7 @@ function ProductDetail() {
                     <Link key={item.id} to={`/product-detail?id=${item.id}`} className="seller-product-card">
                       <div className="seller-product-image">
                         {item.image_url ? <img src={getImageUrl(item.image_url)} alt={item.title} /> : 'NO IMAGE'}
-                        {item.status !== 1 && <span className="sold-badge">Sold out</span>}
+                        {(Number(item.status) === 0 || Number(item.status) === 3) && <span className="sold-badge">Sold out</span>}
                         <span className="seller-product-price-badge">¥{item.price?.toLocaleString()}</span>
                       </div>
                       <div className="seller-product-title">{item.title}</div>
@@ -987,7 +988,7 @@ function ProductDetail() {
                     <Link key={item.id} to={`/product-detail?id=${item.id}`} className="seller-product-card">
                       <div className="seller-product-image">
                         {item.image_url ? <img src={getImageUrl(item.image_url)} alt={item.title} /> : 'NO IMAGE'}
-                        {item.status !== 1 && <span className="sold-badge">Sold out</span>}
+                        {(Number(item.status) === 0 || Number(item.status) === 3) && <span className="sold-badge">Sold out</span>}
                         <span className="seller-product-price-badge">¥{item.price?.toLocaleString()}</span>
                       </div>
                       <div className="seller-product-title">{item.title}</div>

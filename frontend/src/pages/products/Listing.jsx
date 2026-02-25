@@ -13,7 +13,6 @@ function Listing() {
     genre: '',
     condition: '',
     description: '',
-    passion: '',
     price: '',
     shipping: '',
     shippingOrigin: '',
@@ -418,19 +417,6 @@ function Listing() {
                 ></textarea>
                 
                 <div className="help-text">購入者が安心して購入できるよう、詳しい状態を記載してください。</div>
-              </div>
-
-              {/* 本への想い */}
-              <div className="form-group">
-                <label htmlFor="passion" className="form-label">本への想い</label>
-                <textarea
-                  id="passion"
-                  className="form-input form-textarea"
-                  placeholder="この本のどんなところが好きか、次の人にどう読んでほしいか等..."
-                  value={formData.passion}
-                  onChange={handleInputChange}
-                ></textarea>
-                <div className="help-text">任意項目です。この本に対するあなたの想いを次の読者に伝えましょう。</div>
               </div>
 
               {/* タグ付け */}
