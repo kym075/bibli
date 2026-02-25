@@ -5,6 +5,9 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/listing_page.css';
 
+const HOME_CATEGORIES = ['\u6587\u82b8', '\u6f2b\u753b', '\u53c2\u8003\u66f8', '\u6d0b\u66f8', '\u96d1\u8a8c', '\u7d75\u672c', '\u81ea\u5df1\u5553\u767a', '\u305d\u306e\u4ed6'];
+const HOME_GENRES = ['\u30d5\u30a1\u30f3\u30bf\u30b8\u30fc', '\u79d1\u5b66', '\u30db\u30e9\u30fc', '\u604b\u611b', '\u6b74\u53f2', '\u8a69\u96c6', '\u30d3\u30b8\u30cd\u30b9\u66f8', '\u81ea\u5df1\u5553\u767a', '\u305d\u306e\u4ed6'];
+
 function Listing() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -343,15 +346,12 @@ function Listing() {
                   value={formData.category}
                   onChange={handleInputChange}
                 >
-                  <option value="">カテゴリを選択してください</option>
-                  <option value="小説">小説</option>
-                  <option value="漫画">漫画</option>
-                  <option value="専門書">専門書</option>
-                  <option value="絵本">絵本</option>
-                  <option value="雑誌">雑誌</option>
-                  <option value="洋書">洋書</option>
-                  <option value="自己啓発">自己啓発</option>
-                  <option value="その他">その他</option>
+                  <option value="">{'\u30ab\u30c6\u30b4\u30ea\u3092\u9078\u629e\u3057\u3066\u304f\u3060\u3055\u3044'}</option>
+                  {HOME_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
                 </select>
                 
               </div>
@@ -365,16 +365,12 @@ function Listing() {
                   value={formData.genre}
                   onChange={handleInputChange}
                 >
-                  <option value="">ジャンルを選択してください（任意）</option>
-                  <option value="ファンタジー">ファンタジー</option>
-                  <option value="純文学">純文学</option>
-                  <option value="ホラー">ホラー</option>
-                  <option value="歴史">歴史</option>
-                  <option value="童話">童話</option>
-                  <option value="恋愛">恋愛</option>
-                  <option value="ビジネス書">ビジネス書</option>
-                  <option value="自己啓発">自己啓発</option>
-                  <option value="その他">その他</option>
+                  <option value="">{'\u30b8\u30e3\u30f3\u30eb\u3092\u9078\u629e\u3057\u3066\u304f\u3060\u3055\u3044\uff08\u4efb\u610f\uff09'}</option>
+                  {HOME_GENRES.map((genre) => (
+                    <option key={genre} value={genre}>
+                      {genre}
+                    </option>
+                  ))}
                 </select>
                 <div className="help-text">より詳細な分類を指定できます。</div>
               </div>
