@@ -1,547 +1,358 @@
-/* メインコンテンツ */
-.main-content {
-max-width: 1000px;
-margin: 0 auto;
-padding: 2rem;
+.forum-page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: clamp(1rem, 2.4vw, 2.2rem);
 }
 
-/* ページタイトル */
-.page-header {
-text-align: center;
-margin-bottom: 3rem;
-padding: 3rem 2rem;
-background: var(--surface);
-border-radius: var(--radius);
-position: relative;
-overflow: hidden;
-border: 1px solid var(--border);
-box-shadow: var(--shadow);
+.forum-page .fade-in {
+  animation: forumFadeIn 0.32s ease-out both;
 }
 
-.page-header::before {
-content: '';
-position: absolute;
-inset: 0;
-background: radial-gradient(circle at 20% 20%, rgba(47, 93, 80, 0.08), transparent 60%);
+@keyframes forumFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.page-title {
-font-size: 3rem;
-color: var(--ink);
-margin-bottom: 1rem;
-position: relative;
-z-index: 1;
+.forum-page .page-header {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: clamp(1.25rem, 2.3vw, 1.9rem);
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow);
 }
 
-.page-subtitle {
-font-size: 1.3rem;
-color: var(--accent);
-font-weight: 600;
-position: relative;
-z-index: 1;
+.forum-page .page-title {
+  margin: 0 0 0.2rem;
+  font-family: 'Zen Kaku Gothic New', 'Meiryo', sans-serif;
+  font-size: clamp(1.9rem, 3.5vw, 2.6rem);
+  line-height: 1.2;
+  color: var(--ink);
+  font-weight: 800;
 }
 
-.page-description {
-font-size: 1.1rem;
-color: var(--muted);
-margin-top: 1rem;
-position: relative;
-z-index: 1;
+.forum-page .page-subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 700;
 }
 
-@keyframes forumBtnSlideIn {
-from {
-opacity: 0;
-transform: translateY(12px);
-}
-to {
-opacity: 1;
-transform: translateY(0);
-}
+.forum-page .page-description {
+  margin-top: 0.45rem;
+  font-size: 0.9rem;
+  color: var(--muted);
 }
 
-/* 新規投稿ボタン */
-.post-action {
-text-align: center;
-margin-bottom: 3rem;
+.forum-page .post-action {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
 }
 
-.new-post-btn {
-background: var(--accent);
-color: white;
-border: none;
-padding: 1.2rem 3rem;
-border-radius: 12px;
-font-size: 1.1rem;
-font-weight: 600;
-cursor: pointer;
-transition: all 0.3s ease;
-text-decoration: none;
-display: inline-flex;
-align-items: center;
-gap: 0.8rem;
-box-shadow: none;
-animation: forumBtnSlideIn 0.5s ease-out both;
+.forum-page .new-post-btn {
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.85rem 1.35rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
-.new-post-btn:hover {
-transform: translateY(-3px);
-background: var(--accent-strong);
+.forum-page .new-post-btn:hover {
+  background: var(--accent-strong);
+  transform: translateY(-1px);
 }
 
-.new-post-btn::before {
-content: "";
+.forum-page .forum-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
 }
 
-/* フォーラムコンテナ */
-.forum-container {
-background: var(--surface);
-border-radius: var(--radius);
-box-shadow: var(--shadow);
-overflow: hidden;
-border: 1px solid var(--border);
+.forum-page .category-filter {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-muted);
+  padding: 1rem 1.1rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.8rem 1rem;
+  align-items: center;
 }
 
-/* カテゴリフィルター */
-.category-filter {
-background: var(--surface-muted);
-padding: 1.5rem 2rem;
-border-bottom: 1px solid var(--border);
+.forum-page .filter-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
 }
 
-.filter-title {
-font-size: 1rem;
-color: var(--ink);
-margin-bottom: 1rem;
-font-weight: 600;
+.forum-page .sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
 }
 
-.sort-controls {
-display: flex;
-align-items: center;
-gap: 0.8rem;
-margin-bottom: 1rem;
-flex-wrap: wrap;
+.forum-page .sort-label {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 600;
 }
 
-.sort-label {
-font-size: 0.9rem;
-color: var(--ink);
-font-weight: 600;
+.forum-page .sort-select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.88rem;
 }
 
-.sort-select {
-padding: 0.5rem 1rem;
-border: 1px solid var(--border);
-border-radius: 8px;
-background: var(--surface);
-color: var(--ink);
-font-size: 0.9rem;
+.forum-page .category-tags {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.48rem;
 }
 
-.category-tags {
-display: flex;
-flex-wrap: wrap;
-gap: 0.8rem;
+.forum-page .category-tag {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
 }
 
-.category-tag {
-padding: 0.5rem 1rem;
-border: 1px solid var(--border);
-border-radius: 20px;
-background: var(--surface);
-color: var(--muted);
-font-size: 0.9rem;
-font-weight: 500;
-cursor: pointer;
-transition: all 0.3s ease;
+.forum-page .category-tag:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
-.category-tag:hover {
-border-color: var(--accent);
-color: var(--accent);
-transform: translateY(-2px);
+.forum-page .category-tag.active {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
 }
 
-.category-tag.active {
-background: var(--accent);
-color: white;
-border-color: transparent;
+.forum-page .thread-list {
+  padding: 0;
 }
 
-/* スレッド一覧 */
-.thread-list {
-padding: 2rem;
+.forum-page .thread-list.thread-list-status {
+  min-height: 190px;
+  padding: 1.35rem 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.thread-item {
-background: var(--surface-muted);
-border-radius: var(--radius);
-padding: 1.5rem;
-margin-bottom: 1rem;
-border-left: 4px solid transparent;
-transition: all 0.3s ease;
-cursor: pointer;
-position: relative;
+.forum-page .thread-list-message {
+  width: 100%;
+  max-width: 760px;
+  margin: 0;
+  padding: 1rem 1.2rem;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: rgba(47, 93, 80, 0.05);
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.75;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
-.thread-item:hover {
-background: var(--surface);
-box-shadow: var(--shadow);
-transform: translateY(-3px);
-border-left-color: var(--accent);
+.forum-page .thread-list-message.thread-list-message-error {
+  border-color: rgba(180, 107, 61, 0.45);
+  background: rgba(180, 107, 61, 0.12);
+  color: var(--accent-warm);
 }
 
-.thread-item.chat { border-left-color: #2f5d50; }
-.thread-item.question { border-left-color: #b46b3d; }
-.thread-item.discussion { border-left-color: #8b3f2f; }
-.thread-item.recruitment { border-left-color: #3c5a6b; }
-.thread-item.recommendation { border-left-color: #5f7d56; }
-.thread-item.review { border-left-color: #6d4c41; }
-
-.thread-header {
-display: flex;
-align-items: center;
-gap: 1rem;
-margin-bottom: 0.8rem;
+.forum-page .thread-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
 }
 
-.thread-category {
-padding: 0.3rem 0.8rem;
-border-radius: 15px;
-font-size: 0.8rem;
-font-weight: 600;
-color: white;
+.forum-page .thread-item {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 1.15rem;
+  transition: background-color 0.2s ease;
 }
 
-.category-chat { background: #2f5d50; }
-.category-question { background: #b46b3d; }
-.category-discussion { background: #8b3f2f; }
-.category-recruitment { background: #3c5a6b; }
-.category-recommendation { background: #5f7d56; }
-.category-review { background: #6d4c41; }
-
-.thread-link {
-text-decoration: none;
-color: inherit;
+.forum-page .thread-link:last-child .thread-item {
+  border-bottom: none;
 }
 
-.thread-author {
-font-size: 0.9rem;
-color: var(--muted);
-display: flex;
-align-items: center;
-gap: 0.3rem;
+.forum-page .thread-item:hover {
+  background: rgba(47, 93, 80, 0.06);
 }
 
-.thread-time {
-margin-left: auto;
-font-size: 0.8rem;
-color: var(--muted);
+.forum-page .thread-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem 0.7rem;
+  margin-bottom: 0.52rem;
 }
 
-.thread-title {
-font-size: 1.2rem;
-font-weight: 600;
-color: var(--ink);
-margin-bottom: 0.5rem;
-line-height: 1.4;
+.forum-page .thread-category {
+  border-radius: 999px;
+  padding: 0.22rem 0.58rem;
+  background: rgba(180, 107, 61, 0.12);
+  color: var(--accent-warm);
+  border: 1px solid rgba(180, 107, 61, 0.26);
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
-.thread-preview {
-color: var(--muted);
-line-height: 1.5;
-margin-bottom: 1rem;
-display: -webkit-box;
--webkit-line-clamp: 2;
-line-clamp: 2;
--webkit-box-orient: vertical;
-overflow: hidden;
+.forum-page .thread-author {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.thread-stats {
-display: flex;
-align-items: center;
-gap: 2rem;
-font-size: 0.9rem;
-color: var(--muted);
+.forum-page .thread-time {
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
 }
 
-.stat-item {
-display: flex;
-align-items: center;
-gap: 0.5rem;
+.forum-page .thread-title {
+  margin: 0 0 0.24rem;
+  font-family: 'Zen Kaku Gothic New', 'Meiryo', sans-serif;
+  font-size: clamp(1.1rem, 2vw, 1.35rem);
+  line-height: 1.4;
+  color: var(--ink);
+  font-weight: 800;
 }
 
-.stat-item::before {
-content: "";
+.forum-page .thread-preview {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.stat-item svg {
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
+.forum-page .thread-stats {
+  margin-top: 0.7rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem 1rem;
 }
 
-.hot-badge {
-position: absolute;
-top: 1rem;
-right: 1rem;
-background: var(--accent-warm);
-color: white;
-padding: 0.3rem 0.8rem;
-border-radius: 15px;
-font-size: 0.7rem;
-font-weight: bold;
+.forum-page .stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.36rem;
+  color: var(--muted);
+  font-size: 0.82rem;
 }
 
-.new-badge {
-background: var(--accent);
-color: white;
-padding: 0.3rem 0.8rem;
-border-radius: 15px;
-font-size: 0.7rem;
-font-weight: bold;
-position: absolute;
-top: 1rem;
-right: 1rem;
+.forum-page .stat-item svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
-/* ページネーション */
-.pagination {
-display: flex;
-justify-content: center;
-align-items: center;
-gap: 0.5rem;
-padding: 2rem;
-background: var(--surface);
-border-top: 1px solid var(--border);
+.forum-page .pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.9rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
 }
 
-.pagination-btn {
-padding: 0.8rem 1.2rem;
-border: 1px solid var(--border);
-background: var(--surface);
-color: var(--ink);
-text-decoration: none;
-border-radius: 8px;
-transition: all 0.3s ease;
-font-weight: 500;
-animation: forumBtnSlideIn 0.5s ease-out both;
-animation-delay: 0.08s;
+.forum-page .pagination-btn {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
 }
 
-.pagination-btn:hover {
-border-color: var(--accent);
-color: var(--accent);
-transform: translateY(-2px);
+.forum-page .pagination-btn:hover:not(.disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
-.pagination-btn.active {
-background: var(--accent);
-color: white;
-border-color: transparent;
+.forum-page .pagination-btn.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
 }
 
-.pagination-btn.disabled {
-opacity: 0.5;
-cursor: not-allowed;
+.forum-page .pagination-btn.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
-.pagination-btn.disabled:hover {
-transform: none;
-border-color: var(--border);
-color: var(--muted);
+@media (max-width: 900px) {
+  .forum-page .category-filter {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
 }
 
-/* オンラインユーザー */
-.online-users {
-background: var(--surface);
-border-radius: var(--radius);
-padding: 1.5rem;
-margin-bottom: 2rem;
-box-shadow: var(--shadow);
-border: 1px solid var(--border);
-}
-
-.online-title {
-font-size: 1.1rem;
-color: var(--ink);
-margin-bottom: 1rem;
-display: flex;
-align-items: center;
-gap: 0.5rem;
-}
-
-.online-title::before {
-content: "";
-width: 8px;
-height: 8px;
-border-radius: 50%;
-background: var(--accent);
-display: inline-block;
-}
-
-.user-avatars {
-display: flex;
-gap: 0.5rem;
-flex-wrap: wrap;
-}
-
-.user-avatar {
-width: 40px;
-height: 40px;
-border-radius: 50%;
-background: var(--accent);
-display: flex;
-align-items: center;
-justify-content: center;
-color: white;
-font-weight: bold;
-cursor: pointer;
-transition: all 0.3s ease;
-position: relative;
-}
-
-.user-avatar:hover {
-transform: scale(1.1);
-}
-
-.user-avatar::after {
-content: attr(data-name);
-position: absolute;
-top: -2.5rem;
-left: 50%;
-transform: translateX(-50%);
-background: var(--ink);
-color: white;
-padding: 0.3rem 0.6rem;
-border-radius: 6px;
-font-size: 0.7rem;
-white-space: nowrap;
-opacity: 0;
-pointer-events: none;
-transition: opacity 0.3s ease;
-}
-
-.user-avatar:hover::after {
-opacity: 1;
-}
-
-/* フッター（共通） */
-.footer {
-background: #1f1b16;
-color: #f6f1e8;
-padding: 2rem 0;
-text-align: center;
-margin-top: 3rem;
-border-top: 1px solid #2f2a24;
-}
-
-.footer-content {
-max-width: 1200px;
-margin: 0 auto;
-display: flex;
-justify-content: center;
-gap: 2rem;
-flex-wrap: wrap;
-padding: 0 2rem;
-}
-
-.footer-link {
-color: #cfc5b7;
-text-decoration: none;
-transition: color 0.3s ease;
-}
-
-.footer-link:hover {
-color: #f6f1e8;
-}
-
-/* レスポンシブデザイン */
 @media (max-width: 768px) {
-.header-content {
-    flex-direction: column;
-    gap: 1rem;
-}
+  .forum-page .page-description {
+    display: none;
+  }
 
-.search-bar {
-    max-width: 100%;
-}
+  .forum-page .post-action {
+    justify-content: stretch;
+  }
 
-.header-buttons {
+  .forum-page .post-action a,
+  .forum-page .new-post-btn {
     width: 100%;
-    justify-content: center;
-}
+  }
 
-.main-content {
-    padding: 1rem;
-}
+  .forum-page .thread-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.3rem 0.55rem;
+  }
 
-.page-title {
-    font-size: 2rem;
-}
+  .forum-page .thread-category,
+  .forum-page .thread-author {
+    grid-column: 1 / 2;
+  }
 
-.page-header {
-    padding: 2rem 1rem;
-}
-
-.category-tags {
-    justify-content: center;
-}
-
-.sort-controls {
-    justify-content: center;
-}
-
-.thread-list {
-    padding: 1rem;
-}
-
-.thread-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-}
-
-.thread-time {
-    margin-left: 0;
-}
-
-.thread-stats {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-}
-
-.pagination {
-    flex-wrap: wrap;
-    gap: 0.3rem;
-}
-
-.pagination-btn {
-    padding: 0.6rem 1rem;
-    font-size: 0.9rem;
-}
-
-.new-post-btn {
-    padding: 1rem 2rem;
-    font-size: 1rem;
-}
-}
-
-/* アニメーション */
-.fade-in {
-animation: fadeIn 0.6s ease-out;
-}
-
-@keyframes fadeIn {
-from { 
-    opacity: 0; 
-    transform: translateY(20px); 
-}
-to { 
-    opacity: 1; 
-    transform: translateY(0); 
-}
+  .forum-page .thread-time {
+    grid-column: 2 / 3;
+    grid-row: 1 / 3;
+  }
 }
