@@ -6,6 +6,8 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import '../../css/search_results.css';
 
+const PRODUCTS_PER_PAGE = 16;
+
 const isSoldOutProduct = (product) => {
   const status = Number(product?.status);
   return status === 0 || status === 3;
@@ -50,7 +52,7 @@ function SearchResults() {
       params.append('include_sold', filters.includeSold || '1');
       if (currentEmail) params.append('viewer_email', currentEmail);
       params.append('page', currentPage);
-      params.append('limit', 20);
+      params.append('limit', PRODUCTS_PER_PAGE);
 
       const response = await fetch(`http://localhost:5000/api/products?${params}`);
       const data = await response.json();
