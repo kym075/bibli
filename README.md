@@ -8,7 +8,7 @@
 
 ## セットアップ
 ### 1. 環境変数
-- ルートの `.env.example` を `.env` にコピーして設定
+- `backend/.env` を作成して設定（`DATABASE_URL` は必須）
 - `frontend/.env.example` を `frontend/.env` にコピーして設定
 
 ### 2. バックエンド

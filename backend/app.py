@@ -18,7 +18,9 @@ from dotenv import load_dotenv
 app = Flask(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-load_dotenv(os.path.join(BASE_DIR, ".env"))
+PROJECT_ROOT = os.path.dirname(BASE_DIR)
+load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
+load_dotenv(os.path.join(BASE_DIR, ".env"), override=True)
  
 # ---------------------------
 # CORS（完全対応版）
@@ -28,7 +30,24 @@ CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://12
 # ---------------------------
 # 設定
 # ---------------------------
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost/bibli_db'
+def _resolve_database_url():
+    raw_value = os.getenv("DATABASE_URL", "").strip()
+    if not raw_value:
+        raise RuntimeError(
+            "DATABASE_URL が未設定です。backend/.env に接続先DBを設定してください。"
+        )
+
+    if raw_value.startswith("sqlite:///"):
+        sqlite_target = raw_value[len("sqlite:///"):]
+        # 相対パス指定の場合はプロジェクトルート基準に固定して、起動ディレクトリ依存をなくす
+        if sqlite_target and not os.path.isabs(sqlite_target):
+            if not re.match(r'^[A-Za-z]:[\\/]', sqlite_target):
+                absolute_target = os.path.abspath(os.path.join(PROJECT_ROOT, sqlite_target))
+                return f"sqlite:///{absolute_target.replace(os.sep, '/')}"
+    return raw_value
+
+
+app.config['SQLALCHEMY_DATABASE_URI'] = _resolve_database_url()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = secrets.token_hex(32)
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, os.getenv("UPLOAD_FOLDER", "uploads"))
