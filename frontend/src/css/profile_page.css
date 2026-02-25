@@ -72,6 +72,7 @@
 
 .profile-info {
     flex: 1;
+    min-width: 0;
 }
 
 .profile-name-section {
@@ -193,6 +194,9 @@
     color: var(--muted);
     margin-bottom: 1rem;
     line-height: 1.6;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .profile-block-note {

@@ -416,14 +416,6 @@ function ProfilePage() {
                   <span className="stat-label">出品数</span>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-number">0</span>
-                  <span className="stat-label">販売実績</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-number">{ratingAverageText}</span>
-                  <span className="stat-label">評価 ({ratingCount}件)</span>
-                </div>
-                <div className="stat-item">
                   <span className="stat-number">{followCounts.followers}</span>
                   <span className="stat-label">フォロワー</span>
                 </div>
