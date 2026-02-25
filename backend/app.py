@@ -33,9 +33,7 @@ CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://12
 def _resolve_database_url():
     raw_value = os.getenv("DATABASE_URL", "").strip()
     if not raw_value:
-        raise RuntimeError(
-            "DATABASE_URL が未設定です。backend/.env に接続先DBを設定してください。"
-        )
+        raw_value = "sqlite:///instance/bibli.db"
 
     if raw_value.startswith("sqlite:///"):
         sqlite_target = raw_value[len("sqlite:///"):]
