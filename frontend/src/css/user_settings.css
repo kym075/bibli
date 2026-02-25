@@ -29,6 +29,22 @@ h1{
     font-weight: 600;
     color: var(--ink);
 }
+
+.form-label-row {
+    display: flex !important;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.field-inline-error {
+    display: inline-block;
+    margin-left: 0;
+    color: #b42318;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
 .form-group input{
     width: 100%;
     padding: 0.85rem 1rem;
@@ -94,15 +110,26 @@ h1{
 
 .inline-error-message {
     margin-top: 0.5rem;
-    color: var(--accent-warm);
+    color: #b42318;
     font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .help-text {
     margin-top: 0.4rem;
     color: var(--muted);
     font-size: 0.85rem;
+}
+
+.top-error-summary {
+    margin-bottom: 1rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: 10px;
+    border: 1px solid #f1b5b8;
+    background: #fdeced;
+    color: #9f1c24;
+    font-size: 0.92rem;
+    font-weight: 700;
 }
 
 .form-actions {

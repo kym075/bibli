@@ -25,8 +25,13 @@ function UserSettings() {
   });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [imageUploadError, setImageUploadError] = useState('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const scrollToTopOnError = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const getImageUrl = (imageUrl) => {
     if (!imageUrl) return '';
@@ -85,6 +90,19 @@ function UserSettings() {
       ...prev,
       [name]: nextValue
     }));
+
+    setFieldErrors((prev) => {
+      if (!prev[name] && !(name === 'password' && prev.passwordConf) && !(name === 'passwordConf' && prev.password)) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next[name];
+      if (name === 'password' || name === 'passwordConf') {
+        delete next.password;
+        delete next.passwordConf;
+      }
+      return next;
+    });
   };
 
   const handleProfileImageChange = async (e) => {
@@ -92,12 +110,24 @@ function UserSettings() {
     if (!file || !user?.email) return;
 
     setImageUploadError('');
+    setFieldErrors((prev) => {
+      if (!prev.profile_image) return prev;
+      const next = { ...prev };
+      delete next.profile_image;
+      return next;
+    });
     if (!file.type.startsWith('image/')) {
-      setImageUploadError('画像ファイルを選択してください');
+      const msg = '画像ファイルを選択してください';
+      setImageUploadError(msg);
+      setFieldErrors((prev) => ({ ...prev, profile_image: msg }));
+      scrollToTopOnError();
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setImageUploadError('画像サイズは5MB以下にしてください');
+      const msg = '画像サイズは5MB以下にしてください';
+      setImageUploadError(msg);
+      setFieldErrors((prev) => ({ ...prev, profile_image: msg }));
+      scrollToTopOnError();
       return;
     }
 
@@ -121,7 +151,10 @@ function UserSettings() {
       setMessage('プロフィール画像を更新しました');
     } catch (err) {
       console.error('Profile image upload error:', err);
-      setImageUploadError(err.message || 'プロフィール画像の更新に失敗しました');
+      const msg = err.message || 'プロフィール画像の更新に失敗しました';
+      setImageUploadError(msg);
+      setFieldErrors((prev) => ({ ...prev, profile_image: msg }));
+      scrollToTopOnError();
     } finally {
       setIsUploadingImage(false);
       e.target.value = '';
@@ -132,19 +165,31 @@ function UserSettings() {
     e.preventDefault();
     setMessage('');
     setError('');
+    setFieldErrors({});
+
+    const nextErrors = {};
+    if (!formData.user_name.trim()) nextErrors.user_name = 'この項目を入力してください。';
+    if (!formData.real_name.trim()) nextErrors.real_name = 'この項目を入力してください。';
+    if (!formData.name_kana.trim()) nextErrors.name_kana = 'この項目を入力してください。';
+    if (!formData.address.trim()) nextErrors.address = 'この項目を入力してください。';
 
     if (!/^[a-z0-9_.-]{3,30}$/.test(formData.user_id)) {
-      setError('user IDは3-30文字、a-z 0-9 _ . - で入力してください');
-      return;
+      nextErrors.user_id = 'user IDは3-30文字、a-z 0-9 _ . - で入力してください';
     }
 
     if (formData.password && formData.password !== formData.passwordConf) {
-      setError('パスワードが一致しません');
-      return;
+      nextErrors.passwordConf = 'パスワードが一致しません';
     }
 
     if (!user) {
       setError('ログインしてください');
+      scrollToTopOnError();
+      return;
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      scrollToTopOnError();
       return;
     }
 
@@ -173,7 +218,13 @@ function UserSettings() {
 
       const data = await response.json();
       if (!response.ok) {
-        setError(data.error || '更新に失敗しました');
+        const msg = data.error || '更新に失敗しました';
+        if (msg.toLowerCase().includes('user id') || msg.toLowerCase().includes('user_id') || msg.includes('ユーザーID') || msg.includes('user ID')) {
+          setFieldErrors((prev) => ({ ...prev, user_id: msg }));
+        } else {
+          setError(msg);
+        }
+        scrollToTopOnError();
         return;
       }
 
@@ -192,6 +243,7 @@ function UserSettings() {
     } catch (err) {
       console.error('Update error:', err);
       setError('更新に失敗しました');
+      scrollToTopOnError();
     }
   };
 
@@ -219,6 +271,15 @@ function UserSettings() {
     );
   }
 
+  const renderLabel = (fieldName, labelText) => (
+    <label htmlFor={fieldName} className="form-label-row">
+      <span>{labelText}</span>
+      {fieldErrors[fieldName] && <span className="field-inline-error">*{fieldErrors[fieldName]}</span>}
+    </label>
+  );
+
+  const hasInlineErrors = Object.keys(fieldErrors).length > 0;
+
   return (
     <>
       <Header />
@@ -227,10 +288,18 @@ function UserSettings() {
 
         {message && <div style={{ padding: '10px', backgroundColor: '#d4edda', color: '#155724', borderRadius: '5px', marginBottom: '20px' }}>{message}</div>}
         {error && <div style={{ padding: '10px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '5px', marginBottom: '20px' }}>{error}</div>}
+        {hasInlineErrors && (
+          <div className="top-error-summary">
+            入力内容にエラーがあります。各項目のエラー表示を確認してください。
+          </div>
+        )}
 
-        <form className="user-settings-form" onSubmit={handleSubmit}>
+        <form className="user-settings-form" onSubmit={handleSubmit} noValidate>
           <div className="form-group">
-            <label>プロフィールアイコン</label>
+            <label className="form-label-row">
+              <span>プロフィールアイコン</span>
+              {fieldErrors.profile_image && <span className="field-inline-error">*{fieldErrors.profile_image}</span>}
+            </label>
             <div className="profile-image-setting-row">
               <div className="profile-image-preview">
                 {formData.profile_image ? (
@@ -250,17 +319,17 @@ function UserSettings() {
                 />
               </label>
             </div>
-            {imageUploadError && <div className="inline-error-message">{imageUploadError}</div>}
+            {imageUploadError && <div className="inline-error-message">*{imageUploadError}</div>}
             <div className="help-text">JPG / PNG / GIF / WebP、5MB以下</div>
           </div>
 
           <div className="form-group">
-            <label htmlFor="email">メールアドレス（変更不可）</label>
+            {renderLabel('email', 'メールアドレス（変更不可）')}
             <input type="email" id="email" name="email" value={user.email} disabled style={{ backgroundColor: '#f0f0f0' }} />
           </div>
 
           <div className="form-group">
-            <label htmlFor="user_id">user ID（公開ID）</label>
+            {renderLabel('user_id', 'user ID（公開ID）')}
             <input
               type="text"
               id="user_id"
@@ -269,13 +338,12 @@ function UserSettings() {
               onChange={handleChange}
               maxLength={30}
               placeholder="例: yani_123"
-              required
             />
             <div className="help-text">他ユーザーと重複不可。3-30文字、a-z 0-9 _ . -</div>
           </div>
 
           <div className="form-group">
-            <label htmlFor="user_name">ユーザー名</label>
+            {renderLabel('user_name', 'ユーザー名')}
             <input
               type="text"
               id="user_name"
@@ -283,12 +351,11 @@ function UserSettings() {
               value={formData.user_name}
               onChange={handleChange}
               placeholder="ユーザー名を入力"
-              required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="real_name">本名（漢字）</label>
+            {renderLabel('real_name', '本名（漢字）')}
             <input
               type="text"
               id="real_name"
@@ -296,12 +363,11 @@ function UserSettings() {
               value={formData.real_name}
               onChange={handleChange}
               placeholder="本名（漢字）を入力"
-              required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="name_kana">本名（フリガナ）</label>
+            {renderLabel('name_kana', '本名（フリガナ）')}
             <input
               type="text"
               id="name_kana"
@@ -309,12 +375,11 @@ function UserSettings() {
               value={formData.name_kana}
               onChange={handleChange}
               placeholder="フリガナを入力"
-              required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="bio">自己紹介</label>
+            {renderLabel('bio', '自己紹介')}
             <textarea
               id="bio"
               name="bio"
@@ -328,7 +393,7 @@ function UserSettings() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="address">住所</label>
+            {renderLabel('address', '住所')}
             <input
               type="text"
               id="address"
@@ -336,12 +401,11 @@ function UserSettings() {
               value={formData.address}
               onChange={handleChange}
               placeholder="住所を入力"
-              required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="phone_number">電話番号（変更不可）</label>
+            {renderLabel('phone_number', '電話番号（変更不可）')}
             <input
               type="tel"
               id="phone_number"
@@ -351,12 +415,11 @@ function UserSettings() {
               inputMode="numeric"
               pattern="[0-9]*"
               style={{ backgroundColor: '#f0f0f0' }}
-              required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="birth_date">生年月日（変更不可）</label>
+            {renderLabel('birth_date', '生年月日（変更不可）')}
             <input
               type="date"
               id="birth_date"
@@ -368,7 +431,7 @@ function UserSettings() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">新しいパスワード（変更時のみ）</label>
+            {renderLabel('password', '新しいパスワード（変更時のみ）')}
             <input
               type="password"
               id="password"
@@ -380,7 +443,7 @@ function UserSettings() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="passwordConf">パスワード（確認）</label>
+            {renderLabel('passwordConf', 'パスワード（確認）')}
             <input
               type="password"
               id="passwordConf"

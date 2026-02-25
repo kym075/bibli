@@ -72,9 +72,20 @@
     font-size: 1.1rem;
 }
 
-.required {
-    color: var(--accent-warm);
-    margin-left: 0.2rem;
+.form-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.field-inline-error {
+    display: inline-block;
+    margin-left: 0;
+    color: #b42318;
+    font-size: 0.86rem;
+    font-weight: 700;
 }
 
 .form-input {
@@ -410,6 +421,17 @@
     display: flex;
     align-items: center;
     gap: 0.3rem;
+}
+
+.top-error-summary {
+    margin-bottom: 1rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: 10px;
+    border: 1px solid #f1b5b8;
+    background: #fdeced;
+    color: #9f1c24;
+    font-size: 0.92rem;
+    font-weight: 700;
 }
 
 .success-message {

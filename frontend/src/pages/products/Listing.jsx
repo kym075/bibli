@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+﻿import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { auth } from '../../css/firebase';
 import Header from '../../components/Header';
@@ -117,7 +117,7 @@ function Listing() {
 
     if (Object.keys(nextErrors).length) {
       setFieldErrors(nextErrors);
-      setFormError('入力内容を確認してください。');
+      setFormError('');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -248,6 +248,14 @@ function Listing() {
   };
   const shippingFee = shippingFees[formData.shipping] ?? 0;
   const buyerTotal = safePrice + shippingFee;
+  const hasInlineErrors = Object.keys(fieldErrors).length > 0;
+
+  const renderLabel = (fieldName, labelText, htmlFor = fieldName) => (
+    <label htmlFor={htmlFor} className="form-label form-label-row">
+      <span>{labelText}</span>
+      {fieldErrors[fieldName] && <span className="field-inline-error">*{fieldErrors[fieldName]}</span>}
+    </label>
+  );
 
   return (
     <>
@@ -259,6 +267,11 @@ function Listing() {
         </div>
 
         <div className="form-container fade-in">
+          {hasInlineErrors && (
+            <div className="top-error-summary">
+              入力内容にエラーがあります。各項目のエラー表示を確認してください。
+            </div>
+          )}
           <form id="listingForm" onSubmit={handleSubmit} noValidate>
             {formError && <div className="error-message">{formError}</div>}
             <div className="success-message" id="successMessage">
@@ -271,10 +284,7 @@ function Listing() {
 
               {/* 出品画像 */}
               <div className="form-group">
-                <label className="form-label form-label-row">
-                  <span className="label-text">出品画像<span className="required">*</span></span>
-                  {fieldErrors.images && <span className="form-error-inline">{fieldErrors.images}</span>}
-                </label>
+                {renderLabel('images', '出品画像', 'imageInput')}
                 <div className="help-text">最大10枚まで登録できます。1枚目の画像がメイン画像として表示されます。</div>
 
                 <div className="image-upload-area" id="imageUploadArea" onClick={handleImageUploadClick} style={{cursor: 'pointer'}}>
@@ -318,10 +328,7 @@ function Listing() {
 
               {/* 書籍タイトル */}
               <div className="form-group">
-                <label htmlFor="title" className="form-label form-label-row">
-                  <span className="label-text">書籍タイトル<span className="required">*</span></span>
-                  {fieldErrors.title && <span className="form-error-inline">{fieldErrors.title}</span>}
-                </label>
+                {renderLabel('title', '書籍タイトル')}
                 <input
                   type="text"
                   id="title"
@@ -336,10 +343,7 @@ function Listing() {
 
               {/* カテゴリ */}
               <div className="form-group">
-                <label htmlFor="category" className="form-label form-label-row">
-                  <span className="label-text">カテゴリ<span className="required">*</span></span>
-                  {fieldErrors.category && <span className="form-error-inline">{fieldErrors.category}</span>}
-                </label>
+                {renderLabel('category', 'カテゴリ')}
                 <select
                   id="category"
                   className="form-input form-select"
@@ -377,10 +381,7 @@ function Listing() {
 
               {/* 商品の状態 */}
               <div className="form-group">
-                <label htmlFor="condition" className="form-label form-label-row">
-                  <span className="label-text">商品の状態<span className="required">*</span></span>
-                  {fieldErrors.condition && <span className="form-error-inline">{fieldErrors.condition}</span>}
-                </label>
+                {renderLabel('condition', '商品の状態')}
                 <select
                   id="condition"
                   className="form-input form-select"
@@ -400,10 +401,7 @@ function Listing() {
 
               {/* 商品説明 */}
               <div className="form-group">
-                <label htmlFor="description" className="form-label form-label-row">
-                  <span className="label-text">商品説明<span className="required">*</span></span>
-                  {fieldErrors.description && <span className="form-error-inline">{fieldErrors.description}</span>}
-                </label>
+                {renderLabel('description', '商品説明')}
                 <textarea
                   id="description"
                   className="form-input form-textarea"
@@ -455,10 +453,7 @@ function Listing() {
 
               {/* 販売価格 */}
               <div className="form-group">
-                <label htmlFor="price" className="form-label form-label-row">
-                  <span className="label-text">販売価格<span className="required">*</span></span>
-                  {fieldErrors.price && <span className="form-error-inline">{fieldErrors.price}</span>}
-                </label>
+                {renderLabel('price', '販売価格')}
                 <div style={{position: 'relative'}}>
                   <span style={{position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#7f8c8d', fontWeight: '600'}}>¥</span>
                   <input
@@ -506,10 +501,7 @@ function Listing() {
 
               {/* 発送元の地域 */}
               <div className="form-group">
-                <label htmlFor="shippingOrigin" className="form-label form-label-row">
-                  <span className="label-text">発送元の地域<span className="required">*</span></span>
-                  {fieldErrors.shippingOrigin && <span className="form-error-inline">{fieldErrors.shippingOrigin}</span>}
-                </label>
+                {renderLabel('shippingOrigin', '発送元の地域')}
                 <select
                   id="shippingOrigin"
                   className="form-input form-select"
@@ -532,10 +524,7 @@ function Listing() {
 
               {/* 発送までの日数 */}
               <div className="form-group">
-                <label htmlFor="shippingDays" className="form-label form-label-row">
-                  <span className="label-text">発送までの日数<span className="required">*</span></span>
-                  {fieldErrors.shippingDays && <span className="form-error-inline">{fieldErrors.shippingDays}</span>}
-                </label>
+                {renderLabel('shippingDays', '発送までの日数')}
                 <select
                   id="shippingDays"
                   className="form-input form-select"
@@ -552,10 +541,7 @@ function Listing() {
 
               {/* 配送方法 */}
               <div className="form-group">
-                <label htmlFor="shipping" className="form-label form-label-row">
-                  <span className="label-text">配送方法<span className="required">*</span></span>
-                  {fieldErrors.shipping && <span className="form-error-inline">{fieldErrors.shipping}</span>}
-                </label>
+                {renderLabel('shipping', '配送方法')}
                 <select
                   id="shipping"
                   className="form-input form-select"
@@ -593,4 +579,5 @@ function Listing() {
 }
 
 export default Listing;
+
 
