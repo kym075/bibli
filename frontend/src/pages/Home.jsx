@@ -91,7 +91,7 @@ function Home() {
 
   const renderForumTopSection = () => (
     <div className="forum-carousel-window">
-      <h2 className="section-title">人気の掲示板投稿</h2>
+      <h2 className="section-title forum-carousel-title-head">人気の掲示板投稿</h2>
       {weeklyPopularLoading ? (
         <p>読み込み中...</p>
       ) : (
@@ -289,7 +289,7 @@ function Home() {
             <section className="section home-product-block">
               <div className="home-block-head">
                 <div className="home-title-group">
-                  <h2 className="section-title">新着の商品</h2>
+                  <h2 className="home-block-title">新着の商品</h2>
                   <Link to="/search" className="home-more-btn">もっと見る</Link>
                 </div>
               </div>
@@ -299,7 +299,7 @@ function Home() {
             <section className="section home-product-block">
               <div className="home-block-head">
                 <div className="home-title-group">
-                  <h2 className="section-title">おすすめの商品</h2>
+                  <h2 className="home-block-title">おすすめの商品</h2>
                   <Link to="/search" className="home-more-btn">もっと見る</Link>
                 </div>
               </div>
@@ -309,7 +309,7 @@ function Home() {
             <section className="section home-product-block">
               <div className="home-block-head">
                 <div className="home-title-group">
-                  <h2 className="section-title">フォロー中の出品</h2>
+                  <h2 className="home-block-title">フォロー中の出品</h2>
                   <Link to={currentUserEmail ? '/search' : '/login'} className="home-more-btn">もっと見る</Link>
                 </div>
               </div>
