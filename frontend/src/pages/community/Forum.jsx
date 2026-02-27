@@ -68,6 +68,7 @@ function Forum() {
   const [totalPages, setTotalPages] = useState(1);
   const [currentUser, setCurrentUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [onlyMine, setOnlyMine] = useState(false);
 
   const fetchThreads = async () => {
     setLoading(true);
@@ -79,6 +80,9 @@ function Forum() {
       }
       if (sort) {
         params.append('sort', sort);
+      }
+      if (onlyMine && currentUser?.email) {
+        params.append('author_email', currentUser.email);
       }
       params.append('page', currentPage);
       params.append('limit', 10);
@@ -116,7 +120,7 @@ function Forum() {
   useEffect(() => {
     if (!currentUser) return;
     fetchThreads();
-  }, [currentUser, category, sort, currentPage]);
+  }, [currentUser, category, sort, currentPage, onlyMine]);
 
   const handleCategoryChange = (value) => {
     setCategory(value);
@@ -125,6 +129,11 @@ function Forum() {
 
   const handleSortChange = (value) => {
     setSort(value);
+    setCurrentPage(1);
+  };
+
+  const handleOnlyMineToggle = (checked) => {
+    setOnlyMine(checked);
     setCurrentPage(1);
   };
 
@@ -207,6 +216,15 @@ function Forum() {
                 <option value="oldest">古い順</option>
                 <option value="popular">いいね順</option>
               </select>
+              <label className="my-threads-toggle">
+                <input
+                  type="checkbox"
+                  className="toggle-check"
+                  checked={onlyMine}
+                  onChange={(e) => handleOnlyMineToggle(e.target.checked)}
+                />
+                <span>自分の投稿のみ</span>
+              </label>
             </div>
             <div className="category-tags">
               {CATEGORY_ORDER.map((key) => (

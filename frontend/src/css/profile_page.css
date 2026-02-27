@@ -228,6 +228,16 @@
     min-width: 90px;
 }
 
+.stat-item-link {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+}
+
+.stat-item-link:hover .stat-label {
+    color: var(--accent);
+}
+
 .stat-number {
     font-size: 1.5rem;
     font-weight: bold;

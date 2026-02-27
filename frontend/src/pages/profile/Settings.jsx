@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../../css/firebase';
@@ -8,6 +8,7 @@ import '../../css/settings.css';
 
 function Settings() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   const [activeFollowTab, setActiveFollowTab] = useState('following');
@@ -131,6 +132,36 @@ function Settings() {
 
     return () => unsubscribe();
   }, []);
+
+  const scrollToFollow = () => {
+    const target = document.getElementById('follow-management');
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return true;
+    }
+    return false;
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const followTab = params.get('follow_tab');
+    if (followTab === 'following' || followTab === 'followers' || followTab === 'blocked') {
+      setActiveFollowTab(followTab);
+    }
+  }, [location.search]);
+
+  useEffect(() => {
+    if (location.hash !== '#follow-management') return;
+    if (loading) return;
+
+    const raf = requestAnimationFrame(() => {
+      if (!scrollToFollow()) {
+        setTimeout(scrollToFollow, 120);
+      }
+    });
+
+    return () => cancelAnimationFrame(raf);
+  }, [location.hash, loading]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -316,7 +347,7 @@ function Settings() {
           <h1 className="page-title">設定</h1>
 
           {/* アカウント設定 */}
-          <section className="settings-section">
+          <section className="settings-section" id="follow-management">
             <h2 className="section-title">アカウント</h2>
             <div className="settings-list">
               <Link to="/user-settings" className="settings-item">

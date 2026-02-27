@@ -415,14 +415,28 @@ function ProfilePage() {
                   <span className="stat-number">{userProducts.length}</span>
                   <span className="stat-label">出品数</span>
                 </div>
-                <div className="stat-item">
-                  <span className="stat-number">{followCounts.followers}</span>
-                  <span className="stat-label">フォロワー</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-number">{followCounts.following}</span>
-                  <span className="stat-label">フォロー</span>
-                </div>
+                {isOwnProfile ? (
+                  <Link to="/settings?follow_tab=followers#follow-management" className="stat-item stat-item-link">
+                    <span className="stat-number">{followCounts.followers}</span>
+                    <span className="stat-label">フォロワー</span>
+                  </Link>
+                ) : (
+                  <div className="stat-item">
+                    <span className="stat-number">{followCounts.followers}</span>
+                    <span className="stat-label">フォロワー</span>
+                  </div>
+                )}
+                {isOwnProfile ? (
+                  <Link to="/settings?follow_tab=following#follow-management" className="stat-item stat-item-link">
+                    <span className="stat-number">{followCounts.following}</span>
+                    <span className="stat-label">フォロー</span>
+                  </Link>
+                ) : (
+                  <div className="stat-item">
+                    <span className="stat-number">{followCounts.following}</span>
+                    <span className="stat-label">フォロー</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
