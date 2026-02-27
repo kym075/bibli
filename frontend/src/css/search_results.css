@@ -58,6 +58,17 @@
     white-space: nowrap;
 }
 
+.soldout-toggle {
+    gap: 0.6rem;
+}
+
+.toggle-check {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
 .select-wrapper {
     position: relative;
 }

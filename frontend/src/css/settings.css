@@ -22,6 +22,10 @@
     margin-bottom: 2rem;
 }
 
+#follow-management {
+    scroll-margin-top: -240px;
+}
+
 .section-title {
     font-size: 0.9rem;
     font-weight: 600;

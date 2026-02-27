@@ -204,6 +204,15 @@ function SearchResults() {
                 </select>
               </div>
             </div>
+            <label className="control-group soldout-toggle">
+              <input
+                type="checkbox"
+                className="toggle-check"
+                checked={filters.includeSold !== '1'}
+                onChange={(e) => handleFilterChange('includeSold', e.target.checked ? '0' : '1')}
+              />
+              <span className="control-label">Sold outを除外</span>
+            </label>
           </div>
         </div>
 

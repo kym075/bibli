@@ -2457,12 +2457,15 @@ def get_forum_threads():
     try:
         category = request.args.get('category', '').strip()
         sort = request.args.get('sort', 'newest').strip()
+        author_email = _normalize_email(request.args.get('author_email'))
         page = request.args.get('page', 1, type=int)
         limit = request.args.get('limit', 20, type=int)
 
         query = ForumThread.query
         if category and category != 'all':
             query = query.filter(ForumThread.category == category)
+        if author_email:
+            query = query.filter(db.func.lower(ForumThread.author_email) == author_email)
 
         if sort == 'popular':
             query = query.order_by(
