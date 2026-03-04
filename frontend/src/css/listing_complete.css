@@ -102,117 +102,17 @@
     align-items: center;
     justify-content: center;
     gap: 0.8rem;
-    border: 1px solid transparent;
-}
-
-.btn-check {
     background: var(--accent);
     color: white;
+    border: 1px solid var(--accent);
     box-shadow: none;
 }
 
-.btn-check:hover {
+.action-btn:hover {
     transform: translateY(-3px);
     background: var(--accent-strong);
-}
-
-.btn-continue {
-    background: var(--surface);
-    color: var(--accent);
-    border-color: var(--accent);
-    box-shadow: none;
-}
-
-.btn-continue:hover {
-    transform: translateY(-3px);
-    background: var(--accent);
     color: white;
-}
-
-.btn-home {
-    background: var(--accent-warm);
-    color: white;
-    box-shadow: none;
-}
-
-.btn-home:hover {
-    transform: translateY(-3px);
-    background: #8b3f2f;
-}
-
-/* 追加情報 */
-.additional-info {
-    background: var(--surface-muted);
-    padding: 2rem;
-    border-radius: 15px;
-    margin-top: 3rem;
-    border: 1px solid var(--border);
-    border-left: 4px solid var(--accent);
-}
-
-.info-title {
-    font-size: 1.2rem;
-    color: var(--ink);
-    margin-bottom: 1rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.info-list {
-    color: var(--ink);
-    line-height: 1.8;
-}
-
-.info-list li {
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-}
-
-.info-list li::before {
-    content: "OK";
-    color: var(--accent);
-    font-weight: bold;
-    flex-shrink: 0;
-    margin-top: 0.1rem;
-}
-
-/* 統計情報 */
-.stats-section {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
-    margin-top: 2rem;
-}
-
-.stat-card {
-    background: var(--surface);
-    padding: 1.5rem;
-    border-radius: 12px;
-    text-align: center;
-    box-shadow: var(--shadow);
-    border: 1px solid transparent;
-    transition: all 0.3s ease;
-}
-
-.stat-card:hover {
-    border-color: var(--accent);
-    transform: translateY(-2px);
-}
-
-.stat-number {
-    font-size: 2rem;
-    font-weight: bold;
-    color: var(--accent);
-    margin-bottom: 0.5rem;
-}
-
-.stat-label {
-    color: var(--muted);
-    font-size: 0.9rem;
+    border-color: var(--accent-strong);
 }
 
 /* レスポンシブデザイン */
@@ -256,13 +156,6 @@
         font-size: 1rem;
     }
 
-    .stats-section {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .additional-info {
-        padding: 1.5rem;
-    }
 }
 
 /* 特別エフェクト */

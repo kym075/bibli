@@ -166,24 +166,24 @@
 }
 
 .btn-usrsettings {
-    background: var(--surface-muted);
-    color: var(--ink) !important;
-    border: 1px solid var(--border);
+    background: var(--accent);
+    color: #ffffff !important;
+    border: 1px solid var(--accent);
     font-weight: 700;
 }
 
 .btn-usrsettings:hover {
-    background: var(--accent) !important;
+    background: var(--accent-strong) !important;
     color: #ffffff !important;
-    border-color: var(--accent) !important;
+    border-color: var(--accent-strong) !important;
 }
 
 .btn-usrsettings:focus,
 .btn-usrsettings:focus-visible,
 .btn-usrsettings:active {
-    background: var(--accent) !important;
+    background: var(--accent-strong) !important;
     color: #ffffff !important;
-    border-color: var(--accent) !important;
+    border-color: var(--accent-strong) !important;
 }
 
 .btn-block {
