@@ -3587,6 +3587,10 @@ def create_checkout_session():
         return jsonify({"error": "product_id が必要です"}), 400
     if not origin:
         return jsonify({"error": "origin が必要です"}), 400
+    if not re.match(r'^https?://', origin):
+        return jsonify({"error": "origin は http:// または https:// で始まる必要があります"}), 400
+    if customer_email and not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", customer_email):
+        return jsonify({"error": "customer_email の形式が不正です"}), 400
 
     product = Product.query.filter_by(id=product_id, status=1).first()
     if not product:
@@ -3600,6 +3604,16 @@ def create_checkout_session():
     description = (product.description or '').strip()
     if len(description) > 200:
         description = f"{description[:200]}..."
+    title = (product.title or '').strip() or f"商品#{product.id}"
+    if len(title) > 127:
+        title = f"{title[:124]}..."
+
+    try:
+        unit_amount = int(product.price)
+    except (TypeError, ValueError):
+        return jsonify({"error": "商品の価格が不正です"}), 400
+    if unit_amount < 50:
+        return jsonify({"error": "商品の価格がStripeの最低金額(50円)を下回っています"}), 400
 
     try:
         session = stripe.checkout.Session.create(
@@ -3608,9 +3622,9 @@ def create_checkout_session():
             line_items=[{
                 'price_data': {
                     'currency': 'jpy',
-                    'unit_amount': int(product.price),
+                    'unit_amount': unit_amount,
                     'product_data': {
-                        'name': product.title,
+                        'name': title,
                         'description': description or None
                     }
                 },
@@ -3624,7 +3638,12 @@ def create_checkout_session():
                 'seller_id': str(product.seller_id or '')
             }
         )
+    except stripe.error.StripeError as e:
+        detail = getattr(e, 'user_message', None) or str(e)
+        app.logger.exception("Stripe checkout session creation failed")
+        return jsonify({"error": "決済セッション作成に失敗しました", "detail": detail}), 500
     except Exception as e:
+        app.logger.exception("Unexpected checkout session creation error")
         return jsonify({"error": "決済セッション作成に失敗しました", "detail": str(e)}), 500
 
     return jsonify({
