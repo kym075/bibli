@@ -4,7 +4,6 @@ from flask_cors import CORS, cross_origin
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect, text
 from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.utils import secure_filename
 import jwt
 from datetime import datetime, timedelta
 import secrets
@@ -100,8 +99,14 @@ for legacy_key, modern_key in LEGACY_PRODUCT_CONDITION_MAP.items():
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 
 
+def _image_extension(filename):
+    if not filename or "." not in filename:
+        return ""
+    return filename.rsplit(".", 1)[1].strip().lower()
+
+
 def _allowed_image(filename):
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
+    return _image_extension(filename) in ALLOWED_IMAGE_EXTENSIONS
 
 
 def _save_product_image(file_storage):
@@ -110,8 +115,9 @@ def _save_product_image(file_storage):
     if not _allowed_image(file_storage.filename):
         return None
 
-    original_name = secure_filename(file_storage.filename)
-    ext = original_name.rsplit(".", 1)[1].lower()
+    ext = _image_extension(file_storage.filename)
+    if not ext:
+        return None
     unique_name = f"picturesid_{datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}_{secrets.token_hex(8)}.{ext}"
     upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'products')
     os.makedirs(upload_dir, exist_ok=True)
@@ -126,8 +132,9 @@ def _save_profile_image(file_storage):
     if not _allowed_image(file_storage.filename):
         return None
 
-    original_name = secure_filename(file_storage.filename)
-    ext = original_name.rsplit(".", 1)[1].lower()
+    ext = _image_extension(file_storage.filename)
+    if not ext:
+        return None
     unique_name = f"profileid_{datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}_{secrets.token_hex(8)}.{ext}"
     upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'profiles')
     os.makedirs(upload_dir, exist_ok=True)
