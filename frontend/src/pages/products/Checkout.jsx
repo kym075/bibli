@@ -144,7 +144,9 @@ function Checkout() {
         return;
       }
 
-      setError(data.error || '決済の開始に失敗しました');
+      const message = data?.error || '決済の開始に失敗しました';
+      const detail = typeof data?.detail === 'string' ? data.detail.trim() : '';
+      setError(detail ? `${message}（詳細: ${detail}）` : message);
     } catch (err) {
       console.error('Checkout session error:', err);
       setError('決済の開始に失敗しました');
