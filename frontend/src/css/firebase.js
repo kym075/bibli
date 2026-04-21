@@ -4,13 +4,23 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "REDACTED_FIREBASE_API_KEY",
-  authDomain: "bibli-12f66.firebaseapp.com",
-  projectId: "bibli-12f66",
-  storageBucket: "bibli-12f66.firebasestorage.app",
-  messagingSenderId: "1008130646964",
-  appId: "1:1008130646964:web:50962c5ea483ea7721c8e1",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
+
+const missingKeys = Object.entries(firebaseConfig)
+  .filter(([, value]) => !value)
+  .map(([key]) => key);
+
+if (missingKeys.length > 0) {
+  throw new Error(
+    `Firebase設定が不足しています: ${missingKeys.join(", ")}。frontend/.env を設定してください。`
+  );
+}
 
 // Firebase 初期化
 const app = initializeApp(firebaseConfig);
